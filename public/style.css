@@ -2647,7 +2647,7 @@ main { max-width: 100%; overflow-x: hidden; }
 /* iOS PWA Installation Banner Styles */
 .ios-install-banner {
     position: fixed;
-    bottom: -150px; /* Hidden off-screen by default */
+    bottom: -300px; /* 🚀 PUSHED DEEPER OFF SCREEN: Changed from -150px to -300px to completely hide it on iOS safe-areas */
     left: 50%;
     transform: translateX(-50%);
     width: 90%;
@@ -2660,7 +2660,7 @@ main { max-width: 100%; overflow-x: hidden; }
     display: flex;
     flex-direction: column;
     gap: 12px;
-    transition: bottom 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+    transition: bottom 0.4s ease-in-out;
     border: 1px solid #f1f5f9;
 }
 

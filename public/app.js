@@ -665,8 +665,12 @@ function checkIosInstallationPrompt() {
 // Close helper handler
 function closeIosBanner() {
     const banner = document.getElementById('ios-pwa-banner');
-    if (banner) banner.classList.remove('show');
-    // Save preference so banner stays closed for this specific user profile session
+    if (banner) {
+        // 🚀 FORCE IMMEDIATE HIDDEN STATE
+        banner.classList.remove('show');
+        banner.style.display = 'none'; 
+    }
+    // Lock preference so it stays hidden forever on this device tab session
     localStorage.setItem('fpl_ios_banner_dismissed', 'true');
 }
 
