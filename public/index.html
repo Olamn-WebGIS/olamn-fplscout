@@ -917,19 +917,6 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
 
-<!-- ── PWA Install Prompt Modal ──────────────────────────────── -->
-<div id="pwa-install-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem;">
-  <div style="background:#fff;border-radius:12px;padding:2rem;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;">
-    <div style="font-size:3rem;margin-bottom:1rem;">📱</div>
-    <h3 style="font-size:1.3rem;font-weight:700;margin-bottom:0.5rem;color:#0A2540;">Install FPL Scout</h3>
-    <p style="font-size:0.9rem;color:#666;margin-bottom:1.5rem;line-height:1.5;">Get instant access to advanced FPL analytics directly on your home screen.</p>
-    <div style="display:flex;gap:1rem;">
-      <button id="pwa-install-btn" style="flex:1;padding:0.75rem 1rem;background:#00c853;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:1rem;">Install App</button>
-      <button id="pwa-dismiss-btn" style="flex:1;padding:0.75rem 1rem;background:#f0f0f0;color:#333;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:1rem;">Maybe Later</button>
-    </div>
-  </div>
-</div>
-
 <script>
 // ── PWA Setup ──────────────────────────────────────────────
 let deferredPrompt;

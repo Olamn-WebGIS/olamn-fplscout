@@ -446,13 +446,13 @@ app.get('/account', (req, res) => {
 
 // 1. Configure your Zoho SMTP Email Transporter
 const transporter = nodemailer.createTransport({
-    host: 'smtp.zoho.com',
-    port: 465,
-    secure: true, // true for port 465
-    auth: {
-        user: process.env.ZOHO_EMAIL || 'info@fplscout.name.ng',
-        pass: process.env.ZOHO_PASSWORD || 'dCfNKDbtPJyn'
-    }
+  host: 'smtp.zoho.com',
+  port: 465,
+  secure: true, 
+  auth: {
+    user: process.env.ZOHO_EMAIL,
+    pass: process.env.ZOHO_PASSWORD
+  }
 });
 
 // Temporary memory to hold OTPs before they are verified (We will replace this with the database later)
