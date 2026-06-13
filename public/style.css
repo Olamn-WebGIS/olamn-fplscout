@@ -2644,3 +2644,84 @@ main { max-width: 100%; overflow-x: hidden; }
         width: 100% !important;
     }
 }
+/* iOS PWA Installation Banner Styles */
+.ios-install-banner {
+    position: fixed;
+    bottom: -150px; /* Hidden off-screen by default */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: bottom 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+    border: 1px solid #f1f5f9;
+}
+
+.ios-install-banner.show {
+    bottom: 24px; /* Slides up beautifully */
+}
+
+.ios-banner-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ios-banner-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ios-close-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 0 4px;
+}
+
+.ios-banner-steps {
+    font-size: 0.85rem;
+    color: #475569;
+    line-height: 1.5;
+    margin: 0;
+    padding-left: 18px;
+}
+
+.ios-banner-steps li {
+    margin-bottom: 6px;
+}
+
+/* Inline helper icons to mimic Apple system UI */
+.apple-share-icon {
+    display: inline-block;
+    width: 16px;
+    height: 20px;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://w3.org" viewBox="0 0 24 24" fill="none" stroke="%230070f3" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>') center/contain no-repeat;
+    vertical-align: middle;
+    margin: 0 2px;
+}
+
+.apple-plus-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://w3.org" viewBox="0 0 24 24" fill="none" stroke="%23334155" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>') center/contain no-repeat;
+    vertical-align: middle;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 1px;
+    margin: 0 2px;
+}

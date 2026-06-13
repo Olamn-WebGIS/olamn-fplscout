@@ -641,3 +641,34 @@ function togglePasswordVisibility(inputFieldId, toggleElement) {
         toggleElement.innerText = "👁️"; 
     }
 }
+// 📱 SMART SMARTPHONE DETECTION FOR IPHONE WEB APP APP INSTALLS
+function checkIosInstallationPrompt() {
+    // 1. Detect if the device running is an iPhone or iPad matrix hardware setup
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
+    // 2. Detect if the user is already viewing the site as an installed app (Standalone mode)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    // 3. Detect if the user previously clicked 'close' so we don't spam them
+    const isBannerDismissed = localStorage.getItem('fpl_ios_banner_dismissed') === 'true';
+
+    // 🚀 Only show the banner if they are on iOS, haven't installed it yet, and haven't closed the tip box
+    if (isIos && !isStandalone && !isBannerDismissed) {
+        // Wait 3 seconds after page loads to slide it up gracefully
+        setTimeout(() => {
+            const banner = document.getElementById('ios-pwa-banner');
+            if (banner) banner.classList.add('show');
+        }, 3000);
+    }
+}
+
+// Close helper handler
+function closeIosBanner() {
+    const banner = document.getElementById('ios-pwa-banner');
+    if (banner) banner.classList.remove('show');
+    // Save preference so banner stays closed for this specific user profile session
+    localStorage.setItem('fpl_ios_banner_dismissed', 'true');
+}
+
+// Wire the check directly into your existing DOMContentLoaded listener loop
+document.addEventListener('DOMContentLoaded', checkIosInstallationPrompt);

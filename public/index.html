@@ -1095,6 +1095,20 @@ if ('serviceWorker' in navigator) {
         </form>
     </div>
 </div>
+<!-- Smart App Banner for iPhone Users -->
+<div id="ios-pwa-banner" class="ios-install-banner">
+    <div class="ios-banner-header">
+        <div class="ios-banner-title">
+            📲 <span>Install FPL Scout App</span>
+        </div>
+        <button class="ios-close-btn" onclick="closeIosBanner()">✕</button>
+    </div>
+    <ul class="ios-banner-steps">
+        <li>Tap the secure <strong>Share</strong> button <span class="apple-share-icon"></span> down in the Safari menu bar.</li>
+        <li>Scroll down the options list and select <strong>Add to Home Screen</strong> <span class="apple-plus-icon"></span>.</li>
+        <li>Tap <strong>Add</strong> at the top right to download it to your screen!</li>
+    </ul>
+</div>
 
 <!-- Ensure any script files are loaded down here below your markup elements -->
 <script src="/app.js"></script>
