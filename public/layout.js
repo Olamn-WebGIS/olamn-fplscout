@@ -39,7 +39,7 @@
         </div>
         <p style="font-size:0.875rem;max-width:260px;line-height:1.6;">Advanced data analytics for Fantasy Premier League managers.</p>
         <div class="footer-socials" style="margin-top:1rem;">
-          <a href="https://x.com" target="_blank" rel="noopener" aria-label="X (Twitter)">𝕏</a>
+          <a href="https://x.com/OlamnFPL_scout" target="_blank" rel="noopener" aria-label="X (Twitter)">𝕏</a>
         </div>
       </div>
       <div class="footer-columns">
