@@ -19,7 +19,40 @@ const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
+// 🔒 PREMIUM SECURITY CHECK MIDDLEWARE
+// It looks up the requesting user's true profile status in Supabase before unblocking private paths
+async function requirePremiumUser(req, res, next) {
+    try {
+        // Extract userId dynamically from headers or query parameters sent by the frontend
+        const userId = req.headers['x-user-id'] || req.query.userId || req.body.userId;
 
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'Authentication required. Please log in.' });
+        }
+
+        // Fetch their live subscription tier row directly from your profiles schema
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('subscription_status')
+            .eq('id', userId)
+            .single();
+
+        if (error || !profile) {
+            return res.status(404).json({ success: false, message: 'User profile matrix not found.' });
+        }
+
+        // 🚨 SAFETY GATE: If they aren't premium, block them instantly right here!
+        if (profile.subscription_status !== 'Premium Member') {
+            return res.status(403).json({ success: false, isLocked: true, message: 'Access Denied. This feature requires a Premium Subscription.' });
+        }
+
+        // If they pass the check, allow the server to proceed cleanly to the actual endpoint data
+        next();
+    } catch (err) {
+        console.error('Security middleware intercept crash:', err);
+        return res.status(500).json({ success: false, message: 'Internal validation error occurred.' });
+    }
+}
 // ── Middleware ────────────────────────────────────────────────
 app.use(compression());
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -1175,12 +1208,11 @@ app.post('/api/watchlist', async (req, res) => {
 });
 
 // =========================================================
-// 📌 WATCHLIST RETRIEVAL ENDPOINT (FIXED & CLEANED)
+// 🔒 SECURED WATCHLIST RETRIEVAL ENDPOINT (WITH MIDDLEWARE)
 // =========================================================
-app.get('/api/watchlist/:userId', async (req, res) => {
+app.get('/api/watchlist/:userId', requirePremiumUser, async (req, res) => {
     try {
         const { userId } = req.params;
-
         const { data, error } = await supabase
             .from('watchlists')
             .select('*')
@@ -1189,10 +1221,11 @@ app.get('/api/watchlist/:userId', async (req, res) => {
         if (error) throw error;
         return res.json({ success: true, watchlist: data });
     } catch (err) {
-        console.error('Watchlist retrieval crash:', err);
+        console.error('Secured watchlist retrieval crash:', err);
         return res.status(500).json({ success: false, watchlist: [] });
     }
 });
+
 
 // =========================================================
 // 🚀 BACKEND PROXY ROUTE: Bypasses CORS blocks to fetch live exchange rates safely
