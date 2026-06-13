@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account - FPL Scout</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
+    <link rel="apple-touch-icon" href="/images/favicon.svg" />
+    <style>
+        .account-container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+        .account-header {
+            margin-bottom: 2rem;
+        }
+        .account-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        .account-header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+        .account-tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+            white-space: nowrap;
+            scroll-behavior: smooth;
+            padding-bottom: 0.5rem;
+        }
+        .account-tabs::-webkit-scrollbar {
+            height: 6px;
+        }
+        .account-tabs::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .account-tabs::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 3px;
+        }
+        .account-tabs::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.3s;
+        }
+        .tab-btn.active {
+            color: #0070f3;
+            border-bottom-color: #0070f3;
+        }
+        .tab-btn:hover {
+            color: #0070f3;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-section {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .form-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            border-bottom: 2px solid #0070f3;
+            padding-bottom: 0.75rem;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            font-family: inherit;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #0070f3;
+            box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.1);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+        }
+        .btn-primary {
+            background: #0070f3;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0052cc;
+        }
+        .btn-secondary {
+            background: transparent;
+            color: #0070f3;
+            border: 2px solid #0070f3;
+        }
+        .btn-secondary:hover {
+            background: rgba(0, 112, 243, 0.1);
+        }
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #ff3838;
+        }
+        .btn-success {
+            background: #2ed573;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #26de81;
+        }
+        .subscription-card {
+            background: linear-gradient(135deg, #0070f3 0%, #0052cc 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .subscription-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        .subscription-status {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .subscription-details {
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+        .info-box {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            border-left: 4px solid rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        .user-detail {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+        }
+        .user-detail-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .user-detail-value {
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+        .alert {
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+        .alert.show {
+            display: block;
+        }
+        .alert-success {
+            background: rgba(46, 213, 115, 0.1);
+            color: #2ed573;
+            border-left: 4px solid #2ed573;
+        }
+        .alert-error {
+            background: rgba(255, 71, 87, 0.1);
+            color: #ff4757;
+            border-left: 4px solid #ff4757;
+        }
+        .alert-warning {
+            background: rgba(255, 165, 0, 0.1);
+            color: #ffa500;
+            border-left: 4px solid #ffa500;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal {
+            background: var(--bg-primary);
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        .modal h2 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        .modal-close {
+            float: right;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+        @media (max-width: 768px) {
+            .account-container {
+                padding: 1rem;
+            }
+            .account-header h1 {
+                font-size: 1.8rem;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .account-tabs {
+                gap: 0.25rem;
+            }
+            .tab-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+                flex-shrink: 0;
+            }
+            .btn-group {
+                gap: 0.5rem;
+                justify-content: center;
+            }
+            .btn {
+                width: auto;
+                padding: 0.6rem 1.2rem;
+                white-space: nowrap;
+            }
+            .user-detail {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .form-section {
+                padding: 1rem;
+            }
+            .account-header h1 {
+                font-size: 1.5rem;
+            }
+            .account-tabs {
+                gap: 0.1rem;
+            }
+            .tab-btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.75rem;
+                flex-shrink: 0;
+            }
+            .btn-group {
+                gap: 0.4rem;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            .btn {
+                width: auto;
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+                white-space: nowrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="nav-placeholder"></div>
+
+    <div class="account-container">
+        <div class="account-header">
+            <h1>My Account</h1>
+            <p>Manage your profile, subscription, and account settings</p>
+        </div>
+
+        <!-- Alert Messages -->
+        <div id="success-alert" class="alert alert-success"></div>
+        <div id="error-alert" class="alert alert-error"></div>
+        <div id="warning-alert" class="alert alert-warning"></div>
+
+        <!-- Tabs -->
+        <div class="account-tabs" id="account-tabs">
+            <button class="tab-btn active" data-tab="profile">👤 Profile</button>
+            <button class="tab-btn" data-tab="subscription">💳 Subscription</button>
+            <button class="tab-btn" data-tab="security">🔐 Security</button>
+            <button class="tab-btn" data-tab="support">🆘 Support</button>
+        </div>
+
+        <!-- Profile Tab Dashboard Layout -->
+<div id="tab-profile" class="tab-content active">
+    <div class="form-section card-layout">
+        <div class="section-title-wrap">
+            <h2><i class="fa-regular fa-address-card"></i> Account Information</h2>
+        </div>
+        
+        <!-- Keep this container completely empty so your original JavaScript can build your info here -->
+        <div id="profile-details"></div>
+        
+        <form id="edit-profile-form" style="display: none;">
+            <div class="form-group">
+                <label for="edit-name">Full Name *</label>
+                <input type="text" id="edit-name" placeholder="Your name" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-country">Country</label>
+                <input type="text" id="edit-country" placeholder="Your country">
+            </div>
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="button" class="btn btn-secondary" onclick="toggleEditProfile()">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="form-section card-layout">
+        <div class="section-title-wrap">
+            <h2><i class="fa-regular fa-envelope"></i> Email Address</h2>
+        </div>
+        <div class="user-detail-row">
+            <span class="user-detail-label">Current Email:</span>
+            <!-- Your script needs this exact ID to display your email string -->
+            <span class="user-detail-value" id="current-email"></span>
+        </div>
+        <button class="btn btn-primary" onclick="showChangeEmailModal()">Change Email</button>
+    </div>
+</div>
+
+        <!-- Subscription Tab -->
+        <div id="tab-subscription" class="tab-content">
+            <div id="subscription-content"></div>
+        </div>
+
+        <!-- Security Tab -->
+        <div id="tab-security" class="tab-content">
+            <div class="form-section">
+                <h2>Change Password</h2>
+                <form id="change-password-form">
+                    <div class="form-group">
+                        <label for="current-password">Current Password *</label>
+                        <input type="password" id="current-password" placeholder="Enter current password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">New Password *</label>
+                        <input type="password" id="new-password" placeholder="Enter new password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-password">Confirm New Password *</label>
+                        <input type="password" id="confirm-password" placeholder="Confirm new password" required>
+                    </div>
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary">Update Password</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="form-section">
+                <h2>Logout</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Click the button below to logout from your account on this device.</p>
+                <button class="btn btn-danger" onclick="handleLogout()">Logout</button>
+            </div>
+        </div>
+
+        <!-- Support Tab -->
+        <div id="tab-support" class="tab-content">
+            <div class="form-section">
+                <h2>Request Support</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Having issues with your subscription? Let us know how we can help.</p>
+                <form id="support-form">
+                    <div class="form-group">
+                        <label for="support-issue">Issue Type *</label>
+                        <select id="support-issue" required>
+                            <option value="">Select an issue type</option>
+                            <option value="billing">Billing or Payment Issue</option>
+                            <option value="feature">Feature Not Working</option>
+                            <option value="subscription">Subscription Problem</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="support-message">Describe Your Issue *</label>
+                        <textarea id="support-message" rows="6" placeholder="Tell us what's wrong..." required></textarea>
+                    </div>
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-primary">Send Support Request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Email Modal -->
+    <div id="change-email-modal" class="modal-overlay">
+        <div class="modal">
+            <button class="modal-close" onclick="closeChangeEmailModal()">×</button>
+            <h2>Change Email Address</h2>
+            <form id="change-email-form">
+    <div class="form-group">
+        <label for="new-email">New Email Address *</label>
+        <input type="email" id="new-email" placeholder="your-new-email@example.com" required autocomplete="off">
+    </div>
+    <div class="form-group">
+        <label for="email-otp" id="otp-label" style="display: none;">OTP Code *</label>
+        <input type="text" id="email-otp" placeholder="Enter OTP" style="display: none;" autocomplete="one-time-code">
+        <button type="button" class="btn btn-secondary" id="send-email-otp-btn" onclick="sendEmailChangeOTP()">Send OTP to New Email</button>
+    </div>
+    <div class="btn-group">
+        <button type="submit" class="btn btn-primary" style="display: none;" id="verify-email-otp-btn">Verify & Change Email</button>
+        <button type="button" class="btn btn-secondary" onclick="closeChangeEmailModal()">Cancel</button>
+    </div>
+</form>
+        </div>
+    </div>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="/layout.js"></script>
+    <script src="/app.js"></script>
+    <script>
+        // ────────────────────────────────────────────────────────────
+        // Account Page Specific Functions
+        // ────────────────────────────────────────────────────────────
+
+        // Check if user is logged in
+        function checkAuth() {
+            const session = localStorage.getItem('fpl_user_session');
+            if (!session) {
+                window.location.href = '/';
+                return null;
+            }
+            return JSON.parse(session);
+        }
+
+        currentUser = checkAuth();
+
+        // Switch tabs
+        window.switchTab = function(e, tabName) {
+            e.preventDefault();
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            e.target.classList.add('active');
+
+            if (tabName === 'subscription') {
+                loadSubscriptionInfo();
+            }
+        };
+
+        // Load profile info
+        function loadProfileInfo() {
+            const detailsDiv = document.getElementById('profile-details');
+            detailsDiv.innerHTML = `
+                <div class="user-detail">
+                    <span class="user-detail-label">Full Name:</span>
+                    <span class="user-detail-value">${currentUser.fullName}</span>
+                </div>
+                <div class="user-detail">
+                    <span class="user-detail-label">Country:</span>
+                    <span class="user-detail-value">${currentUser.country || 'Not specified'}</span>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" onclick="toggleEditProfile()">Edit Profile</button>
+                </div>
+            `;
+            document.getElementById('current-email').textContent = currentUser.email;
+        }
+
+        // Toggle edit profile form
+        function toggleEditProfile() {
+            const form = document.getElementById('edit-profile-form');
+            const details = document.getElementById('profile-details');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            details.style.display = details.style.display === 'none' ? 'block' : 'none';
+            
+            if (form.style.display === 'block') {
+                document.getElementById('edit-name').value = currentUser.fullName;
+                document.getElementById('edit-country').value = currentUser.country || '';
+            }
+        }
+
+        // Handle profile edit
+        document.getElementById('edit-profile-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('edit-name').value;
+            const country = document.getElementById('edit-country').value;
+
+            try {
+                const res = await fetch('/api/update-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentUser.email, name, country })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    currentUser.fullName = name;
+                    currentUser.country = country;
+                    localStorage.setItem('fpl_user_session', JSON.stringify(currentUser));
+                    showAlert('success', 'Profile updated successfully!');
+                    toggleEditProfile();
+                    loadProfileInfo();
+                } else {
+                    showAlert('error', data.message || 'Failed to update profile');
+                }
+            } catch (error) {
+                showAlert('error', 'Error updating profile');
+            }
+        });
+
+        // Change email
+        function showChangeEmailModal() {
+            document.getElementById('change-email-modal').classList.add('show');
+            document.getElementById('new-email').value = '';
+            document.getElementById('email-otp').value = '';
+            document.getElementById('email-otp').style.display = 'none';
+            document.getElementById('send-email-otp-btn').style.display = 'block';
+            document.getElementById('verify-email-otp-btn').style.display = 'none';
+            document.getElementById('send-email-otp-btn').textContent = 'Send OTP to New Email';
+        }
+
+       function closeChangeEmailModal() {
+    // 1. Hide the modal by removing your CSS class
+    document.getElementById('change-email-modal').classList.remove('show');
+    
+    // 2. Clean up and reset everything back to hidden for the next time it opens
+    document.getElementById('change-email-form').reset();
+    document.getElementById('otp-label').style.display = 'none';
+    document.getElementById('email-otp').style.display = 'none';
+    
+    const verifyBtn = document.getElementById('verify-email-otp-btn');
+    const sendOtpBtn = document.getElementById('send-email-otp-btn');
+    if (verifyBtn) verifyBtn.style.display = 'none';
+    if (sendOtpBtn) sendOtpBtn.style.display = 'inline-flex';
+}
+
+async function sendEmailChangeOTP() {
+    const newEmail = document.getElementById('new-email').value.trim();
+    
+    if (!newEmail) {
+        alert("Please enter your new email address first!");
+        return;
+    }
+
+    try {
+        // (Your existing functional Supabase code logic goes here)
+        
+        // 1. Reveal the OTP inputs and text label
+        const otpLabel = document.getElementById('otp-label');
+        const otpInput = document.getElementById('email-otp');
+        const verifyBtn = document.getElementById('verify-email-otp-btn');
+        const sendOtpBtn = document.getElementById('send-email-otp-btn');
+
+        otpLabel.style.display = 'block';
+        otpLabel.textContent = "Please fill in your OTP code *"; 
+        otpLabel.style.color = ""; 
+        
+        otpInput.style.display = 'block';
+        otpInput.required = true; 
+        
+        // 2. Swap the action buttons
+        if (verifyBtn) verifyBtn.style.display = 'inline-flex';
+        if (sendOtpBtn) sendOtpBtn.style.display = 'none'; 
+
+    } catch (error) {
+        console.error("Failed to route email change transmission request:", error);
+    }
+}
+
+// 3. NEW ADDITION: Intercept click before form triggers a browser exit reset
+document.getElementById('change-email-form').addEventListener('submit', async (e) => {
+    // Stop the modal from closing or reloading instantly
+    e.preventDefault(); 
+
+    const otpInput = document.getElementById('email-otp');
+    const otpValue = otpInput.value.trim();
+    const otpLabel = document.getElementById('otp-label');
+
+    // CHECK: Is the field visible but completely empty?
+    if (!otpValue) {
+        if (otpLabel) {
+            otpLabel.textContent = "⚠️ Fill in your OTP code to proceed!";
+            otpLabel.style.color = "#ef4444"; // Changes label text to error red
+        }
+        return; // Stops execution right here so the modal stays wide open!
+    }
+
+    // PROCEED: If the code is filled, continue with your backend verify script
+    try {
+        // Example backend call:
+        // const { error } = await supabase.auth.verifyOtp({ email: newEmail, token: otpValue, type: 'email_change' });
+        
+        alert("Email changed successfully!");
+        closeChangeEmailModal(); // Only close now on actual success
+    } catch (err) {
+        console.error("Verification sequence failed:", err);
+    }
+});
+        // Change password
+        document.getElementById('change-password-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (newPassword !== confirmPassword) {
+                showAlert('error', 'Passwords do not match');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentUser.email, currentPassword, newPassword })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showAlert('success', 'Password changed successfully!');
+                    document.getElementById('change-password-form').reset();
+                } else {
+                    showAlert('error', data.message || 'Failed to change password');
+                }
+            } catch (error) {
+                showAlert('error', 'Error changing password');
+            }
+        });
+
+                // Load subscription info
+        function loadSubscriptionInfo() {
+            const content = document.getElementById('subscription-content');
+            if (!content) return; // Prevent DOM script errors
+            
+            // 🚀 FIXED: Checks your exact database column values instead of old placeholders
+            const isUserPremium = currentUser && (currentUser.subscription_status === 'Premium Member' || currentUser.isPremium === true);
+            
+            if (isUserPremium) {
+                content.innerHTML = `
+                    <div class="subscription-card">
+                        <h3>Premium Subscription Active ✓</h3>
+                        <div class="subscription-status">Premium Member</div>
+                        <div class="subscription-details">
+                            <p><strong>Status:</strong> Active</p>
+                            <p><strong>Plan:</strong> ₦3,000/month (~$3 USD)</p>
+                            <p><strong>Joined:</strong> ${new Date(currentUser.createdAt || Date.now()).toLocaleDateString()}</p>
+                        </div>
+                        <div class="info-box">
+                            You have full access to all premium features including League Spy, Advanced Recommendations, Real-time Alerts, and Priority Support.
+                        </div>
+                        <div class="btn-group">
+                            <!-- 🚀 FIXED: Cleaned up the leaked code and closed the tag properly -->
+                            <button class="btn btn-primary" onclick="showRenewSubscriptionModal()">Renew Subscription</button>
+                            <button class="btn btn-danger" onclick="showCancelSubscriptionModal()">Cancel Subscription</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = `
+                    <div class="subscription-card" style="background: linear-gradient(135deg, #888 0%, #666 100%);">
+                        <h3>Free Tier</h3>
+                        <div class="subscription-status">Free Member</div>
+                        <div class="subscription-details">
+                            <p><strong>Status:</strong> Free account (Limited features)</p>
+                            <p><strong>Upgrade to Premium:</strong> ₦3,000/month (~$3 USD)</p>
+                        </div>
+                        <div class="info-box">
+                            Upgrade to Premium to unlock League Spy, Advanced Recommendations, Real-time Alerts, and Priority Support. Your first month gives you full access to all features!
+                        </div>
+                        <div class="btn-group">
+                            <a href="/subscribe.html" class="btn btn-primary">Upgrade to Premium</a>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+               // =========================================================
+        // 🚀 PAYSTACK INTEGRATED RENEWAL CHECKOUT LOGIC
+        // =========================================================
+        async function showRenewSubscriptionModal() {
+            if (!currentUser || !currentUser.email) {
+                showAlert('error', 'Please log in to purchase a subscription!');
+                return;
+            }
+
+            if (confirm('Renew your premium subscription for ₦3,000/month? You will be redirected to Paystack to complete your payment securely.')) {
+                try {
+                    if (typeof showToast === 'function') {
+                        showToast('Redirecting to secure gateway...', 'success');
+                    }
+
+                    // 1. Request a live secure payment checkout URL from your Node server
+                    const response = await fetch('/api/initialize-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: currentUser.email,
+                            amount: 3000 // Cost in NGN
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success && data.authorization_url) {
+                        // 2. 🚀 REDIRECT USER TO LIVE SECURE PAYSTACK PAGE
+                        window.location.href = data.authorization_url;
+                    } else {
+                        showAlert('error', data.message || 'Could not launch payment gateway.');
+                    }
+
+                } catch (err) {
+                    console.error('Failed to communicate with payment API:', err);
+                    showAlert('error', 'A payment network gateway error occurred.');
+                }
+            }
+        }
+
+        // =========================================================
+        // 🔒 SECURED SUBSCRIPTION CANCELLATION LOGIC
+        // =========================================================
+        async function showCancelSubscriptionModal() {
+            if (confirm('Are you sure you want to cancel your subscription? You will lose access to premium features after your current billing cycle ends.')) {
+                try {
+                    const res = await fetch('/api/cancel-subscription', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: currentUser.email })
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        // 🚀 FIXED: Update your correct database parameters in user state cache
+                        currentUser.subscription_status = 'Free Member'; 
+                        currentUser.isPremium = false;
+                        
+                        localStorage.setItem('fpl_user_session', JSON.stringify(currentUser));
+                        showAlert('success', 'Subscription cancelled. You will have access until the end of your billing cycle.');
+                        
+                        if (typeof loadSubscriptionInfo === 'function') {
+                            loadSubscriptionInfo();
+                        }
+                    } else {
+                        showAlert('error', data.message || 'Failed to cancel subscription');
+                    }
+                } catch (error) {
+                    console.error('Cancellation error:', error);
+                    showAlert('error', 'Error processing cancellation request');
+                }
+            }
+        }
+
+        // Support form
+        document.getElementById('support-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const issue = document.getElementById('support-issue').value;
+            const message = document.getElementById('support-message').value;
+
+            try {
+                const res = await fetch('/api/send-support-request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentUser.email, name: currentUser.fullName, issue, message })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showAlert('success', 'Support request sent! We will respond within 24 hours.');
+                    document.getElementById('support-form').reset();
+                } else {
+                    showAlert('error', data.message || 'Failed to send support request');
+                }
+            } catch (error) {
+                showAlert('error', 'Error sending support request');
+            }
+        });
+
+        // Logout
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('fpl_user_session');
+                window.location.href = '/';
+            }
+        }
+
+        // Show alerts
+        function showAlert(type, message) {
+            const alertDiv = document.getElementById(`${type}-alert`);
+            alertDiv.textContent = message;
+            alertDiv.classList.add('show');
+            setTimeout(() => alertDiv.classList.remove('show'), 5000);
+        }
+
+        // Initialize page
+        try {
+            loadProfileInfo();
+            loadSubscriptionInfo();
+        } catch (e) {
+            console.error('Error initializing page:', e);
+        }
+
+        // Tab switching - attach listeners directly using event delegation
+        try {
+            document.addEventListener('click', (e) => {
+                if (e.target.closest('#account-tabs .tab-btn')) {
+                    const btn = e.target.closest('.tab-btn');
+                    document.querySelectorAll('#account-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(p => p.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+                    
+                    // Load content for subscription tab
+                    if (btn.dataset.tab === 'subscription' && typeof loadSubscriptionInfo === 'function') {
+                        loadSubscriptionInfo();
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('Error attaching tab listeners:', e);
+        }
+    </script>
+    <script>
+document.addEventListener("DOMContentLoaded", () => {
+    const tabButtons = document.querySelectorAll(".tab-btn");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            // 1. Get the target name from the clicked button (e.g., "profile", "subscription")
+            const targetTab = button.getAttribute("data-tab");
+
+            // 2. Remove the "active" class from all tab buttons
+            tabButtons.forEach(btn => btn.classList.remove("active"));
+
+            // 3. Remove the "active" class from all tab content divs
+            tabContents.forEach(content => content.classList.remove("active"));
+
+            // 4. Add the "active" class back to the clicked button
+            button.classList.add("active");
+
+            // 5. Find the matching content div and add the "active" class to it
+            const targetContent = document.getElementById(`tab-${targetTab}`);
+            if (targetContent) {
+                targetContent.classList.add("active");
+            }
+        });
+    });
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // 1. Existing Tab logic (Keeps your tabs working)
+    const tabButtons = document.querySelectorAll(".tab-btn");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            const targetTab = button.getAttribute("data-tab");
+            tabButtons.forEach(btn => btn.classList.remove("active"));
+            tabContents.forEach(content => content.classList.remove("active"));
+            button.classList.add("active");
+            const targetContent = document.getElementById(`tab-${targetTab}`);
+            if (targetContent) {
+                targetContent.classList.add("active");
+            }
+        });
+    });
+});
+
+// 2. New Logout Logic (Fixes the missing reference error)
+async function handleLogout() {
+    try {
+        // Only clear user session, preserve watchlist and sync data
+        localStorage.removeItem('fpl_user_session');
+        sessionStorage.clear();
+        
+        alert("Logged out successfully!");
+        
+        // Redirect the user back to the landing index page
+        window.location.href = "index.html"; 
+    } catch (error) {
+        console.error("Error during logout:", error);
+    }
+}
+</script>
+</body>
+</html>

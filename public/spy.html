@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>League Spy — FPL Scout</title>
+  <meta name="description" content="Spy on your mini-league rivals, analyze their teams, and track transfers in real-time." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
+  <link rel="apple-touch-icon" href="/images/favicon.svg" />
+  <style>
+    .spy-rival-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .spy-rival-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--blue-light), var(--green));
+    }
+    .rival-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .rival-info {
+      flex: 1;
+      min-width: 200px;
+    }
+    .rival-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .rival-rank {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .rival-points {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--blue-light);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 70px;
+    }
+    .rival-points small {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+    .rival-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .icon-btn {
+      background: #f1f5f9;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    .icon-btn:hover {
+      background: var(--blue-light);
+      color: #fff;
+      transform: scale(1.05);
+    }
+    .h2h-comp {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e2e8f0;
+    }
+    .h2h-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .h2h-stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .h2h-stat-value {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+    .h2h-vs {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .captain-picks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .captain-item {
+      background: linear-gradient(135deg, #f8faff 0%, #eef3fc 100%);
+      border: 1.5px solid #dfe7f1;
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .captain-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(25,118,210,0.2);
+      border-color: var(--blue-light);
+    }
+    .captain-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .captain-badge {
+      font-size: 1.2rem;
+      margin-bottom: 4px;
+    }
+    .captain-team {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .watchlist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: #f8faff;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border-left: 3px solid var(--green);
+    }
+    .watchlist-item.removed {
+      border-left-color: var(--fwd);
+      background: #fff8f8;
+    }
+    .watchlist-action {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .watchlist-action.added {
+      color: var(--green);
+    }
+    .watchlist-action.removed {
+      color: var(--fwd);
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+
+<!-- Nav injected by layout.js -->
+
+<main class="page-wrap">
+  <div style="background:var(--navy);padding:2.5rem 1.5rem 2rem;margin:-2rem -1.5rem 2rem;color:#fff;">
+    <div style="max-width:var(--max-w);margin:0 auto;">
+      <div class="section-eyebrow" style="color:var(--green);margin-bottom:8px;">Mini-League Analytics</div>
+      <h1 class="display" style="font-size:clamp(2rem,5vw,2.8rem);margin-bottom:0.75rem;">Spy on Your <em style="color:var(--green);font-style:normal;">Mini-League</em></h1>
+      <p style="color:rgba(255,255,255,0.7);max-width:680px;font-size:1.05rem;line-height:1.5;">🎯 See who's ahead, analyze their teams, and track your rivals. ⚡ Get instant alerts on transfers and captain picks. 📊 Compare your team vs rivals in real-time. 📈 Access advanced head-to-head analytics.</p>
+    </div>
+  </div>
+
+  <!-- League Selection -->
+  <div class="card" style="margin-bottom:2rem;">
+    <h2 class="card-title">📊 Track Your League</h2>
+    <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">League ID</label>
+        <input type="number" id="league-id-input" placeholder="e.g. 12345" style="width:100%;padding:0.7rem;border:1.5px solid #e2e8f0;border-radius:var(--radius-sm);font-size:0.95rem;">
+      </div>
+      <button class="btn btn-green" id="load-league-btn" style="font-weight:700;">Load League</button>
+      <a href="/how-to-findids.html" class="hint-link" style="font-size:0.85rem;">💡 Find League ID</a>
+    </div>
+  </div>
+
+  <!-- League Stats Banner -->
+  <div id="league-banner" style="background:var(--bg-card);border-radius:var(--radius-md);padding:1.5rem;margin-bottom:2rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;box-shadow:var(--shadow-sm);display:none;">
+    <div>
+      <div class="section-eyebrow">Current Gameweek</div>
+      <div style="font-size:1.2rem;font-weight:700;" id="current-gw">—</div>
+    </div>
+    <div style="height:40px;width:1px;background:#e2e8f0;"></div>
+    <div>
+      <div class="section-eyebrow">League Name</div>
+      <div style="font-size:1.2rem;font-weight:700;" id="league-name">—</div>
+    </div>
+    <div style="height:40px;width:1px;background:#e2e8f0;"></div>
+    <div>
+      <div class="section-eyebrow">Managers</div>
+      <div style="font-size:1.2rem;font-weight:700;" id="league-managers">—</div>
+    </div>
+    <div style="height:40px;width:1px;background:#e2e8f0;"></div>
+    <div>
+      <div class="section-eyebrow">Avg Points</div>
+      <div style="font-size:1.2rem;font-weight:700;" id="league-avg-pts">—</div>
+    </div>
+    <div style="margin-left:auto;">
+      <span class="nav-badge" style="font-size:0.75rem;">LIVE TRACKING</span>
+    </div>
+  </div>
+
+  <!-- Rivals List -->
+  <div id="rivals-container">
+    <div style="background:#f8faff;border:1.5px dashed #dfe7f1;border-radius:var(--radius-md);padding:3rem 1.5rem;text-align:center;color:var(--text-muted);">
+      <div style="font-size:1.5rem;margin-bottom:0.5rem;">🔍</div>
+      <p>Enter a league ID to start tracking rivals and analyzing their teams.</p>
+    </div>
+  </div>
+
+  <!-- Alerts & Transfers -->
+  <div id="alerts-section" style="margin-top:3rem;display:none;">
+    <h2 class="card-title">⚡ Recent Activity</h2>
+    <div class="three-col" style="gap:1.5rem;">
+      <!-- Captain Alerts -->
+      <div class="card">
+        <h3 class="card-title">🎖 Captain Changes</h3>
+        <div id="captain-alerts" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
+      </div>
+      <!-- Transfer Alerts -->
+      <div class="card">
+        <h3 class="card-title">🔄 Recent Transfers</h3>
+        <div id="transfer-alerts" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
+      </div>
+      <!-- Chip Usage -->
+      <div class="card">
+        <h3 class="card-title">🃏 Chip Usage</h3>
+        <div id="chip-alerts" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Team View Modal -->
+  <div id="team-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;overflow-y:auto;padding:1rem;">
+    <div style="max-width:800px;margin:2rem auto;background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:2rem;margin-bottom:2rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;gap:1rem;">
+        <h2 class="card-title" style="margin:0;font-size:1.1rem;" id="modal-team-name">Team Squad</h2>
+        <button onclick="closeTeamModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;flex-shrink:0;">✕</button>
+      </div>
+      <div id="modal-team-content" class="loading-block"><div class="spinner"></div><span>Loading squad…</span></div>
+    </div>
+  </div>
+</main>
+
+<!-- Footer injected by layout.js -->
+
+<script src="/utils.js"></script>
+<script src="/layout.js"></script>
+<script>
+
+// ── PREMIUM PAGE ACCESS CHECK ──
+(function checkPremiumAccess() {
+  const currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
+  
+  // If not logged in, redirect to home and trigger signup modal
+  if (!currentUser) {
+    window.location.href = '/';
+    return;
+  }
+  
+  // If logged in but not premium, redirect to subscribe
+  if (!currentUser.isPremium) {
+    window.location.href = '/subscribe.html';
+    return;
+  }
+})();
+
+/* ── League Spy ────────────────────────────────────────────────── */
+let leagueData = null;
+let allPlayers = [];
+let allTeams = [];
+let currentGW = 1;
+let bsData = null;
+let watchedTeams = {};
+
+async function bootstrap() {
+  const data = await API.bootstrap();
+  allPlayers = data.elements;
+  allTeams = data.teams;
+  bsData = data;
+  currentGW = data.events.find(e => e.is_current)?.id || data.events[data.events.length - 1]?.id || 1;
+  return data;
+}
+
+function loadWatchedTeams() {
+  const stored = localStorage.getItem('fpl_watched_teams');
+  watchedTeams = stored ? JSON.parse(stored) : {};
+}
+
+async function loadLeague() {
+  const leagueId = document.getElementById('league-id-input').value.trim();
+  if (!leagueId) {
+    showToast('Please enter a league ID', 'error');
+    return;
+  }
+localStorage.setItem('fpl_saved_league_id', leagueId);
+  try {
+    await bootstrap();
+    loadWatchedTeams();
+    const data = await API.league(leagueId, 1);
+    leagueData = data;
+    
+    // Show banner
+    document.getElementById('league-banner').style.display = 'flex';
+    document.getElementById('current-gw').textContent = `GW ${currentGW}`;
+    document.getElementById('league-name').textContent = data.league.name;
+    document.getElementById('league-managers').textContent = data.standings.results.length;
+    
+    // Calculate avg points
+    const avgPts = Math.round(data.standings.results.reduce((sum, r) => sum + (r.total_points || 0), 0) / data.standings.results.length);
+    document.getElementById('league-avg-pts').textContent = avgPts;
+    
+    renderRivals(data.standings.results.slice(0, 10)); // Show top 10
+    loadRecentActivity(data.standings.results.slice(0, 10));
+    showToast('League loaded successfully! 🎯', 'success');
+  } catch (e) {
+    showToast('Failed to load league. Check the ID and try again.', 'error');
+    console.error(e);
+  }
+}
+
+function isTeamWatched(managerId) {
+  return String(managerId) in watchedTeams;
+}
+
+async function loadRecentActivity(rivals) {
+  try {
+    // Fetch captain changes from top rivals
+    const captainChanges = [];
+    const transfers = [];
+    
+    for (const rival of rivals.slice(0, 5)) {
+      try {
+        const picks = await API.managerPicks(rival.entry, currentGW);
+        const captain = picks.picks.find(p => p.is_captain);
+        if (captain) {
+          const player = bsData.elements.find(e => e.id === captain.element);
+          if (player) {
+            captainChanges.push({
+              manager: rival.player_name,
+              player: player.web_name,
+              team: bsData.teams.find(t => t.id === player.team)?.name,
+              code: player.code
+            });
+          }
+        }
+        
+        const trans = await API.managerTransfers(rival.entry);
+        if (trans.length > 0) {
+          const lastTransfer = trans[0];
+          const playerIn = bsData.elements.find(e => e.id === lastTransfer.element_in);
+          const playerOut = bsData.elements.find(e => e.id === lastTransfer.element_out);
+          if (playerIn && playerOut) {
+            transfers.push({
+              manager: rival.player_name,
+              in: playerIn.web_name,
+              out: playerOut.web_name,
+              gw: lastTransfer.event
+            });
+          }
+        }
+      } catch (e) {
+        console.error(`Failed to load data for ${rival.player_name}`);
+      }
+    }
+    
+    // Render captain changes
+    if (captainChanges.length > 0) {
+      const captainHtml = captainChanges.map(c => `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#f8faff;border-radius:8px;margin-bottom:8px;">
+          <div class="player-avatar" style="width:32px;height:32px;flex-shrink:0;">
+            <img src="${photoUrl(c.code)}" alt="${c.player}" loading="lazy" style="width:100%;height:100%;object-fit:contain;border-radius:6px;" onerror="this.parentElement.textContent='${c.player.slice(0,2)}'" />
+          </div>
+          <div style="flex:1;font-size:0.85rem;">
+            <strong>${c.player}</strong> · ${c.team}
+          </div>
+          <div style="font-size:0.75rem;color:var(--text-muted);">${c.manager}</div>
+        </div>
+      `).join('');
+      document.getElementById('captain-alerts').innerHTML = captainHtml;
+    } else {
+      document.getElementById('captain-alerts').innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No captain changes this GW</p>';
+    }
+    
+    // Render transfers
+    if (transfers.length > 0) {
+      const transferHtml = transfers.map(t => `
+        <div style="display:flex;align-items:center;gap:8px;padding:10px;background:#f8faff;border-radius:8px;margin-bottom:8px;font-size:0.85rem;">
+          <div style="flex:1;">
+            <strong>${t.out}</strong>
+            <span style="color:var(--fwd);">→</span>
+            <strong>${t.in}</strong>
+          </div>
+          <div style="font-size:0.7rem;color:var(--text-muted);">${t.manager}</div>
+        </div>
+      `).join('');
+      document.getElementById('transfer-alerts').innerHTML = transferHtml;
+    } else {
+      document.getElementById('transfer-alerts').innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No recent transfers</p>';
+    }
+    
+    // Chip usage
+    document.getElementById('chip-alerts').innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">Chip data coming soon</p>';
+    
+  } catch (e) {
+    console.error('Failed to load recent activity:', e);
+    document.getElementById('captain-alerts').innerHTML = '<p style="color:var(--text-muted);">Failed to load data</p>';
+    document.getElementById('transfer-alerts').innerHTML = '<p style="color:var(--text-muted);">Failed to load data</p>';
+    document.getElementById('chip-alerts').innerHTML = '<p style="color:var(--text-muted);">Failed to load data</p>';
+  }
+}
+
+function isTeamWatched(managerId) {
+  return String(managerId) in watchedTeams;
+}
+
+function renderRivals(rivals) {
+  const html = rivals.map((r, idx) => {
+    const rank = r.rank || idx + 1;
+    const totalPts = r.total_points || 0;
+    const gwPts = r.event_points || 0;
+    const gwRank = r.last_rank || '—';
+    const isWatched = isTeamWatched(r.entry);
+    
+    return `<div class="card spy-rival-card" style="margin-bottom:1.5rem;">
+      <div class="rival-header">
+        <div class="rival-info">
+          <div class="rival-name">
+            <span style="font-size:0.9rem;color:var(--text-muted);">#${rank}</span>
+            ${r.player_name}
+          </div>
+          <div class="rival-rank">${r.entry_name || 'Unnamed'}</div>
+        </div>
+        <div class="rival-points">
+          <strong>${totalPts}</strong>
+          <small>total pts</small>
+        </div>
+        <div class="rival-actions">
+          <button class="icon-btn" onclick="viewTeam(${r.entry}, '${r.player_name.replace(/'/g, "\\'")}');" title="View Squad">👁️</button>
+          <button class="icon-btn" id="star-${r.entry}" onclick="toggleTeamWatchlist(${r.entry}, '${r.player_name.replace(/'/g, "\\'")}', '${r.entry_name.replace(/'/g, "\\'")}', ${totalPts}, ${rank});" title="Add to Watchlist" style="background:${isWatched ? 'var(--green)' : '#f1f5f9'};color:${isWatched ? '#fff' : '#000'};">⭐</button>
+        </div>
+      </div>
+      
+      <div class="h2h-comp">
+        <div class="h2h-stat">
+          <span class="h2h-stat-label">GW Points</span>
+          <span class="h2h-stat-value">${gwPts}</span>
+        </div>
+        <div class="h2h-stat">
+          <span class="h2h-stat-label">GW Rank</span>
+          <span class="h2h-stat-value">${gwRank}</span>
+        </div>
+        <div class="h2h-stat">
+          <span class="h2h-stat-label">Total Points</span>
+          <span class="h2h-stat-value" style="color:var(--blue-light);">${totalPts}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('rivals-container').innerHTML = html;
+  document.getElementById('alerts-section').style.display = 'block';
+}
+
+async function viewTeam(managerId, playerName) {
+  try {
+    showToast(`Loading ${playerName}'s squad...`, 'success');
+    
+    // Fetch manager picks
+    const picks = await API.managerPicks(managerId, currentGW);
+    const squad = picks.picks;
+    
+    // Separate starting XI (first 11) and bench (remaining)
+    const starters = squad.filter(p => p.position <= 11);
+    const bench = squad.filter(p => p.position > 11).slice(0, 4);
+    
+    // Position colors and labels
+    const posColors = { 1: '#f57c00', 2: '#2e7d32', 3: '#4a90d9', 4: '#e53935' };
+    const posLabels = { 1: 'GKP', 2: 'DEF', 3: 'MID', 4: 'FWD' };
+    
+    // Build starting XI HTML - Fixed 4-column compact grid matrix
+    let startersHtml = `<div style="margin-top: -1.5rem !important; margin-bottom: 1rem; width: 100%;">
+      <h4 style="font-size:0.8rem; margin:0 0 0.5rem 0; color:var(--text-primary); text-align:left;">⚽ Starting XI</h4>
+      <div style="display:grid !important; grid-template-columns:repeat(4, 1fr) !important; gap:4px !important; width:100% !important; box-sizing:border-box;">`;
+    
+    starters.forEach(pick => {
+      const player = bsData.elements.find(p => p.id === pick.element);
+      if (player) {
+        const posColor = posColors[player.element_type];
+        const capBadge = pick.is_captain ? '<div style="position:absolute; top:-3px; right:-3px; width:11px; height:11px; border-radius:50%; background:#ffd600; color:#000; font-size:0.5rem; font-weight:900; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 3px rgba(0,0,0,0.2);">C</div>' : '';
+        
+        // Split the name string safely and take the last element name
+        const shortName = player.web_name ? player.web_name.split(' ').pop() : 'Player';
+        
+        startersHtml += `<div style="position:relative; padding:4px 2px; background:linear-gradient(135deg, ${posColor}15 0%, ${posColor}05 100%); border-top:2px solid ${posColor}; border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box; width:100%; min-width:0; text-align:center;">
+          ${capBadge}
+          <div style="font-weight:700; font-size:0.58rem; color:var(--text-primary); line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; padding:0 2px;">${shortName}</div>
+          <div style="font-size:0.48rem; color:var(--text-muted); margin-top:1px;">${posLabels[player.element_type]}</div>
+          <div style="font-size:0.52rem; color:var(--text-muted); font-weight:600; margin-top:1px;">£${(player.now_cost/10).toFixed(1)}m</div>
+        </div>`;
+      }
+    });
+    
+    startersHtml += `</div></div>`;
+    
+        // Build bench HTML - Compact 4-column row display layout
+    let benchHtml = '';
+    if (bench.length > 0) {
+      // 🚀 FIXED: Increased margin-top to 2.5rem !important to push the bench down independently
+      benchHtml = `<div style="margin-top: 2.5rem !important; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; width: 100%; display: block !important; clear: both !important;">
+        <h4 style="font-size:0.8rem; margin:0 0 0.5rem 0; color:var(--text-muted); text-align:left;">🔄 Bench</h4>
+        <div style="display:grid !important; grid-template-columns:repeat(4, 1fr) !important; gap:4px !important; width:100% !important; box-sizing:border-box;">`;
+      
+      bench.forEach(pick => {
+        const player = bsData.elements.find(p => p.id === pick.element);
+        if (player) {
+          const posColor = posColors[player.element_type];
+          const shortName = player.web_name ? player.web_name.split(' ').pop() : 'Player';
+          
+          benchHtml += `<div style="padding:4px 2px; background:linear-gradient(135deg, ${posColor}10 0%, ${posColor}02 100%); border-top:2px solid ${posColor}; opacity:0.85; border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box; width:100%; min-width:0; text-align:center;">
+            <div style="font-weight:700; font-size:0.58rem; color:var(--text-primary); line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; padding:0 2px;">${shortName}</div>
+            <div style="font-size:0.48rem; color:var(--text-muted); margin-top:1px;">${posLabels[player.element_type]}</div>
+            <div style="font-size:0.52rem; color:var(--text-muted); font-weight:600; margin-top:1px;">£${(player.now_cost/10).toFixed(1)}m</div>
+          </div>`;
+        }
+      });
+      
+      benchHtml += `</div></div>`;
+    } else {
+      // 🚀 FIXED: Added margin-top here as well for empty bench layouts
+      benchHtml = `<div style="margin-top: 2.5rem !important; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; width: 100%;">
+        <h4 style="font-size:0.8rem; margin:0 0 0.5rem 0; color:var(--text-muted); text-align:left;">🔄 Bench</h4>
+        <p style="text-align:center; color:var(--text-muted); font-size:0.7rem; margin:0;">No bench players</p>
+      </div>`;
+    }
+        const targetContentBox = document.getElementById('modal-team-content');
+    if (targetContentBox) {
+        targetContentBox.style.width = '100%';
+        targetContentBox.style.maxWidth = '100%';
+        targetContentBox.style.padding = '0px !important';
+        targetContentBox.style.display = 'block';
+        // 🚀 Add this line to allow clean vertical scrolling if the card layout runs deep:
+        targetContentBox.style.overflowY = 'auto'; 
+        targetContentBox.innerHTML = startersHtml + benchHtml;
+    }
+  
+    document.getElementById('team-modal').style.display = 'block';
+  } catch (e) {
+    console.error(e);
+    showToast('Failed to load team squad', 'error');
+  }
+}
+
+function closeTeamModal() {
+  document.getElementById('team-modal').style.display = 'none';
+}
+
+async function toggleTeamWatchlist(managerId, playerName, entryName, totalPts, rank) {
+  
+  // 1. Check if user is logged in using localStorage authentication
+  const currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
+  
+  if (!currentUser || !currentUser.email) {
+    showToast('Please log in to save items to your permanent cloud account!', 'error');
+    return;
+  }
+
+  // 2. Update local watchlist state
+  const starBtn = document.getElementById(`star-${managerId}`);
+  const isWatched = isTeamWatched(managerId);
+
+  if (isWatched) {
+    delete watchedTeams[String(managerId)];
+    if (starBtn) {
+      starBtn.style.background = '#f1f5f9';
+      starBtn.style.color = '#000';
+    }
+    showToast(`${playerName} removed from watchlist`, 'success');
+  } else {
+    watchedTeams[String(managerId)] = {
+      entry: managerId,
+      player_name: playerName,
+      entry_name: entryName,
+      total_points: totalPts,
+      rank: rank,
+      added_at: new Date().toISOString()
+    };
+    if (starBtn) {
+      starBtn.style.background = 'var(--green)';
+      starBtn.style.color = '#fff';
+    }
+    showToast(`${playerName} added to watchlist! 📌`, 'success');
+  }
+
+  // 3. Save to localStorage
+  localStorage.setItem('fpl_watched_teams', JSON.stringify(watchedTeams));
+
+  // 4. Sync to Supabase for cross-device persistence
+  try {
+    await fetch('/api/save-user-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: currentUser.email,
+        syncedTeam: watchedTeams
+      })
+    });
+    console.log('📤 Team watchlist saved to Supabase');
+  } catch (error) {
+    console.error('Error saving team watchlist to Supabase:', error);
+  }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', (e) => {
+  const modal = document.getElementById('team-modal');
+  if (e.target === modal) {
+    closeTeamModal();
+  }
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // 1. Existing button listeners
+  const loadBtn = document.getElementById('load-league-btn');
+  const idInput = document.getElementById('league-id-input');
+  
+  if (loadBtn) loadBtn.addEventListener('click', loadLeague);
+  if (idInput) idInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') loadLeague();
+  });
+
+  // 🚀 NEW: AUTO-RESTORE LEAGUE INPUT ON REFRESH
+  if (idInput) {
+    const savedLeagueId = localStorage.getItem('fpl_saved_league_id');
+    if (savedLeagueId) {
+      idInput.value = savedLeagueId; // Put the number back into the input box
+      console.log(`Auto-restoring league ID on refresh: ${savedLeagueId}`);
+      
+      // Automatically trigger your loading script so the data draws instantly
+      if (typeof loadLeague === 'function') {
+        await loadLeague();
+      }
+    }
+  }
+
+  // 2. Load watched teams from localStorage on initial page load
+  loadWatchedTeams();
+
+  // 3. Load logged-in user from localStorage
+  try {
+    currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
+    
+    if (currentUser && currentUser.email) {
+      console.log("Logged in user identified:", currentUser.email);
+      
+      // Show account button if user is logged in
+      const accountNavItem = document.getElementById('account-nav-item');
+      if (accountNavItem) {
+        accountNavItem.classList.remove('account-hidden');
+      }
+      
+      // Load user's team watchlist from Supabase
+      await loadSyncedTeamFromSupabase(currentUser.email);
+    } else {
+      console.warn("No logged-in user found in localStorage");
+    }
+  } catch (authError) {
+    console.error("Failed to load user from localStorage:", authError);
+  }
+});
+
+async function loadSyncedTeamFromSupabase(email) {
+    try {
+        const response = await fetch('/api/user-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        
+        const data = await response.json();
+
+        if (data.success && data.syncedTeam) {
+            // Restore watched teams from Supabase
+            watchedTeams = data.syncedTeam;
+            localStorage.setItem('fpl_watched_teams', JSON.stringify(watchedTeams));
+            console.log('📥 Team watchlist restored from Supabase:', watchedTeams);
+        }
+    } catch (err) {
+        console.error("Error loading team watchlist from Supabase:", err);
+    }
+}
+</script>
+<script src="app.js?v=2"></script>
+</body>
+</html>

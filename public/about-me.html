@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About Me — FPL Scout</title>
+  <meta name="description" content="Learn about Favour Olamilekan Adeoye, CEO and Front-End Web Developer behind FPL Scout." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
+  <link rel="apple-touch-icon" href="/images/favicon.svg" />
+  <meta name="theme-color" content="#0A2540" />
+  <style>
+    .about-header {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 2rem;
+      margin-bottom: 3rem;
+      padding: 2rem;
+      background: linear-gradient(135deg, rgba(25, 118, 210, 0.08) 0%, rgba(0, 200, 83, 0.08) 100%);
+      border-radius: 12px;
+      border: 1px solid rgba(25, 118, 210, 0.2);
+    }
+    .about-photo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .profile-img {
+      width: 100%;
+      max-width: 180px;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .about-info h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+    .title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--blue-light);
+      margin-bottom: 1rem;
+    }
+    .portfolio-links {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .portfolio-links a {
+      padding: 0.6rem 1.2rem;
+      background: var(--blue-light);
+      color: #fff;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .portfolio-links a:hover {
+      background: #1565c0;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(25, 118, 210, 0.3);
+    }
+    .content-wrapper {
+      max-width: 900px;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+    .content-wrapper h2 {
+      margin-top: 2.5rem;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+      font-size: 1.5rem;
+    }
+    .content-wrapper h3 {
+      margin-top: 1.8rem;
+      margin-bottom: 0.8rem;
+      color: var(--text-primary);
+      font-size: 1.2rem;
+    }
+    .content-wrapper p {
+      margin-bottom: 1rem;
+      color: var(--text-secondary);
+    }
+    .content-wrapper ul {
+      margin: 1rem 0 1rem 2rem;
+      list-style: disc;
+    }
+    .content-wrapper li {
+      margin-bottom: 0.6rem;
+      color: var(--text-secondary);
+    }
+    @media (max-width: 640px) {
+      .about-header {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+      .about-info h1 {
+        font-size: 1.5rem;
+      }
+      .portfolio-links {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="nav-placeholder"></div>
+<main class="page-wrap" style="min-height: calc(100vh - 200px);">
+  <div style="background:var(--navy);padding:2.5rem 1.5rem 2rem;margin:-2rem -1.5rem 2rem;color:#fff;">
+    <div style="max-width:var(--max-w);margin:0 auto;">
+      <div class="section-eyebrow" style="color:var(--green);margin-bottom:8px;">Creator</div>
+      <h1 class="display" style="font-size:clamp(2rem,5vw,2.8rem);margin-bottom:0.75rem;">About <em style="color:var(--green);font-style:normal;">Me</em></h1>
+      <p style="color:rgba(255,255,255,0.7);max-width:680px;font-size:1.05rem;line-height:1.5;">Get to know the developer and vision behind FPL Scout.</p>
+    </div>
+  </div>
+
+  <div style="max-width:var(--max-w);margin:0 auto;padding:2rem 1.5rem;">
+    <div class="container">
+      <div class="content-wrapper">
+        <div class="about-header">
+          <div class="about-photo">
+            <img src="./images/Profilepic.png" alt="Favour Olamilekan Adeoye" class="profile-img">
+          </div>
+          <div class="about-info">
+            <h1>Favour Olamilekan Adeoye</h1>
+            <div class="title">CEO & Front-End Web Developer</div>
+            <p>I am a passionate <strong>Front-End Web Developer</strong> dedicated to turning complex ideas into clean, functional, and user-friendly digital spaces.</p>
+            <p>I focus on engineering <strong>high-contrast, responsive interfaces</strong> using core web standards. By blending semantic structures with interactive logic, I ensure platforms are not only beautiful but <strong>highly optimized for performance and real-world deployment</strong>.</p>
+            <div class="portfolio-links">
+              <a href="https://olamn-webgis.github.io/my-portfolio/" target="_blank" rel="noopener">My Portfolio</a>
+              <a href="https://olamn-webgis.github.io/my-professional-site/" target="_blank" rel="noopener">Professional Site</a>
+            </div>
+          </div>
+        </div>
+
+        <h2>About FPL Scout</h2>
+        <p>As the CEO of FPL Scout, I've built this platform to combine my passion for Fantasy Premier League with my expertise in web development and data analytics. FPL Scout leverages cutting-edge predictive algorithms and advanced fixture analysis to empower Fantasy Premier League managers with data-driven insights.</p>
+
+        <h3>Vision</h3>
+        <p>My vision for FPL Scout is to eliminate guesswork from Fantasy Premier League decision-making. By harnessing the power of statistics, machine learning, and intuitive design, we're creating a platform that helps managers make smarter transfers, captain picks, and chip timing decisions.</p>
+
+        <h3>Technical Excellence</h3>
+        <p>Every aspect of FPL Scout reflects my commitment to technical excellence:</p>
+        <ul>
+          <li><strong>Performance-First Architecture:</strong> Optimized load times and smooth interactions for users of all devices</li>
+          <li><strong>Data-Driven Predictions:</strong> Advanced algorithms that weigh recent form, expected goal involvement, and historical match data</li>
+          <li><strong>Responsive Design:</strong> A seamless experience whether you're on desktop, tablet, or mobile</li>
+          <li><strong>User-Centric Interface:</strong> Intuitive layouts that make complex data analysis accessible to everyone</li>
+        </ul>
+
+        <h3>My Expertise</h3>
+        <ul>
+          <li>Front-End Web Development (HTML, CSS, JavaScript)</li>
+          <li>Responsive & Mobile-First Design</li>
+          <li>UI/UX Implementation</li>
+          <li>Performance Optimization</li>
+          <li>Data Analytics & Visualization</li>
+          <li>Fantasy Premier League Domain Knowledge</li>
+        </ul>
+
+        <h3>Get In Touch</h3>
+        <p>If you have feedback about FPL Scout, want to collaborate, or just want to discuss Fantasy Premier League strategy, feel free to reach out at <strong>olamn@fplscout.name.ng</strong>.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/utils.js"></script>
+<script src="layout.js?v=2"></script>
+<script src="app.js?v=2"></script>
+</body>
+</html>

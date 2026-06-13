@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - FPL Scout</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
+    <link rel="apple-touch-icon" href="/images/favicon.svg" />
+    <style>
+        .contact-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+        .contact-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        .contact-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        .contact-header p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .contact-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+        .contact-info {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 12px;
+        }
+        .contact-info h2 {
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+        .contact-item {
+            margin-bottom: 1.5rem;
+        }
+        .contact-item h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        .contact-item p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .contact-item a {
+            color: #0070f3;
+            text-decoration: none;
+        }
+        .contact-item a:hover {
+            text-decoration: underline;
+        }
+        .contact-form {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 12px;
+        }
+        .contact-form h2 {
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            background: white;
+            color: var(--text-primary);
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #0070f3;
+            box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.1);
+        }
+        .submit-btn {
+            background: #0070f3;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        .submit-btn:hover {
+            background: #0052cc;
+        }
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .faq-section {
+            margin-top: 4rem;
+            padding-top: 3rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        .faq-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: var(--text-primary);
+        }
+        .faq-item {
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .faq-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .faq-item h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        .faq-item p {
+            display: none;
+            margin-top: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .faq-item.active p {
+            display: block;
+        }
+        @media (max-width: 768px) {
+            .contact-content {
+                grid-template-columns: 1fr;
+            }
+            .contact-header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="nav-placeholder"></div>
+
+    <div class="contact-container">
+        <div class="contact-header">
+            <h1>Get in Touch</h1>
+            <p>Have questions or need support? We're here to help! Reach out to us through any of the channels below.</p>
+        </div>
+
+        <div class="contact-content">
+            <!-- Contact Information -->
+            <div class="contact-info">
+                <h2>Contact Information</h2>
+                
+                <div class="contact-item">
+                    <h3>📧 Email</h3>
+                    <p><a href="mailto:info@fplscout.name.ng">info@fplscout.name.ng</a></p>
+                    <p style="font-size: 0.85rem; color: #999; margin-top: 0.5rem;">We respond within 24 hours</p>
+                </div>
+
+                <div class="contact-item">
+                    <h3>Social Media</h3>
+                    <p><a href="https://x.com/OlamnFPL_scout" target="_blank">Follow us on X (Twitter)</a></p>
+                    <p style="font-size: 0.85rem; color: #999; margin-top: 0.5rem;">For updates and announcements</p>
+                </div>
+
+                <div class="contact-item">
+                    <h3>Response Time</h3>
+                    <p>Monday - Friday: 9 AM - 6 PM (WAT)</p>
+                    <p style="font-size: 0.85rem; color: #999; margin-top: 0.5rem;">We're closed on weekends</p>
+                </div>
+
+                <div class="contact-item">
+                    <h3>Location</h3>
+                    <p>Lagos, Nigeria</p>
+                    <p style="font-size: 0.85rem; color: #999; margin-top: 0.5rem;">Based in West Africa</p>
+                </div>
+            </div>
+
+            <!-- Contact Form -->
+            <div class="contact-form">
+                <h2>Send us a Message</h2>
+                <form id="contact-form" onsubmit="handleContactSubmit(event)">
+                    <div class="form-group">
+                        <label for="name">Your Name *</label>
+                        <input type="text" id="name" name="name" required placeholder="John Doe">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" name="email" required placeholder="your@email.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="subject">Subject *</label>
+                        <input type="text" id="subject" name="subject" required placeholder="How can we help?">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message">Message *</label>
+                        <textarea id="message" name="message" required placeholder="Tell us more..."></textarea>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Send Message</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="faq-section">
+            <h2>Frequently Asked Questions</h2>
+            
+            <div class="faq-item" onclick="toggleFAQ(this)">
+                <h3>❓ How do I get started with FPL Scout?</h3>
+                <p>Simply sign up on our website, choose a premium subscription, and start using all our advanced tools to enhance your FPL experience. Your first month gives you access to League Spy, Transfer Recommendations, and much more!</p>
+            </div>
+
+            <div class="faq-item" onclick="toggleFAQ(this)">
+                <h3>❓ Can I cancel my subscription anytime?</h3>
+                <p>Yes! You can cancel your subscription anytime. If you cancel before the end of your billing cycle, you'll retain access until your subscription expires. No questions asked. Check our Refund & Cancellation Policy for more details.</p>
+            </div>
+
+            <div class="faq-item" onclick="toggleFAQ(this)">
+                <h3>❓ Is there a free trial?</h3>
+                <p>Currently, we don't offer a free trial, but our ₦3,000/month (~$3 USD) subscription is affordable and includes all premium features. You can cancel anytime within the first month if you're not satisfied.</p>
+            </div>
+
+            <div class="faq-item" onclick="toggleFAQ(this)">
+                <h3>❓ How accurate are your predictions?</h3>
+                <p>Our predictive algorithm uses real-time data including player form, xG/xA statistics, and historical performance against specific opponents. While no prediction is 100% accurate, our users consistently see improved decision-making.</p>
+            </div>
+
+            <div class="faq-item" onclick="toggleFAQ(this)">
+                <h3>❓ Do you support payment in my country?</h3>
+                <p>We accept payments in NGN (Nigerian Naira) and USD. Payment is processed through our secure payment gateway. If you have issues, please contact us at info@fplscout.name.ng.</p>
+            </div>
+
+            <div class="faq-item" onclick="toggleFAQ(this)">
+                <h3>❓ What is League Spy?</h3>
+                <p>League Spy is our premium tool that lets you track all managers in your mini-leagues in real-time. See their transfers, captain choices, chip usage, and bench decisions to spot opportunities and stay ahead of your rivals.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="/layout.js"></script>
+    <script>
+        function handleContactSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const subject = document.getElementById('subject').value;
+            const message = document.getElementById('message').value;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+
+            // Send email via backend API
+            fetch('/api/send-contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, subject, message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Thank you for your message! We will get back to you within 24 hours.');
+                    document.getElementById('contact-form').reset();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to send message. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message';
+            });
+        }
+
+        function toggleFAQ(element) {
+            element.classList.toggle('active');
+        }
+    </script>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="/layout.js"></script>
+    <script src="/app.js"></script>
+</body>
+</html>

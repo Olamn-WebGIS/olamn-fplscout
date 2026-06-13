@@ -1,0 +1,2646 @@
+/* ── FPL Scout — Design System ─────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap');
+
+:root {
+  /* Brand palette */
+  --navy:        #0d1b2a;
+  --navy-mid:    #162032;
+  --navy-light:  #1e2d42;
+  --bg:          #dce8f5;
+  --bg-card:     #ffffff;
+  --green:       #00c853;
+  --green-dark:  #009c40;
+  --yellow:      #ffd600;
+  --yellow-dark: #f9a825;
+  --blue-accent: #1565c0;
+  --blue-light:  #1976d2;
+  --mid:         #4a90d9;
+  --fwd:         #e53935;
+  --def:         #2e7d32;
+  --gkp:         #f57c00;
+
+  /* Text */
+  --text-primary:   #0d1b2a;
+  --text-secondary: #4a5568;
+  --text-muted:     #718096;
+  --text-on-dark:   #ffffff;
+  --text-on-dark-2: rgba(255,255,255,0.7);
+
+  /* Spacing */
+  --radius-sm:  6px;
+  --radius-md:  12px;
+  --radius-lg:  18px;
+  --radius-xl:  24px;
+
+  /* Shadows */
+  --shadow-sm:  0 1px 3px rgba(13,27,42,0.08);
+  --shadow-md:  0 4px 16px rgba(13,27,42,0.10);
+  --shadow-lg:  0 8px 32px rgba(13,27,42,0.13);
+
+  /* Layout */
+  --nav-h: 68px;
+  --max-w: 1280px;
+}
+
+/* ── Reset & Base ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  padding-top: var(--nav-h);
+}
+img { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; border: none; outline: none; }
+input, select, textarea { font-family: inherit; outline: none; }
+
+/* ── Typography ─────────────────────────────────────────────── */
+.display { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; letter-spacing: -0.5px; }
+h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.1; }
+h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 700; line-height: 1.2; }
+h3 { font-size: 1.15rem; font-weight: 700; }
+h4 { font-size: 0.95rem; font-weight: 600; }
+
+/* ── Navigation ─────────────────────────────────────────────── */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  background: var(--navy);
+  height: var(--nav-h);
+  display: flex; align-items: center;
+  padding: 0 1.5rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+.navbar-inner {
+  max-width: var(--max-w); width: 100%; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo {
+  display: flex; flex-direction: column; line-height: 1.1;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800; font-size: 1.4rem;
+  color: var(--text-on-dark);
+  user-select: none;
+}
+.logo span.fpl { color: var(--green); font-size: 1rem; letter-spacing: 1px; }
+.logo span.scout { color: var(--yellow); display: flex; align-items: center; gap: 2px; }
+.logo-ball { font-size: 0.9rem; }
+
+.nav-links {
+  display: flex; align-items: center; gap: 0.15rem;
+  list-style: none;
+}
+.nav-links a {
+  color: var(--text-on-dark-2);
+  font-size: 0.8rem; font-weight: 500;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.nav-links a:hover,
+.nav-links a.active { color: #fff; background: rgba(255,255,255,0.08); }
+
+.account-hidden {
+  display: none;
+}
+
+.nav-badge {
+  background: var(--green); color: #000;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.6px;
+  padding: 0.35rem 0.75rem; border-radius: 20px;
+  display: flex; align-items: center; gap: 5px;
+  animation: glow 2s ease-in-out infinite;
+}
+.nav-badge::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  background: #000; animation: blink 1.4s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+@keyframes glow { 0%,100%{box-shadow:0 0 0 0 rgba(0,200,83,0)} 50%{box-shadow:0 0 10px 2px rgba(0,200,83,0.4)} }
+
+/* Live Indicator - Status Dot (Bottom-Right Corner) */
+.live-indicator {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #00c853;
+  display: block;
+  animation: pulse-green 2s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(0, 200, 83, 0.7);
+  cursor: pointer;
+  z-index: 999;
+}
+.live-indicator.online {
+  background: #00c853;
+  box-shadow: 0 0 0 0 rgba(0, 200, 83, 0.7);
+  animation: pulse-green 2s ease-in-out infinite;
+}
+.live-indicator.offline {
+  background: #ffb300;
+  box-shadow: 0 0 0 0 rgba(255, 179, 0, 0.7);
+  animation: pulse-yellow 2s ease-in-out infinite;
+}
+.live-indicator.error {
+  background: #ff4444;
+  box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7);
+  animation: pulse-red 2s ease-in-out infinite;
+}
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(0, 200, 83, 0.7); opacity: 1; }
+  50% { box-shadow: 0 0 0 10px rgba(0, 200, 83, 0); opacity: 0.8; }
+  100% { box-shadow: 0 0 0 0 rgba(0, 200, 83, 0); opacity: 1; }
+}
+@keyframes pulse-yellow {
+  0% { box-shadow: 0 0 0 0 rgba(255, 179, 0, 0.7); opacity: 1; }
+  50% { box-shadow: 0 0 0 10px rgba(255, 179, 0, 0); opacity: 0.8; }
+  100% { box-shadow: 0 0 0 0 rgba(255, 179, 0, 0); opacity: 1; }
+}
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7); opacity: 1; }
+  50% { box-shadow: 0 0 0 10px rgba(255, 68, 68, 0); opacity: 0.8; }
+  100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); opacity: 1; }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 200, 83, 0.7);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(0, 200, 83, 0);
+    opacity: 0.8;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 200, 83, 0);
+    opacity: 1;
+  }
+}
+
+.hamburger {
+  display: none;
+  background: none; border: none;
+  flex-direction: column; gap: 5px;
+  cursor: pointer; padding: 4px;
+}
+.hamburger span {
+  display: block; width: 24px; height: 2px;
+  background: #fff; border-radius: 2px; transition: all 0.25s;
+}
+
+/* ── Layout Containers ──────────────────────────────────────── */
+.page-wrap {
+  max-width: var(--max-w); margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+.two-col-predictions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.two-col-predictions .card {
+  padding: 2rem;
+}
+.three-col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+.four-col {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+/* ── Cards ──────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover { box-shadow: var(--shadow-lg); }
+.card-title {
+  font-size: 1.2rem; font-weight: 700;
+  color: var(--text-primary); margin-bottom: 1.25rem;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title svg, .card-title .icon { color: var(--blue-light); }
+
+.two-col-predictions .card {
+  position: relative;
+  overflow: hidden;
+}
+.two-col-predictions .card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--blue-light), var(--green));
+}
+.two-col-predictions .card-title {
+  margin-bottom: 1.5rem;
+}
+
+/* ── Metric Cards ───────────────────────────────────────────── */
+.metric-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+.metric-card .label {
+  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.5px;
+  color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;
+}
+.metric-card .value {
+  font-size: 1.8rem; font-weight: 800; color: var(--text-primary);
+  font-family: 'Barlow Condensed', sans-serif; line-height: 1;
+}
+.metric-card .delta {
+  font-size: 0.8rem; margin-top: 4px; font-weight: 500;
+}
+.delta-up { color: var(--green-dark); }
+.delta-dn { color: #e53935; }
+.delta-neutral { color: var(--text-muted); }
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 0.6rem 1.25rem; border-radius: var(--radius-sm);
+  font-size: 0.875rem; font-weight: 600;
+  transition: all 0.15s; white-space: nowrap;
+}
+.btn-primary {
+  background: var(--blue-light); color: #fff;
+  box-shadow: 0 2px 8px rgba(21,101,192,0.3);
+}
+.btn-primary:hover { background: var(--blue-accent); transform: translateY(-1px); }
+.btn-green {
+  background: var(--green); color: #000;
+  box-shadow: 0 2px 8px rgba(0,200,83,0.3);
+}
+.btn-green:hover { background: var(--green-dark); color: #fff; }
+.btn-outline {
+  background: transparent; color: var(--blue-light);
+  border: 1.5px solid var(--blue-light);
+}
+.btn-outline:hover { background: var(--blue-light); color: #fff; }
+.btn-ghost {
+  background: transparent; color: var(--text-secondary);
+  border: 1px solid #e2e8f0;
+}
+.btn-ghost:hover { background: #f7fafc; }
+.btn-sm { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
+.btn-lg { padding: 0.8rem 2rem; font-size: 1rem; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+/* ── Inputs ─────────────────────────────────────────────────── */
+.input-group { position: relative; }
+.input-group svg {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--text-muted); pointer-events: none;
+}
+input[type="text"], input[type="number"], input[type="search"], select {
+  width: 100%; padding: 0.6rem 0.9rem;
+  border: 1.5px solid #e2e8f0; border-radius: var(--radius-sm);
+  font-size: 0.9rem; color: var(--text-primary);
+  background: #fff; transition: border-color 0.15s, box-shadow 0.15s;
+}
+input:focus, select:focus {
+  border-color: var(--blue-light);
+  box-shadow: 0 0 0 3px rgba(25,118,210,0.12);
+}
+.input-with-icon input { padding-left: 2.5rem; }
+.input-row { display: flex; gap: 8px; }
+.input-row input { flex: 1; }
+.success-msg { color: var(--green-dark); font-size: 0.82rem; font-weight: 600; margin-top: 6px; }
+.error-msg   { color: #e53935;           font-size: 0.82rem; font-weight: 600; margin-top: 6px; }
+
+/* ── Position Badges ────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 3px 9px; border-radius: 20px;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.4px;
+}
+.badge-gkp { background: var(--gkp);  color: #fff; }
+.badge-def { background: var(--def);  color: #fff; }
+.badge-mid { background: var(--mid);  color: #fff; }
+.badge-fwd { background: var(--fwd);  color: #fff; }
+.badge-chip-wc { background: #7b1fa2; color: #fff; }
+.badge-chip-bb { background: var(--def); color: #fff; }
+.badge-chip-fh { background: var(--gkp); color: #fff; }
+.badge-chip-3x { background: #1565c0; color: #fff; }
+
+/* ── Filter Tabs ────────────────────────────────────────────── */
+.filter-tabs {
+  display: flex; gap: 4px; flex-wrap: wrap;
+}
+.filter-tab {
+  padding: 0.35rem 0.9rem; border-radius: 20px;
+  font-size: 0.8rem; font-weight: 600;
+  background: #f1f5f9; color: var(--text-secondary);
+  border: 1.5px solid transparent;
+  transition: all 0.15s; cursor: pointer;
+}
+.filter-tab:hover { background: #e2e8f0; }
+.filter-tab.active {
+  background: var(--blue-light); color: #fff;
+  border-color: var(--blue-light);
+}
+.filter-tab.all.active { background: var(--blue-light); }
+
+/* ── Table ──────────────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: 0.875rem;
+}
+thead th {
+  text-align: left; padding: 0.6rem 0.75rem;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px;
+  text-transform: uppercase; color: var(--text-muted);
+  border-bottom: 1.5px solid #e2e8f0;
+}
+tbody td { padding: 0.75rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: #f8faff; }
+tbody tr.highlight td { background: rgba(0,200,83,0.05); }
+
+.player-cell { display: flex; align-items: center; gap: 10px; }
+.player-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: #e2e8f0; overflow: hidden; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 700; color: var(--text-muted);
+}
+.player-avatar img { width: 100%; height: 100%; object-fit: contain; }
+.player-name { font-weight: 700; color: var(--text-primary); font-size: 0.9rem; }
+.player-club { font-size: 0.75rem; color: var(--text-muted); }
+.pts-cell { font-weight: 700; font-size: 1rem; color: var(--text-primary); }
+
+.star-btn {
+  background: none; border: none; cursor: pointer;
+  color: #cbd5e0; font-size: 1.1rem; padding: 2px;
+  transition: color 0.15s, transform 0.15s;
+}
+.star-btn.active, .star-btn:hover { color: var(--yellow); transform: scale(1.15); }
+
+/* ── Rank medal ─────────────────────────────────────────────── */
+.rank-medal {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 700; flex-shrink: 0;
+}
+.rank-1 { background: #ffd600; color: #5d4037; }
+.rank-2 { background: #b0bec5; color: #263238; }
+.rank-3 { background: #bf8a4e; color: #fff; }
+.rank-n { background: #f1f5f9; color: var(--text-muted); }
+
+/* ── Captain bar ────────────────────────────────────────────── */
+.cap-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.cap-name { flex: 0 0 88px; font-size: 0.85rem; font-weight: 600; }
+.cap-bar-bg { flex: 1; height: 9px; background: #f1f5f9; border-radius: 5px; overflow: hidden; }
+.cap-bar { height: 100%; border-radius: 5px; transition: width 0.5s ease; }
+.cap-pct { font-size: 0.78rem; color: var(--text-muted); min-width: 36px; text-align: right; font-weight: 600; }
+
+/* ── Transfer alert items ───────────────────────────────────── */
+.alert-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  margin-bottom: 8px; border-left: 3px solid transparent;
+}
+.alert-transfer { border-color: var(--green);   background: rgba(0,200,83,0.05); }
+.alert-captain  { border-color: var(--yellow);  background: rgba(255,214,0,0.07); }
+.alert-chip     { border-color: #7b1fa2;         background: rgba(123,31,162,0.06); }
+.alert-icon { font-size: 1.1rem; margin-top: 1px; flex-shrink: 0; }
+.alert-icon.green  { color: var(--green-dark); }
+.alert-icon.yellow { color: var(--yellow-dark); }
+.alert-icon.purple { color: #7b1fa2; }
+.alert-main { font-size: 0.82rem; color: var(--text-primary); line-height: 1.4; }
+.alert-time { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+/* ── H2H bars ───────────────────────────────────────────────── */
+.h2h-cat { margin-bottom: 14px; }
+.h2h-label-row {
+  display: flex; justify-content: space-between;
+  font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 5px;
+}
+.h2h-bar-wrap { display: flex; height: 11px; border-radius: 6px; overflow: hidden; }
+.h2h-me    { background: var(--blue-light); }
+.h2h-rival { background: var(--fwd); }
+.h2h-values {
+  display: flex; justify-content: space-between;
+  font-size: 0.8rem; font-weight: 700; margin-top: 3px;
+}
+
+/* ── Watch list tags ────────────────────────────────────────── */
+.watch-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #edf2f7; border: 1px solid #e2e8f0;
+  padding: 5px 10px 5px 12px; border-radius: 20px;
+  font-size: 0.8rem; color: var(--text-primary);
+  margin: 3px;
+}
+.watch-tag-remove {
+  cursor: pointer; color: var(--text-muted); font-size: 1rem;
+  line-height: 1; background: none; border: none; padding: 0;
+  transition: color 0.15s;
+}
+.watch-tag-remove:hover { color: var(--fwd); }
+
+/* ── Hero ───────────────────────────────────────────────────── */
+.hero {
+  background: #ffffff;
+  padding: 3rem 1.5rem 2rem;
+  text-align: center;
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(0,200,83,0.15); border: 1px solid rgba(0,200,83,0.3);
+  color: var(--green); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.8px;
+  padding: 5px 14px; border-radius: 20px; margin-bottom: 0.75rem;
+  text-transform: uppercase;
+}
+.hero-eyebrow::before { content:''; width:7px;height:7px;border-radius:50%;background:currentColor;animation:blink 1.4s infinite; }
+.hero h1 { margin-bottom: 0.75rem; max-width: 700px; margin-inline: auto; color: var(--text-primary); }
+.hero h1 em { color: var(--green); font-style: normal; }
+.hero p { color: var(--text-secondary); max-width: 560px; margin: 0 auto 1.25rem; font-size: 1.05rem; }
+.hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  justify-items: center;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.hero-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.hero-stat .number {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--green);
+  line-height: 1;
+}
+.hero-stat .name {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  white-space: nowrap;
+}
+
+/* ── Feature cards ──────────────────────────────────────────── */
+.feature-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; margin-bottom: 1rem;
+}
+.feature-icon.green  { background: rgba(0,200,83,0.12);  color: var(--green-dark); }
+.feature-icon.blue   { background: rgba(25,118,210,0.12); color: var(--blue-light); }
+.feature-icon.yellow { background: rgba(255,214,0,0.15);  color: var(--yellow-dark); }
+
+/* ── Page section titles ────────────────────────────────────── */
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.25rem; flex-wrap: wrap; gap: 8px;
+}
+.section-eyebrow {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.8px;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;
+}
+
+/* ── Stat mini pills ────────────────────────────────────────── */
+.stat-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 600;
+}
+.pill-green  { background: rgba(0,200,83,0.12);  color: var(--green-dark); }
+.pill-blue   { background: rgba(25,118,210,0.12); color: var(--blue-accent); }
+.pill-red    { background: rgba(229,57,53,0.10);  color: var(--fwd); }
+.pill-yellow { background: rgba(255,214,0,0.18);  color: var(--yellow-dark); }
+
+/* ── Toast ──────────────────────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999;
+  background: var(--navy); color: #fff;
+  padding: 0.75rem 1.25rem; border-radius: var(--radius-sm);
+  font-size: 0.875rem; font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(100px); opacity: 0;
+  transition: all 0.3s cubic-bezier(.34,1.56,.64,1);
+  max-width: 320px;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+#toast.success { border-left: 3px solid var(--green); }
+#toast.error   { border-left: 3px solid var(--fwd); }
+
+/* ── Loading block ─────────────────────────────────────────── */
+.spinner {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 3px solid #e2e8f0; border-top-color: var(--blue-light);
+  animation: spin 0.7s linear infinite; margin: 0 auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-block {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px; padding: 2.5rem; color: var(--text-muted); font-size: 0.875rem;
+}
+
+/* ── Tabs ───────────────────────────────────────────────────── */
+.tab-bar {
+  display: flex; gap: 4px; border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 1.25rem; overflow-x: auto;
+}
+.tab-btn {
+  padding: 0.55rem 1rem; font-size: 0.85rem; font-weight: 600;
+  background: none; border: none; color: var(--text-muted);
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  cursor: pointer; white-space: nowrap; transition: all 0.15s;
+}
+.tab-btn.active { color: var(--blue-light); border-bottom-color: var(--blue-light); }
+.tab-btn:hover:not(.active) { color: var(--text-primary); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Diff pick card ─────────────────────────────────────────── */
+.diff-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 12px; border-radius: var(--radius-sm);
+  background: #f8faff; border: 1px solid #e8eef8;
+  margin-bottom: 8px;
+}
+.diff-row:hover { background: #eef3fc; }
+.diff-pts-up { color: var(--green-dark); font-weight: 700; font-size: 0.9rem; }
+
+/* ── Footer ─────────────────────────────────────────────────── */
+footer {
+  background: var(--navy); color: var(--text-on-dark-2);
+  padding: 3rem 1.5rem 1.5rem;
+}
+.footer-inner {
+  max-width: var(--max-w); margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 2fr; gap: 3rem;
+  align-items: start;
+}
+.footer-branding {
+  grid-column: 1 / -1;
+}
+.footer-columns {
+  grid-column: 1 / -1;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 3rem;
+}
+.footer-col {
+  display: flex; flex-direction: column; gap: 2rem;
+}
+.footer-col div {
+  display: flex; flex-direction: column;
+}
+footer h4 { color: var(--yellow); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 0.9rem; }
+footer ul { list-style: none; }
+footer ul li { margin-bottom: 0.5rem; }
+footer ul li a { font-size: 0.875rem; color: var(--yellow); opacity: 0.85; transition: opacity 0.15s; }
+footer ul li a:hover { opacity: 1; }
+.footer-logo { margin-bottom: 0.75rem; }
+.footer-copy {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  margin-top: 2.5rem; padding-top: 1.25rem;
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  font-size: 0.78rem; color: rgba(255,255,255,0.45);
+}
+.footer-copy a { color: var(--yellow); opacity: 0.7; }
+.footer-copy a:hover { opacity: 1; }
+.footer-socials { display: flex; gap: 10px; }
+.footer-socials a {
+  color: rgba(255,255,255,0.4); font-size: 1rem;
+  transition: color 0.15s;
+}
+.footer-socials a:hover { color: var(--yellow); }
+
+/* ── Sync sidebar box ───────────────────────────────────────── */
+.sync-box { margin-bottom: 1.25rem; }
+.hint-link { font-size: 0.8rem; color: var(--blue-light); margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+.hint-link:hover { text-decoration: underline; }
+.synced-info { border-top: 1px solid #f1f5f9; margin-top: 1rem; padding-top: 1rem; }
+.synced-info .row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 3px 0; }
+.synced-info .row span:first-child { color: var(--text-muted); }
+.synced-info .row span:last-child  { font-weight: 600; }
+
+/* ── Card header row – for consistent alignment ──────────────── */
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 1.25rem;
+}
+.card-header-row .card-title {
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+/* ── Controls row – for filter and sort buttons ─────────────── */
+.controls-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+/* ── Squad grid ─────────────────────────────────────────────── */
+.squad-row {
+  display: flex; justify-content: center; gap: 8px;
+  margin-bottom: 8px; flex-wrap: wrap;
+}
+.squad-player {
+  background: var(--navy); color: #fff;
+  border-radius: var(--radius-sm); padding: 6px 10px;
+  font-size: 0.72rem; font-weight: 600; min-width: 70px;
+  text-align: center; position: relative;
+  border-left: 3px solid transparent;
+  transition: all 0.2s;
+}
+.squad-player:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.squad-player.gkp { border-left-color: var(--gkp); background: rgba(245,124,0,0.15); color: var(--text-primary); }
+.squad-player.def { border-left-color: var(--def); background: rgba(46,125,50,0.15); color: var(--text-primary); }
+.squad-player.mid { border-left-color: var(--mid); background: rgba(74,144,217,0.15); color: var(--text-primary); }
+.squad-player.fwd { border-left-color: var(--fwd); background: rgba(229,57,53,0.15); color: var(--text-primary); }
+.squad-player.captain::after {
+  content: 'C'; position: absolute; top: -4px; right: -4px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--yellow); color: #000;
+  font-size: 0.55rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.squad-player.vice::after {
+  content: 'V'; position: absolute; top: -4px; right: -4px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #b0bec5; color: #000;
+  font-size: 0.55rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Prediction cards ───────────────────────────────────────── */
+.pred-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px; border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #f9fbfc 0%, #f0f5fa 100%);
+  border: 1.5px solid #dfe7f1;
+  margin-bottom: 12px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+}
+.pred-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--green), var(--blue-light));
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.pred-row:hover { 
+  transform: translateX(6px);
+  border-color: var(--blue-light);
+  box-shadow: 0 6px 20px rgba(25,118,210,0.18);
+  background: linear-gradient(135deg, #eef3fc 0%, #e0e7f1 100%);
+}
+.pred-row:hover::before {
+  opacity: 1;
+}
+.pred-rank { 
+  font-size: 1.4rem; 
+  font-weight: 800; 
+  color: #fff;
+  min-width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--green), var(--blue-light));
+  border-radius: 12px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0,200,83,0.25);
+}
+.pred-avatar {
+  width: 60px; 
+  height: 60px; 
+  border-radius: 12px;
+  background: #e2e8f0; 
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.pred-avatar img { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: contain; 
+  background: #f1f5f9;
+}
+.pred-info {
+  flex: 1;
+  min-width: 0;
+}
+.pred-player { 
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+.pred-team { 
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+.pred-score { 
+  font-size: 1.3rem; 
+  font-weight: 800;
+  color: var(--green);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.pred-score strong {
+  line-height: 1;
+}
+.pred-score small {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.transfer-row {
+  display: flex; 
+  align-items: center; 
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #f9fbfc 0%, #f0f7ff 100%);
+  border-left: 4px solid var(--green);
+  margin-bottom: 12px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+}
+.transfer-row:hover { 
+  transform: translateX(6px);
+  box-shadow: 0 6px 20px rgba(0,200,83,0.22);
+}
+.transfer-row.sell { 
+  border-left-color: var(--fwd);
+  background: linear-gradient(135deg, #fef8f8 0%, #fff0f0 100%);
+}
+.transfer-row.sell:hover {
+  box-shadow: 0 6px 20px rgba(229,57,53,0.22);
+}
+.transfer-avatar {
+  width: 58px; 
+  height: 58px; 
+  border-radius: 12px;
+  background: #e2e8f0; 
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.transfer-avatar img { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: contain; 
+  background: #f1f5f9;
+}
+.transfer-info {
+  flex: 1;
+  min-width: 0;
+}
+.transfer-player { 
+  font-weight: 700;
+  font-size: 0.96rem;
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+.transfer-team { 
+  font-size: 0.73rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+.transfer-in { 
+  color: #fff;
+  font-weight: 700; 
+  font-size: 0.8rem;
+  background: linear-gradient(135deg, var(--green), var(--green-dark));
+  padding: 7px 14px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,200,83,0.25);
+  flex-shrink: 0;
+}
+.transfer-out { 
+  color: #fff;
+  font-weight: 700; 
+  font-size: 0.8rem;
+  background: linear-gradient(135deg, var(--fwd), #d32f2f);
+  padding: 7px 14px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(229,57,53,0.25);
+  flex-shrink: 0;
+}
+.chip-active {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 700;
+  background: rgba(123,31,162,0.1); color: #7b1fa2;
+  border: 1px solid rgba(123,31,162,0.2);
+}
+
+/* ── Transfer Cards (Sidebar Style) ───────────────────────── */
+.transfer-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef5ff 100%);
+  border: 1.5px solid #e2e8f0;
+  margin-bottom: 10px;
+  transition: all 0.25s ease;
+}
+
+.transfer-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(59,130,246,0.15);
+  border-color: #bfdbfe;
+}
+
+.transfer-card-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.transfer-card-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.transfer-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.transfer-card-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.transfer-card-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.transfer-card-score {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(59,130,246,0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.transfer-card-score small {
+  font-size: 0.65rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+html, body { overflow-x: hidden; width: 100%; }
+main { max-width: 100%; overflow-x: hidden; }
+
+/* Page and Layout Structure */
+.page-wrap {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1.5rem;
+  max-width: 100%;
+}
+
+.two-col > div:first-child {
+  min-width: 0;
+}
+
+.three-col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  max-width: 100%;
+}
+
+.four-col {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  max-width: 100%;
+}
+
+/* Features Section */
+.features-section {
+  background: #ffffff;
+  padding: 3rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.features-container {
+  max-width: var(--max-w);
+  margin: 0 auto;
+}
+
+.features-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.features-header h2 {
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.features-header p {
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+  font-size: 1rem;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+/* Button size constraints */
+.btn { max-width: none; }
+.btn-primary { max-width: 150px; }
+.btn-green { max-width: 180px; }
+.btn-lg { max-width: 100%; }
+.sync-box .btn-primary { width: auto; max-width: 100%; }
+
+@media (max-width: 1024px) {
+  .two-col { grid-template-columns: 1fr; }
+  .two-col-predictions { grid-template-columns: 1fr; }
+  .three-col { grid-template-columns: 1fr 1fr; }
+  .four-col  { grid-template-columns: 1fr 1fr; }
+  .footer-columns { grid-template-columns: 1fr 1fr; }
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  /* Navigation */
+  .navbar { padding: 0 1rem; }
+  .nav-links { display: none; position: absolute; top: var(--nav-h); left: 0; right: 0; background: var(--navy); flex-direction: column; padding: 1rem; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 999; }
+  .nav-links.open { display: flex; }
+  .hamburger { display: flex; }
+  
+  /* Hero Section */
+  .hero { padding: 1.5rem 1rem 1rem; }
+  .hero .display { font-size: clamp(1.4rem, 5vw, 2rem); line-height: 1.2; }
+  .hero p { font-size: 0.9rem; }
+  .hero-cta { flex-direction: column; gap: 0.75rem; }
+  .hero-cta .btn { width: 100%; max-width: 100%; }
+  .hero-stats { gap: 0.75rem; grid-template-columns: repeat(2, 1fr); padding-top: 1rem; }
+  .hero-stat { padding: 0.75rem; }
+  .hero-stat .number { font-size: 1.8rem; }
+  .hero-stat .name { font-size: 0.75rem; }
+  
+  /* Main Layout */
+  .page-wrap { padding: 0.75rem; }
+  .two-col { gap: 1rem; }
+  .card { padding: 1rem; border-radius: 10px; }
+  
+  /* Player Stats */
+  .card-header-row { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+  .card-header-row .card-title { width: 100%; margin-bottom: 0; }
+  .controls-row { flex-direction: column; gap: 0.75rem; }
+  .controls-row > * { width: 100%; }
+  .controls-row > select { width: 100%; max-width: 100%; }
+  .controls-row > input[type="search"] { width: 100% !important; max-width: 100%; box-sizing: border-box; }
+  .controls-row .input-with-icon { width: 100%; }
+  .controls-row .filter-tabs { width: 100%; overflow-x: auto; }
+  .input-with-icon input { width: 100% !important; }
+  
+  /* Table adjustments */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+  table { font-size: 0.8rem; width: 100%; }
+  .player-cell { flex-direction: row; gap: 8px; }
+  .player-avatar { width: 40px; height: 40px; }
+  
+  /* Transfer Cards */
+  .transfer-card { gap: 10px; padding: 12px; }
+  .transfer-card-avatar { width: 45px; height: 45px; }
+  .transfer-card-name { font-size: 0.85rem; }
+  .transfer-card-meta { font-size: 0.7rem; }
+  .transfer-card-score { padding: 4px 8px; font-size: 0.7rem; }
+  
+  /* Predictions and recommendations */
+  .pred-row { padding: 8px; }
+  .pred-avatar { width: 40px; height: 40px; }
+  .pred-rank { width: 32px; height: 32px; font-size: 0.9rem; }
+  .pred-info span { font-size: 0.8rem; }
+  
+  /* Sidebar */
+  aside { gap: 0.75rem; }
+  .sync-box { padding: 1rem; }
+  
+  /* Grid layouts */
+  .three-col { grid-template-columns: 1fr; }
+  .four-col { grid-template-columns: 1fr 1fr; }
+  .features-grid { grid-template-columns: 1fr; }
+  .footer-columns { grid-template-columns: 1fr 1fr; }
+  .footer-col { gap: 1.5rem; }
+  
+  /* Features Section */
+  .features-section { padding: 2rem 1rem; }
+  .features-header { margin-bottom: 1.5rem; }
+  .features-header h2 { font-size: 1.5rem; }
+  
+  /* Footer */
+  .footer-copy { flex-direction: column-reverse; align-items: center; text-align: center; gap: 0.5rem; }
+  
+  /* Buttons */
+  .btn { font-size: 0.9rem; padding: 0.6rem 1rem; max-width: 100%; }
+  .btn-lg { font-size: 1rem; padding: 0.8rem 1.5rem; width: 100%; max-width: 100%; }
+  .btn-sm { font-size: 0.8rem; padding: 0.4rem 0.8rem; }
+  .btn-primary { max-width: 100%; }
+  .btn-green { max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+  /* Hero */
+  .hero { padding: 1rem 0.75rem 0.75rem; }
+  .hero .display { font-size: clamp(1.2rem, 6vw, 1.6rem); }
+  .hero p { font-size: 0.85rem; line-height: 1.4; }
+  .hero-eyebrow { font-size: 0.75rem; padding: 0.4rem 0.8rem; }
+  
+  /* Stats */
+  .hero-stats { gap: 0.5rem; grid-template-columns: repeat(2, 1fr); }
+  .hero-stat { padding: 0.5rem; border-radius: 6px; }
+  .hero-stat .number { font-size: 1.4rem; }
+  .hero-stat .name { font-size: 0.65rem; }
+  
+  /* Main */
+  .page-wrap { padding: 0.5rem; }
+  .card { padding: 0.75rem; }
+  
+  /* Controls */
+  .controls-row { gap: 0.5rem; }
+  .card-title { font-size: 1.1rem; }
+  
+  /* Table */
+  table th, table td { padding: 6px 4px; }
+  .player-avatar { width: 36px; height: 36px; }
+  .player-name { font-size: 0.75rem; font-weight: 600; }
+  .player-club { font-size: 0.65rem; }
+  
+  /* Buttons */
+  .btn { font-size: 0.8rem; padding: 0.5rem 0.75rem; max-width: 100%; }
+  .btn-primary { max-width: 100%; }
+  .btn-green { max-width: 100%; }
+  .star-btn { width: 28px; height: 28px; font-size: 0.9rem; }
+  
+  /* Transfer */
+  .transfer-card { gap: 8px; padding: 10px; }
+  .transfer-card-avatar { width: 40px; height: 40px; }
+  .transfer-card-name { font-size: 0.8rem; font-weight: 600; }
+  
+  /* Inputs */
+  input[type="search"],
+  input[type="number"],
+  select { font-size: 16px; padding: 0.6rem; border-radius: 6px; max-width: 100%; }
+  
+  /* Filter tabs */
+  .filter-tabs { gap: 0.4rem; }
+  .filter-tab { font-size: 0.75rem; padding: 0.4rem 0.6rem; }
+  
+  /* Squad display */
+  .squad-row { margin-bottom: 0.75rem; gap: 0.5rem; }
+  .squad-player { padding: 0.6rem 0.5rem; font-size: 0.75rem; }
+  
+  /* Grid */
+  .four-col { grid-template-columns: 1fr; }
+  .three-col { grid-template-columns: 1fr; }
+  .features-grid { grid-template-columns: 1fr; }
+  
+  /* Feature cards */
+  .feature-icon { font-size: 2rem; }
+  
+  /* Features section */
+  .features-section { padding: 1.5rem 0.75rem; }
+  .features-header h2 { font-size: 1.3rem; }
+  .features-header p { font-size: 0.9rem; }
+}
+
+@media (max-width: 360px) {
+  .hero .display { font-size: 1rem; }
+  .card { padding: 0.5rem; }
+  .controls-row > * { width: 100%; }
+  input[type="search"] { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+/* Mobile responsive layout for hero buttons */
+@media (max-width: 480px) {
+  /* Aligns the anchor tags on a single row */
+  .hero-cta {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;            /* Space between the two buttons */
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 16px !important;     /* Prevents buttons from touching screen edges */
+    box-sizing: border-box !important;
+  }
+
+  /* Targets the buttons inside the hero container */
+  .hero-cta .btn {
+    flex: 1 !important;             /* Forces both buttons to have equal width */
+    display: inline-flex !important;
+    justify-content: center !important; /* Centers text horizontally */
+    align-items: center !important;     /* Centers text vertically */
+    padding: 10px 4px !important;       /* Reduces height and inner padding */
+    font-size: 13px !important;         /* Shrinks text size slightly to fit mobile screens */
+    white-space: nowrap !important;     /* Forces the text to stay on one line */
+    text-align: center !important;
+    width: auto !important;             /* Overrides any rigid block widths */
+  }
+}
+/* Mobile responsive layout for header-aligned button */
+@media (max-width: 768px) {
+  /* Keeps the bar elements leveled across the row */
+  .navbar-inner {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 10px 16px !important;
+  }
+  
+  /* Cleans up remaining dropdown vertical structure text alignment */
+  .nav-links {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important; /* Left alignment for the open dropdown text */
+    text-align: left !important;
+  }
+    /* Ensures the links list is completely hidden on mobile by default */
+  .nav-links {
+    display: none !important;
+    position: absolute !important;
+    top: 60px !important;
+    left: 0 !important;
+    width: 100% !important;
+    background-color: #0b1520 !important; /* Matches your navbar dark blue tint */
+    padding: 20px !important;
+    box-sizing: border-box !important;
+    z-index: 999 !important;
+  }
+
+  /* Instantly reveals the links dropdown list when the active class 'open' is toggled */
+  .nav-links.open {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+  }
+
+}
+/* Single line compact mobile layout for statistics */
+@media (max-width: 480px) {
+  /* 1. Forces the main wrapper to stay flat on one row without wrapping */
+  .stats-container, 
+  .stats-grid, 
+  .stats-section,
+  [class*="stats"] {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;       /* Locks all 4 blocks strictly on a single row */
+    justify-content: space-between !important; /* Spreads the 4 cards evenly across the screen width */
+    align-items: flex-start !important;
+    gap: 4px !important;                 /* Drastically reduces gap width between item slots */
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 16px 8px !important;        /* Mini side gutters to maximize horizontal screen area */
+    box-sizing: border-box !important;
+  }
+
+  /* 2. Standardizes each column block width footprint */
+  .stats-item, 
+  .stat-card,
+  [class*="stats"] > div {
+    flex: 1 !important;                 /* Gives all 4 elements exactly equal flexible widths */
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    margin: 0 !important;
+    min-width: 0 !important;            /* Critical: allows flex containers to shrink below content width */
+  }
+
+  /* 3. Significantly scales down typography numbers to fit narrow columns */
+  [class*="stats"] h3,
+  [class*="stats"] .number,
+  [class*="stats"] strong,
+  .stats-item div:first-child {
+    font-size: 16px !important;         /* Compact readable height for the bold green figures */
+    margin-bottom: 2px !important;
+    font-weight: 700 !important;
+  }
+
+  /* 4. Miniaturizes description labels and handles vertical word drops safely */
+  [class*="stats"] p,
+  [class*="stats"] .label,
+  [class*="stats"] span {
+    font-size: 9px !important;          /* Tiny font profile so words like "Current gameweek" fit */
+    line-height: 1.1 !important;
+    color: #556575 !important;
+    white-space: normal !important;     /* Safely lets texts stack vertically if column gets narrow */
+    word-break: break-word !important; 
+  }
+}
+/* Direct tag layout overrides for mobile devices */
+@media (max-width: 768px) {
+  /* 1. Reset any flex containers that are forcing vertical stacking */
+  .player-stats-section div,
+  [class*="player-stats"] div,
+  .filter-section div {
+    display: revert !important;
+    width: auto !important;
+  }
+
+
+    /* 2. Create the first row: Search box and pills next to each other */
+  .player-stats-section input[type="text"] {
+    width: 35% !important;           /* Takes up roughly one third of the width */
+    height: 32px !important;
+    font-size: 11px !important;
+    padding: 4px 6px !important;
+    margin: 0 4px 12px 0 !important; /* Pushes the buttons to sit right next to it */
+    float: left !important;           /* Floats left to share the line */
+  }
+
+  /* 3. Create the second row: Clear floats and force all 3 dropdowns onto a single line */
+  .player-stats-section select {
+    width: calc(33.33% - 6px) !important; /* Splits the space into 3 perfectly equal columns */
+    height: 32px !important;
+    font-size: 10px !important;       /* Compact text fits words like "Total Points" */
+    padding: 2px !important;
+    margin: 4px 3px !important;        /* Balanced spacing gaps between select fields */
+    float: left !important;
+    clear: none !important;           /* Keeps them locked flat side-by-side */
+  }
+
+
+  /* Force the first dropdown select to clean-break underneath the search input row */
+  .player-stats-section select:first-of-type {
+    clear: both !important;           /* Drops cleanly onto its own row line below search/buttons */
+  }
+}
+/* Custom 2x2 Pill Row Layout for Mobile Filters */
+@media (max-width: 768px) {
+  /* 1. Use a flexible flex row to keep search and button grid leveled */
+  .card-header-row + .controls-row,
+  .controls-row:first-of-type {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;    /* Makes search bar match total height of the buttons */
+    justify-content: space-between !important;
+    gap: 8px !important;                 /* Clean spacing gap between search and button matrix */
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 2. Style the larger search input container box */
+  .input-with-icon {
+    flex: 1 1 50% !important;           /* Allows search bar to dynamically fill up half the space */
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+
+  #player-search {
+    width: 100% !important;
+    height: 100% !important;            /* Dynamically matches the exact height of the button grid */
+    min-height: 72px !important;        /* Sets a large premium touch target box size */
+    font-size: 13px !important;
+    padding-left: 2.2rem !important;    
+    box-sizing: border-box !important;
+    border-radius: 12px !important;     /* Smooth clean card border radius corners */
+  }
+
+  /* 3. BUTTON GRID: Sets up the 2x2 button grid matrix on the right side */
+  .filter-tabs,
+  #pos-filters.filter-tabs {
+    display: grid !important;           
+    grid-template-columns: repeat(2, 1fr) !important; /* Forces 2 perfect equal columns */
+    grid-gap: 6px !important;           /* Space between individual pills */
+    flex: 1 1 50% !important;           /* Claims the remaining half of the screen row width */
+    width: auto !important;             
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;       
+  }
+
+  /* 4. Formats individual buttons to fit neatly inside grid slots */
+  .filter-tabs .filter-tab,
+  #pos-filters .filter-tab {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;             
+    height: 34px !important;            /* Consistent individual card block heights */
+    padding: 0 4px !important;          
+    font-size: 11px !important;         
+    font-weight: 700 !important;
+    text-align: center !important;
+    white-space: nowrap !important;     
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    border-radius: 6px !important;
+  }
+
+  /* 5. Forces the 5th button (FWD) to span full width across the bottom of the grid */
+  #pos-filters .filter-tab:nth-child(5),
+  .filter-tabs button:last-child {
+    grid-column: span 2 !important;     /* Makes FWD take up both columns under the others */
+  }
+
+  /* 6. Keeps the 3 Dropdown select capsules in a clean line right below */
+  .controls-row:last-of-type {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important; 
+    gap: 6px !important;
+    width: 100% !important;
+    margin-top: 0 !important;            
+    padding: 0 !important;
+  }
+
+  #sort-by,
+  #team-filter,
+  #per-page {
+    width: 100% !important;             
+    max-width: 100% !important;
+    height: 34px !important;            
+    font-size: 11px !important;         
+    padding: 2px 4px !important;         
+    margin: 0 !important;               
+    box-sizing: border-box !important;
+  }
+}
+/* Tight Single-Line Mobile Pagination Fix */
+@media (max-width: 768px) {
+  /* 1. Force the parent block to lay out its items in a flat, un-wrapped row */
+  .pagination,
+  .pagination-container,
+  .table-footer,
+  [class*="pagination"] {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;       /* Block text from snapping to a new line */
+    align-items: center !important;      /* Centers elements vertically */
+    justify-content: flex-start !important; 
+    width: 100% !important;
+    padding: 12px 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 2. Target the text layer directly to prevent any line breaks */
+  .pagination span,
+  .pagination-info,
+  [class*="pagination"] p,
+  [class*="pagination"] div:first-child:not(:has(button)) {
+    font-size: 11px !important;          /* Small compact size to fit screen limits */
+    white-space: nowrap !important;      /* GUARANTEES the text stays on one single line */
+    display: inline-block !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding-right: 8px !important;       /* Tiny gap before buttons approach */
+  }
+
+  /* 3. PUSH BUTTONS TO THE RIGHT: Pushes the button container completely to the right margin */
+  .pagination-buttons,
+  .pagination div:has(button),
+  [class*="pagination"] > div:last-child {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;                 /* Gap between Prev and Next button */
+    margin-left: auto !important;        /* Acts like a spring pushing buttons completely to the right wall */
+    margin-right: 0 !important;
+  }
+
+  /* 4. Compact button sizing */
+  .pagination button,
+  [class*="pagination"] button {
+    height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+}
+/* Hide any duplicate Live Data buttons in the page content */
+@media (max-width: 768px) {
+  /* Targets any live badge that does not have the header class we created */
+  #live-badge:not(.header-live-badge),
+  .nav-badge:not(.header-live-badge),
+  .card [id="live-badge"],
+  .card .nav-badge {
+    display: none !important; /* Completely hides it from the Gameweek info box */
+  }
+}
+/* Precise layout fix for Captain Picks Tab cards */
+@media (max-width: 768px) {
+  
+  /* 1. FORCE OUTER BACKGROUND CONTAINER WIDE EDGE-TO-EDGE */
+  #tab-captain .card {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 10px !important;   /* Massively shrinks card padding to create width space */
+    padding-right: 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 2. MAKE CARDS CONTAINER STRETCH TO FIT THE NEW BACKGROUND EDGE */
+  #captain-cards {
+    display: flex !important;
+    flex-direction: column !important; /* Stacks player rows vertically in a straight single line */
+    gap: 12px !important;               /* Spacing distance between adjacent cards */
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 12px 0 0 0 !important;
+  }
+
+   /* 3. ARRANGE INNER CONTENT HORIZONTALLY (Medal on left, details center, score right) */
+  #captain-cards > div,
+  #captain-cards .player-card {
+    display: flex !important;
+    flex-direction: row !important;     /* Forces components into a clean side-by-side row */
+    align-items: center !important;     /* Centers everything perfectly on the vertical axis */
+    justify-content: space-between !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 14px 12px !important;       /* Balanced padding top, bottom, and sides */
+    box-sizing: border-box !important;
+  }
+
+  /* Group layout for Left Side: Badge + Avatar Photo + Name Info */
+  #captain-cards > div > div:first-child,
+  #captain-cards .player-card-main-info {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px !important;                /* Clean spacing between visual elements */
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  /* Force the textual information box to stack details neatly */
+  #captain-cards .player-bio,
+  #captain-cards .player-details-text {
+    display: flex !important;
+    flex-direction: column !important;  /* Stacks player name on top of the pills array */
+    align-items: flex-start !important;
+    text-align: left !important;
+    gap: 4px !important;
+    min-width: 0 !important;
+  }
+
+  /* Player Names Typography adjustment */
+  #captain-cards h4,
+  #captain-cards .player-name,
+  #captain-cards h3 {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important; /* Elegant truncation if screen size gets extra narrow */
+  }
+
+  /* Sub-details (Team Name - Price) text footprint layout */
+  #captain-cards .player-meta-sub,
+  #captain-cards p {
+    font-size: 11px !important;
+    color: var(--text-secondary, #64748b) !important;
+    margin: 0 !important;
+  }
+
+  /* Horizontal positioning layout row array for your analytical pills */
+  #captain-cards .player-pills-row,
+  #captain-cards [class*="meta"] {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;       /* Locks your pills cleanly on a single row */
+    gap: 4px !important;                 /* Equal space gaps between metrics */
+    margin: 2px 0 0 0 !important;
+  }
+
+  /* Uniform, compact look for MID/FWD, Form, and EP text pills */
+  #captain-cards .badge,
+  #captain-cards span.pill,
+  #captain-cards .player-pills-row span {
+    font-size: 9px !important;          /* Small neat font weights */
+    padding: 2px 6px !important;         /* Compact padding profiles */
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+  }
+
+  /* Keep your rank medals/badges perfectly level on the far left side track */
+  #captain-cards > div img:first-of-type,
+  #captain-cards [class*="medal"] {
+    display: block !important;          /* Re-enables display to look premium */
+    width: 24px !important;              /* Keeps badge proportions compact */
+    height: 24px !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Keep player circular avatar portraits clean and uniform */
+  #captain-cards img[class*="player"],
+  #captain-cards img[src*="player"] {
+    width: 34px !important;              /* Sleek face-circle sizing profile */
+    height: 34px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+    object-fit: cover !important;
+  }
+
+  /* 4. KEEP PREDICTED SCORE DATA ALIGNED TO THE FAR RIGHT SIDE WALL */
+  #captain-cards > div > div:last-child,
+  #captain-cards .player-score-box {
+    display: flex !important;
+    flex-direction: column !important;  /* Stack big number on top of the text label */
+    align-items: flex-end !important;   /* Pulls text flush against the right margin */
+    text-align: right !important;
+    flex-shrink: 0 !important;
+    margin: 0 0 0 auto !important;      /* Pushes entire box straight to the right edge */
+    padding: 0 !important;
+    border: none !important;            /* Removes any old border separation blocks */
+  }
+
+  /* Green analytical score figures text weighting scaling */
+  #captain-cards strong,
+  #captain-cards .score-value {
+    font-size: 18px !important;         /* Bold, premium accent sizing tracking */
+    font-weight: 800 !important;
+    color: #00FF66 !important;          /* Signature neon digital green */
+    line-height: 1.1 !important;
+  }
+
+  /* Small gray label text underneath the green metric tracking scores */
+  #captain-cards .score-label,
+  #captain-cards .score-box-labels,
+  #captain-cards div:last-child span {
+    font-size: 10px !important;
+    color: var(--text-muted, #475569) !important;
+    line-height: 1.2 !important;
+    margin: 1px 0 0 0 !important;
+    white-space: nowrap !important;
+  }
+}
+/* Precise layout fix for Best Transfers Tab cards */
+@media (max-width: 768px) {
+  
+  /* 1. Force the dynamic list container to stretch full-width */
+  #transfers-list {
+    display: flex !important;
+    flex-direction: column !important; /* Stacks player cards vertically */
+    gap: 12px !important;               /* Space between cards */
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 12px 0 0 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 2. Format individual transfer player cards horizontally */
+  #transfers-list > div,
+  #transfers-list .player-card {
+    display: flex !important;
+    flex-direction: row !important;     /* Forces items side-by-side */
+    align-items: center !important;     /* Centers everything vertically */
+    justify-content: space-between !important;
+    width: 100% !important;             /* Stretches the card frame fully edge-to-edge */
+    max-width: 100% !important;
+    height: auto !important;            /* Allows card depth to expand safely */
+    padding: 14px 12px !important;       /* Balanced internal padding */
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+  }
+
+  /* 3. Left Side Content Grouping: Avatar Photo + Bio text */
+  #transfers-list > div > div:first-child,
+  #transfers-list .player-card-main-info {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px !important;                /* Clean spacing between picture and text */
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  /* Force bio text lines to stack cleanly */
+  #transfers-list .player-bio,
+  #transfers-list .player-details-text {
+    display: flex !important;
+    flex-direction: column !important;  
+    align-items: flex-start !important;
+    text-align: left !important;
+    gap: 2px !important;
+    min-width: 0 !important;
+  }
+
+  /* Player name typography sizing */
+  #transfers-list h4,
+  #transfers-list .player-name {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Team Name - Price metadata styling */
+  #transfers-list p,
+  #transfers-list .player-meta-sub {
+    font-size: 11px !important;
+    color: var(--text-secondary, #64748b) !important;
+    margin: 0 !important;
+  }
+
+  /* Keep player images uniform and circular */
+  #transfers-list img[class*="player"],
+  #transfers-list img[src*="player"] {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+    object-fit: cover !important;
+    margin: 0 !important;
+  }
+
+  /* 4. Right Side Content Grouping: Position Badge + Score data values */
+  #transfers-list > div > div:last-child,
+  #transfers-list .player-score-box {
+    display: flex !important;
+    flex-direction: column !important;  /* Stacks score on top of its label */
+    align-items: flex-end !important;   /* Flushes typography text rightward */
+    text-align: right !important;
+    flex-shrink: 0 !important;
+    margin: 0 0 0 auto !important;      /* Springs entire block straight to the right edge */
+    padding: 0 !important;
+    gap: 2px !important;
+  }
+
+  /* Position Badge pill styling (GKP, DEF, MID, FWD) */
+  #transfers-list .badge,
+  #transfers-list span.pill {
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    margin-bottom: 2px !important;      /* Space before points value appears beneath it */
+  }
+
+  /* Large green analytical score figure numbers */
+  #transfers-list strong,
+  #transfers-list .score-value {
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    color: #00FF66 !important;          /* Matches your premium signature neon green */
+    line-height: 1.1 !important;
+    margin: 0 !important;
+  }
+
+  /* Small gray label text strings below point figures */
+  #transfers-list .score-label,
+  #transfers-list div:last-child span:not(.pill) {
+    font-size: 10px !important;
+    color: var(--text-muted, #475569) !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+  }
+}
+/* Fix squished player images and circle cutoffs on mobile */
+@media (max-width: 768px) {
+  /* Targets the player image elements precisely inside the transfers view list */
+  #transfers-list img,
+  #transfers-list [class*="player"] img,
+  #transfers-list [class*="avatar"] {
+    width: 44px !important;            /* explicit constant horizontal footprint */
+    height: 44px !important;           /* explicit constant vertical footprint */
+    max-width: 44px !important;
+    max-height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    border-radius: 50% !important;     /* Locks layout shape boundary coordinates to a perfect circle */
+    aspect-ratio: 1 / 1 !important;    /* Force math engine to balance layout box geometry */
+    object-fit: cover !important;      /* Centers and reveals player head without flattening proportions */
+    object-position: top center !important; /* Positions viewport grid slightly higher to catch face details safely */
+    display: inline-block !important;
+    flex-shrink: 0 !important;         /* Completely blocks layout rows from flattening the circle frame width */
+    margin: 0 !important;
+  }
+}
+/* Precise layout fix for Differential Picks Tab cards */
+@media (max-width: 768px) {
+  
+  /* 1. Force the dynamic differential container to stretch full-width edge-to-edge */
+  #diff-list {
+    display: flex !important;
+    flex-direction: column !important; /* Stacks player rows vertically in a straight line */
+    gap: 12px !important;               /* Space between cards */
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 12px 0 0 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 2. Format individual differential player cards horizontally */
+  #diff-list > div,
+  #diff-list .player-card {
+    display: flex !important;
+    flex-direction: row !important;     /* Forces components side-by-side */
+    align-items: center !important;     /* Centers everything vertically on the horizontal line */
+    justify-content: space-between !important;
+    width: 100% !important;             /* Direct spring command to expand out fully */
+    max-width: 100% !important;
+    height: auto !important;            /* Card grows naturally so content never overflows */
+    padding: 14px 12px !important;       /* Balanced padding top, bottom, and sides */
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+  }
+
+  /* 3. Left Side Content Grouping: Avatar Photo + Bio text */
+  #diff-list > div > div:first-child,
+  #diff-list .player-card-main-info {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px !important;                /* Clean spacing between picture and text */
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  /* Force bio text lines to stack cleanly */
+  #diff-list .player-bio,
+  #diff-list .player-details-text {
+    display: flex !important;
+    flex-direction: column !important;  /* Stacks player name on top of the metadata */
+    align-items: flex-start !important;
+    text-align: left !important;
+    gap: 2px !important;
+    min-width: 0 !important;
+  }
+
+  /* Player name typography sizing */
+  #diff-list h4,
+  #diff-list .player-name {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important; /* Elegant truncation if screen gets narrow */
+  }
+
+  /* Team Name - Price metadata styling */
+  #diff-list p,
+  #diff-list .player-meta-sub {
+    font-size: 11px !important;
+    color: var(--text-secondary, #64748b) !important;
+    margin: 0 !important;
+  }
+
+  /* 4. Fix player images to be perfectly round circles without squishing heads */
+  #diff-list img,
+  #diff-list img[class*="player"],
+  #diff-list img[src*="player"] {
+    width: 38px !important;            /* Constant clean layout width */
+    height: 38px !important;           /* Constant clean layout height */
+    max-width: 38px !important;
+    max-height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+    border-radius: 50% !important;     /* Perfect circular crop boundary coordinates */
+    aspect-ratio: 1 / 1 !important;    /* Forces geometric circle properties */
+    object-fit: cover !important;      /* Centers and reveals photo profile face details */
+    object-position: top center !important;
+    flex-shrink: 0 !important;         /* Prevents other containers from squeezing the circle width */
+    margin: 0 !important;
+    display: inline-block !important;
+  }
+
+  /* 5. Horizontal positioning layout array for your analytical pills */
+  #diff-list .player-pills-row,
+  #diff-list [class*="meta"] {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;       /* Locks pills flat on a single row line */
+    align-items: center !important;
+    gap: 4px !important;                 /* Equal space gaps between metrics */
+    margin: 2px 0 0 0 !important;
+  }
+
+  /* Uniform look for position (MID, DEF, FWD) and ownership badges */
+  #diff-list .badge,
+  #diff-list span.pill,
+  #diff-list [class*="own"] {
+    font-size: 9px !important;          /* Small neat text sizing */
+    padding: 2px 6px !important;         /* Compact padding profiles */
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+  }
+
+  /* 6. Right Side Content Grouping: Predicted Score / Form values aligned far right */
+  #diff-list > div > div:last-child,
+  #diff-list .player-score-box,
+  #diff-list [class*="form-score"] {
+    display: flex !important;
+    flex-direction: column !important;  /* Stack points number on top of the small text label */
+    align-items: flex-end !important;   /* Flushes text lines cleanly against right wall */
+    text-align: right !important;
+    flex-shrink: 0 !important;
+    margin: 0 0 0 auto !important;      /* Springs entire block straight to the right edge */
+    padding: 0 !important;
+    border: none !important;            /* Removes any old vertical divider lines */
+  }
+
+  /* Green analytical form or point value text numbers */
+  #diff-list strong,
+  #diff-list .score-value,
+  #diff-list [class*="Form"] {
+    font-size: 16px !important;         /* Clear, bold accent scaling weight */
+    font-weight: 800 !important;
+    color: #00FF66 !important;          /* Premium signature neon green */
+    line-height: 1.1 !important;
+    margin: 0 !important;
+  }
+
+  /* Small gray label text below point metrics numbers */
+  #diff-list .score-label,
+  #diff-list div:last-child span:not(.pill) {
+    font-size: 10px !important;
+    color: var(--text-muted, #475569) !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    margin: 1px 0 0 0 !important;
+  }
+}
+/* Reduce descriptive paragraph font sizes on the League Spy section */
+@media (max-width: 768px) {
+  /* Targets any description paragraph containing your specific inline color styling */
+  main p[style*="rgba(255,255,255,0.7)"],
+  .spy-page p,
+  [class*="spy"] p {
+    font-size: 0.85rem !important;  /* REDUCED: Decreases text height to a sleek mobile size */
+    line-height: 1.4 !important;    /* Tightens up the vertical paragraph spacing nicely */
+    max-width: 100% !important;     /* Allows text to naturally fill the available width boundaries */
+    margin-bottom: 1rem !important;
+  }
+}
+/* Reduce container heights on the League Spy page */
+@media (max-width: 768px) {
+  /* 1. Target and compress the main League Stats Banner height */
+  #league-banner {
+    padding: 12px 16px !important;    /* REDUCED: Drastically cuts vertical height padding */
+    margin-bottom: 12px !important;   /* Pulls the rivals container up closer */
+    gap: 10px 14px !important;         /* Tightens spacing gaps between data elements */
+  }
+
+  /* Shrink vertical layout separator lines */
+  #league-banner div[style*="height:40px"] {
+    height: 24px !important;          /* Scales down line heights to match compressed text */
+  }
+
+  /* 2. Target and compress individual Rivals Card modules */
+  /* This targets both the blank placeholder container and your generated rival panels */
+  #rivals-container > div,
+  #rivals-container .card,
+  #rivals-container [class*="rival-card"] {
+    padding: 12px 14px !important;    /* REDUCED: Compresses top and bottom heights massively */
+    margin-bottom: 10px !important;   /* Tight vertical gaps between stacked competitors */
+  }
+
+  /* 3. Handle data elements inside the rival cards to tightly save space */
+  #rivals-container div[style*="padding:3rem 1.5rem"] {
+    padding: 20px 14px !important;    /* Shrinks the "🔍 Enter a league ID" box footprint */
+  }
+
+  /* Compact spacing around individual data row layers */
+  #rivals-container h4, 
+  #rivals-container .player-name,
+  #rivals-container [style*="font-size:1.2rem"] {
+    font-size: 13px !important;       /* Scales typography down cleanly */
+  }
+
+  #rivals-container p,
+  #rivals-container .section-eyebrow {
+    font-size: 10px !important;       /* Minimizes small label description texts */
+    margin-bottom: 2px !important;
+  }
+}
+/* Precise layout fix for Captain Changes Alert cards */
+@media (max-width: 768px) {
+  
+  /* 1. Force the main background card container to have tight padding */
+  #alerts-section .card {
+    padding: 12px 10px !important;    /* Massively shrinks inner card cushions */
+    box-sizing: border-box !important;
+  }
+
+  /* 2. Force the alerts list container to stretch full-width edge-to-edge */
+  #captain-alerts {
+    display: flex !important;
+    flex-direction: column !important; /* Stacks alert rows vertically in a straight line */
+    gap: 8px !important;                /* Space between alert cards */
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 12px 0 0 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 3. Format individual alert cards horizontally */
+  #captain-alerts > div,
+  #captain-alerts .alert-item,
+  #captain-alerts [class*="card"] {
+    display: flex !important;
+    flex-direction: row !important;     /* Forces components side-by-side */
+    align-items: center !important;     /* Centers everything vertically on the line */
+    justify-content: space-between !important;
+    width: 100% !important;             /* Direct spring command to expand out fully */
+    max-width: 100% !important;
+    height: auto !important;            /* Card grows naturally so content never overflows */
+    padding: 10px !important;           /* Balanced uniform compact inner padding */
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 4. Left Side Content Grouping: Avatar Photo + Bio text */
+  #captain-alerts > div > div:first-child,
+  #captain-alerts [class*="main-info"] {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px !important;                /* Clean spacing between picture and text */
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  /* Force bio player name and team info lines to wrap or display cleanly */
+  #captain-alerts .player-bio,
+  #captain-alerts div:has(> img) + div {
+    display: flex !important;
+    flex-direction: row !important;     /* Keeps text fields inline like 'Haaland - Man City' */
+    flex-wrap: wrap !important;         /* Allows clean multi-line wrap if screen is tight */
+    align-items: center !important;
+    gap: 4px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: var(--text-primary, #ffffff) !important;
+    text-align: left !important;
+  }
+
+  /* Clean up subtext typography sizing */
+  #captain-alerts span, 
+  #captain-alerts p {
+    font-size: 11px !important;
+    font-weight: 400 !important;
+    color: var(--text-secondary, #64748b) !important;
+    margin: 0 !important;
+  }
+
+  /* 5. Fix player images to be perfectly round circles without squishing */
+  #captain-alerts img,
+  #captain-alerts img[class*="player"] {
+    width: 34px !important;            /* Constant clean layout width */
+    height: 34px !important;           /* Constant clean layout height */
+    max-width: 34px !important;
+    max-height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    border-radius: 50% !important;     /* Perfect circular crop boundary coordinates */
+    aspect-ratio: 1 / 1 !important;    /* Forces geometric circle properties */
+    object-fit: cover !important;      /* Centers and reveals photo profile face details */
+    flex-shrink: 0 !important;         /* Prevents other containers from squeezing the circle width */
+    margin: 0 !important;
+    display: inline-block !important;
+  }
+
+  /* 6. Right Side Content Grouping: Manager name aligned far right */
+  #captain-alerts > div > div:last-child,
+  #captain-alerts .manager-name,
+  #captain-alerts div[style*="color"] {
+    font-size: 11px !important;
+    color: var(--text-muted, #64748b) !important;
+    font-weight: 500 !important;
+    text-align: right !important;
+    flex-shrink: 0 !important;
+    margin: 0 0 0 auto !important;      /* Springs entire block straight to the right edge */
+    padding: 0 0 0 8px !important;
+    white-space: normal !important;     /* Allows long names to drop down instead of overlapping */
+    max-width: 110px !important;        /* Prevents manager names from crushing player data */
+  }
+}
+/* Fix squished player images and wide oval halos in recent activity alerts */
+@media (max-width: 768px) {
+  /* Targets the player avatar images specifically inside the captain alerts container */
+  #captain-alerts img,
+  #captain-alerts [class*="avatar"],
+  #captain-alerts [class*="player"] img {
+    width: 44px !important;            /* Hard locks explicit width size */
+    height: 44px !important;           /* Hard locks explicit height size */
+    max-width: 44px !important;
+    max-height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    border-radius: 50% !important;     /* Forces the boundary back into a flawless clean circle */
+    aspect-ratio: 1 / 1 !important;    /* Keeps geometry perfectly balanced */
+    object-fit: cover !important;      /* Centers and displays the player head fully without cropping details */
+    object-position: top center !important; /* Slightly tilts the camera up to secure hair/head details safely */
+    flex-shrink: 0 !important;         /* Explicitly prevents horizontal text layout boxes from compressing the circle */
+    display: inline-block !important;
+    margin: 0 !important;
+    background: transparent !important; /* Removes any wide oval background highlight colors or halos if present */
+  }
+
+  /* If the image is wrapped in a background container causing that gray/blue oval shadow shape */
+  #captain-alerts div:has(> img) {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 50% !important;
+    background: transparent !important; /* Fixes any wide wrapper stretch borders */
+    flex-shrink: 0 !important;
+  }
+}
+/* Precise layout fix for Recent Transfers Alert cards */
+@media (max-width: 768px) {
+  
+  /* 1. Force the recent transfers container to stretch full-width edge-to-edge */
+  #transfer-alerts,
+  #recent-transfers-list,
+  #alerts-section div:has(> [style*="Gibbs-White"]) {
+    display: flex !important;
+    flex-direction: column !important; /* Stacks transfer items cleanly in a vertical file */
+    gap: 8px !important;                /* Uniform vertical spacing between rows */
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 12px 0 0 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 2. Format individual transfer alert cards horizontally */
+  #transfer-alerts > div,
+  #recent-transfers-list > div,
+  .transfer-alert-item,
+  #alerts-section div[style*="background"]:has(span:contains("→")),
+  #alerts-section div:has(> [style*="Olayinka"]) {
+    display: flex !important;
+    flex-direction: row !important;     /* Forces items to lay out side-by-side */
+    align-items: center !important;     /* Centers both transfer text and name vertically */
+    justify-content: space-between !important; /* Pushes player info left, manager name right */
+    width: 100% !important;             /* Direct spring command to expand out fully */
+    max-width: 100% !important;
+    height: auto !important;            /* Allows container to expand safely if words wrap */
+    padding: 12px 10px !important;       /* Balanced uniform compact inner padding */
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    border-radius: 6px !important;
+  }
+
+  /* 3. Left Side Content Grouping: Transfer players string text (Player Out → Player In) */
+  #transfer-alerts > div > div:first-child,
+  #recent-transfers-list div[style*="font-weight"] {
+    display: flex !important;
+    flex-direction: row !important;     /* Keeps text flat inline */
+    flex-wrap: wrap !important;         /* Gracefully wraps long names like Gibbs-White if screen is narrow */
+    align-items: center !important;
+    gap: 6px !important;                /* Space around the red arrow indicator */
+    font-size: 13px !important;         /* Clean, bold premium layout text size */
+    font-weight: 700 !important;
+    text-align: left !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  /* Adjust color and format for the transfer arrow text if isolated */
+  #transfer-alerts span[style*="color"],
+  #recent-transfers-list span {
+    font-size: 13px !important;
+    font-weight: bold !important;
+  }
+
+  /* 4. Right Side Content Grouping: Manager name aligned far right */
+  #transfer-alerts > div > div:last-child,
+  #recent-transfers-list div[style*="color"],
+  #alerts-section div:has(> span:contains("→")) div:last-child {
+    font-size: 11px !important;
+    color: var(--text-muted, #64748b) !important;
+    font-weight: 500 !important;
+    text-align: right !important;
+    flex-shrink: 0 !important;
+    margin: 0 0 0 auto !important;      /* Springs entire block straight to the right edge */
+    padding: 0 0 0 12px !important;     /* Safety gap preventing text fields from touching */
+    white-space: normal !important;     /* Allows long names to drop down instead of overlapping */
+    max-width: 110px !important;        /* Prevents manager names from crushing player data */
+  }
+}
+/* Proactive mobile layout fix for Chip Usage container cards */
+@media (max-width: 768px) {
+  
+  /* 1. Target the future dynamic list container block wrapper */
+  #chip-usage-list,
+  #chips-container,
+  .card:has(> h3:contains("Chip Usage")) > div:last-child {
+    display: flex !important;
+    flex-direction: column !important; /* Stacks data rows vertically in a straight line */
+    gap: 8px !important;                /* Uniform vertical space between stacked cards */
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 12px 0 0 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 2. Format individual dynamic chip cards to align horizontally edge-to-edge */
+  #chip-usage-list > div,
+  #chips-container > div,
+  .chip-data-item {
+    display: flex !important;
+    flex-direction: row !important;     /* Forces items side-by-side on one row */
+    align-items: center !important;     /* Centers both chip text and counts vertically */
+    justify-content: space-between !important; /* Pushes chip name left, counter/percentage right */
+    width: 100% !important;             /* Direct spring command to expand out fully */
+    max-width: 100% !important;
+    height: auto !important;
+    padding: 12px 10px !important;       /* Balanced uniform compact inner padding */
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    border-radius: 6px !important;
+  }
+
+  /* 3. Left Side Content Grouping: Chip Name/Icon text (Wildcard, Free Hit, etc.) */
+  #chip-usage-list > div > div:first-child,
+  .chip-data-item .chip-name {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;                 /* Space between optional mini asset indicator and text */
+    font-size: 13px !important;         /* Consistent bold accent text size */
+    font-weight: 700 !important;
+    text-align: left !important;
+    color: var(--text-primary, #ffffff) !important;
+  }
+
+  /* 4. Right Side Content Grouping: Metrics / Percentages aligned far right */
+  #chip-usage-list > div > div:last-child,
+  .chip-data-item .chip-value,
+  .chip-data-item strong {
+    font-size: 14px !important;         /* Bold, premium layout score text size */
+    font-weight: 800 !important;
+    color: #00FF66 !important;          /* Fits your clean premium signature green theme */
+    text-align: right !important;
+    margin-left: auto !important;       /* Layout spring locking value block to right margin */
+    flex-shrink: 0 !important;
+  }
+
+  /* Formatting for subtitle labels underneath percentages (e.g. 'active' or 'used') */
+  .chip-data-item span.label {
+    font-size: 10px !important;
+    color: var(--text-muted, #64748b) !important;
+    display: block !important;
+  }
+}
+/* Exact Football Lineup Theme Override for Mobile Modal */
+@media (max-width: 768px) {
+  /* 1. Set up the main field container background to be clean and bright */
+  #modal-team-content {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+    background: #ffffff !important;     /* Clean white field canvas from your screenshot */
+    border: none !important;
+    padding: 24px 12px !important;
+    gap: 20px !important;                /* Vertical spacing between rows */
+    box-sizing: border-box !important;
+  }
+
+  /* 2. Row arrangement: Center-aligns the players in each lineup row */
+  #modal-team-content > div {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;  /* Centers cards horizontally exactly like the photo */
+    align-items: center !important;
+    gap: 12px 10px !important;           /* Space between individual player blocks */
+    width: 100% !important;
+  }
+
+  /* 3. THE PLAYER BLOCK SHAPE: Exact styling for the clean rectangles */
+  #modal-team-content .player-card,
+  #modal-team-content > div > div {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+    padding: 8px 6px !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important; /* Soft card shadow depth */
+    width: calc(28% - 8px) !important;   /* Dynamic widths to distribute 3-4 blocks beautifully */
+    min-width: 85px !important;          /* Keeps blocks structurally uniform */
+    height: 54px !important;             /* Fixed compact height box */
+    border: 1px solid #e2e8f0 !important;
+    border-left: 4px solid #94a3b8 !important; /* Default fallback left-accent accent line */
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+  }
+
+  /* Hide player pictures completely to match your reference layout photo */
+  #modal-team-content img {
+    display: none !important;
+  }
+
+  /* 4. THE POSITION BADGE (GKP, DEF, MID, FWD) */
+  /* Targets the top label string text inside your player cards */
+  #modal-team-content .player-card .position-label,
+  #modal-team-content div:first-child span,
+  #modal-team-content .badge {
+    display: block !important;
+    font-size: 9px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    color: #64748b !important;          /* Sleek steel grey font color */
+    margin-bottom: 3px !important;
+  }
+
+  /* 5. THE PLAYER NAME TEXT */
+  #modal-team-content h4,
+  #modal-team-content .player-name,
+  #modal-team-content strong {
+    display: block !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: #1e293b !important;          /* Dark rich font color for supreme readability */
+    margin: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;  /* Handles long strings cleanly */
+    width: 100% !important;
+  }
+
+  /* 6. DYNAMIC COLOR ACCENTS: Maps left-border indicators to role tags */
+  
+  /* Goalkeeper (GKP) - Peach/Orange theme */
+  #modal-team-content div:has([id*="gkp"]), 
+  #modal-team-content div:has(span:contains("GKP")),
+  #modal-team-content .player-card[data-pos="GKP"] {
+    background: #fff7ed !important; 
+    border-left-color: #ff9800 !important; 
+  }
+
+  /* Defenders (DEF) - Forest Green theme */
+  #modal-team-content div:has([id*="def"]), 
+  #modal-team-content div:has(span:contains("DEF")),
+  #modal-team-content .player-card[data-pos="DEF"] {
+    background: #f0fdf4 !important; 
+    border-left-color: #2e7d32 !important; 
+  }
+
+  /* Midfielders (MID) - Ocean Blue theme */
+  #modal-team-content div:has([id*="mid"]), 
+  #modal-team-content div:has(span:contains("MID")),
+  #modal-team-content .player-card[data-pos="MID"] {
+    background: #eff6ff !important; 
+    border-left-color: #1e88e5 !important; 
+  }
+
+  /* Forwards (FWD) - Crimson Red theme */
+  #modal-team-content div:has([id*="fwd"]), 
+  #modal-team-content div:has(span:contains("FWD")),
+  #modal-team-content .player-card[data-pos="FWD"] {
+    background: #fff1f2 !important; 
+    border-left-color: #e53935 !important; 
+  }
+
+  /* 7. CAPTAIN 'C' ICON BADGE POSITIONING */
+  #modal-team-content span:contains("(C)"),
+  #modal-team-content .captain-badge {
+    position: absolute !important;
+    top: -6px !important;
+    right: -6px !important;
+    background: #334155 !important;
+    color: #ffffff !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    width: 16px !important;
+    height: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2) !important;
+  }
+}
+#auth-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6); display: flex;
+    justify-content: center; align-items: center; z-index: 1000;
+}
+.modal-content {
+    background: #fff; padding: 30px; border-radius: 12px;
+    width: 90%; max-width: 400px; position: relative; color: #333;
+}
+#close-modal-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; }
+.auth-tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #eee; }
+.auth-tabs button { flex: 1; background: none; border: none; padding: 10px; font-size: 16px; cursor: pointer; color: #888; font-weight: bold; }
+.auth-tabs button.active-tab { color: #0070f3; border-bottom: 2px solid #0070f3; }
+.form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+.form-group label { font-size: 14px; margin-bottom: 5px; font-weight: 600; }
+.form-group input, .form-group select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
+.auth-btn { width: 100%; padding: 12px; background: #0070f3; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+.modal-hidden, .form-hidden { display: none !important; }
+
+/* Password entry wrapper container */
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+/* Ensure the text inputs stretch nicely but leave space for the eye symbol */
+.password-wrapper input {
+    width: 100%;
+    padding-right: 40px; /* Leaves room so text doesn't overlap the icon */
+    box-sizing: border-box;
+}
+
+/* Position the eye symbol inside the right end of the box */
+.password-toggle-btn {
+    position: absolute;
+    right: 12px;
+    cursor: pointer;
+    font-size: 16px;
+    user-select: none;
+    color: #666;
+}
+/* Keeps the log out nav button hidden until active user session verified */
+.logout-hidden {
+    display: none !important;
+}
+/* --- Account Tabs Styling --- */
+
+/* Hide all tab content sections by default */
+.tab-content {
+    display: none !important;
+}
+
+/* Only show the tab content section that has the active class */
+.tab-content.active {
+    display: block !important;
+}
+/* Fix the support button text padding and overflow */
+.btn-primary, .btn {
+    width: auto !important;         /* Allows the button width to grow with text */
+    min-width: max-content;         /* Forces the button to fit the full text length */
+    padding: 10px 24px !important;  /* Adds extra room on the left and right sides */
+    white-space: nowrap;            /* Prevents the text from breaking into a second line */
+}
+/* ==========================================================================
+   MODAL POPUP MODERN DESIGN FIX
+   ========================================================================== */
+
+/* The dark background overlay covering the rest of your screen */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(15, 23, 42, 0.6) !important; /* Elegant dark blur overlay */
+    backdrop-filter: blur(4px); /* Softly blurs background contents */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999 !important; /* Pushes the modal completely above everything else */
+}
+
+/* The actual modal popup box card */
+.modal {
+    background: #ffffff !important; /* Forces the box container background to be crisp white */
+    border-radius: 12px !important;
+    padding: 32px !important;
+    width: 100%;
+    max-width: 480px; /* Clean structured constraint sizing */
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+    position: relative;
+    box-sizing: border-box;
+}
+
+/* Modal Title Text */
+.modal h2 {
+    font-size: 1.5rem !important;
+    font-weight: 700;
+    color: #0d1b2a !important;
+    margin-bottom: 24px !important;
+    margin-top: 0 !important;
+}
+
+/* The Close "X" button top right */
+.modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+.modal-close:hover {
+    color: #ef4444; /* Turns red when hovered */
+}
+/* Responsive Overwrites for the Team Squad Modal */
+@media (max-width: 600px) {
+    /* 1. Make the modal container fit nicely with safe spacing */
+    #team-modal, 
+    .modal-content, 
+    div:has(> #team-modal) {
+        width: 92% !important;
+        max-width: 95vw !important;
+        padding: 16px !important;
+        margin: 10px auto !important;
+        box-sizing: border-box !important;
+    }
+
+    /* 2. Strip card blocks into simple text-list rows */
+    .player-card, 
+    .squad-row,
+    #team-modal div[class*="player"] {
+        display: flex !important;
+        flex-direction: row !important; /* Keep names beside stats */
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
+        background: transparent !important; /* Remvoves bulky card background */
+        border: none !important;
+        border-bottom: 1px solid #eee !important; /* Clean divider line */
+        padding: 8px 4px !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+
+    /* 3. Re-align text so names don't overlap with points */
+    .player-name, 
+    .player-title,
+    #team-modal p,
+    #team-modal span {
+        font-size: 14px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important; /* Adds '...' if name is too long */
+        text-align: left !important;
+        margin: 0 !important;
+    }
+
+    /* 4. Display points cleanly on the right side */
+    .player-points, 
+    .pts-badge,
+    #team-modal strong {
+        font-size: 14px !important;
+        text-align: right !important;
+        color: #333 !important;
+        min-width: 50px !important;
+    }
+
+    /* 5. Clean up the Starting XI / Bench section labels */
+    .section-title,
+    #team-modal h3,
+    #team-modal h4 {
+        font-size: 16px !important;
+        margin: 14px 0 6px 0 !important;
+        border-bottom: 2px solid var(--green, #0070f3) !important;
+        padding-bottom: 4px !important;
+        text-align: left !important;
+        width: 100% !important;
+    }
+}

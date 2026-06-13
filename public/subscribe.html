@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FPL Scout - Premium Subscription</title>
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
+    <link rel="apple-touch-icon" href="/images/favicon.svg" />
+    <style>
+        body { 
+            font-family: sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            background: #f4f6f8; 
+            color: #333; 
+            padding: 20px;
+        }
+        .card { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            text-align: center; 
+            max-width: 500px; 
+            width: 100%;
+        }
+        .price-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #0070f3;
+            margin: 20px 0;
+        }
+        button { 
+            background: #22c55e; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            font-size: 16px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            margin-top: 20px;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #16a34a;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .features {
+            text-align: left;
+            margin: 30px 0;
+            font-size: 0.95rem;
+        }
+        .features li {
+            margin: 10px 0;
+        }
+        .back-link {
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+        .back-link a {
+            color: #0070f3;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>⭐ Unlock Premium Access</h2>
+        <p>Get instant entry to the locked League Spy tools, manager watchlists, and advanced analytics data tracking features.</p>
+        
+        <div class="price-display">
+            <span id="price-ngn-sub">₦3,000</span><span style="font-size: 1rem; color: #666;">/month</span>
+        </div>
+        <div id="subscribe-price-display" style="text-align: center; font-size: 0.9rem; color: #666; margin-bottom: 20px;">
+            Loading exchange rates...
+        </div>
+        
+        <div class="features">
+            <ul>
+                <li>✅ League Spy Tools - See all manager strategies</li>
+                <li>✅ Advanced Transfer Analysis</li>
+                <li>✅ Real-time Player Stats & Predictions</li>
+                <li>✅ Watchlist Management</li>
+                <li>✅ Real-time Rival Alerts - Transfers, captains & chips</li>
+                <li>✅ Priority Support</li>
+            </ul>
+        </div>
+
+        <button id="subscribe-btn" onclick="initiatePayment()">Subscribe Now</button>
+        
+        <div class="loading" id="loading">
+            <p>Processing payment...</p>
+        </div>
+
+        <div class="back-link">
+            <a onclick="goBack()">← Back to Home</a>
+        </div>
+    </div>
+
+    <script>
+        const PAYSTACK_PUBLIC_KEY = 'pk_test_97af4992be38c14710ad453b4e814fe4cdc109d4';
+        // Get current user from localStorage
+        const currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
+        const PREMIUM_PRICE_NGN = 3000;
+
+        // Fetch and display exchange rates
+        async function updatePricingDisplay() {
+    try {
+        // 🚀 FIX: Talk straight to your Node backend route (No CORS, No broken proxies)
+        const response = await fetch('/api/exchange-rates');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success || !data.rates) {
+            throw new Error(data.message || "Failed to retrieve rates from backend route");
+        }
+        
+        const rates = data.rates;
+        
+        // Extract USD conversion value cleanly
+        let displayPrice = rates && rates.USD ? `$${rates.USD.toFixed(2)} USD` : '$3.00 USD';
+        
+        // Update on both homepage and subscribe page containers
+        const priceConverted = document.getElementById('price-converted');
+        const subscribePriceDisplay = document.getElementById('subscribe-price-display');
+        
+        if (priceConverted) {
+            priceConverted.textContent = displayPrice;
+        }
+        
+        if (subscribePriceDisplay) {
+            const ngnPrice = typeof PREMIUM_PRICE_NGN !== 'undefined' ? PREMIUM_PRICE_NGN.toLocaleString() : '3,000';
+            subscribePriceDisplay.innerHTML = `
+                <div style="font-size: 1.1rem; color: #999; margin: 1rem 0;">
+                    <strong>Pricing in your region:</strong><br>
+                    <span style="font-size: 2rem; font-weight: bold; color: #0070f3;">₦${ngnPrice}</span> (NGN)<br>
+                    <span style="font-size: 0.95rem; color: #666;">≈ ${displayPrice}</span>
+                </div>
+            `;
+        }
+        
+        window.exchangeRates = rates;
+        console.log('Exchange rates updated cleanly via backend router:', rates);
+
+    } catch (error) {
+        console.warn('Handling currency fetch locally via robust backup fallback mechanism:', error);
+        
+        // Secure hardcoded backup templates to prevent interface breaks
+        const priceConverted = document.getElementById('price-converted');
+        if (priceConverted) {
+            priceConverted.textContent = '$3.00 USD (approx)';
+        }
+
+        const subscribePriceDisplay = document.getElementById('subscribe-price-display');
+        if (subscribePriceDisplay) {
+            const ngnPrice = typeof PREMIUM_PRICE_NGN !== 'undefined' ? PREMIUM_PRICE_NGN.toLocaleString() : '3,000';
+            subscribePriceDisplay.innerHTML = `
+                <div style="font-size: 1.1rem; color: #999; margin: 1rem 0;">
+                    <strong>Pricing in your region:</strong><br>
+                    <span style="font-size: 2rem; font-weight: bold; color: #0070f3;">₦${ngnPrice}</span> (NGN)<br>
+                    <span style="font-size: 0.95rem; color: #666;">≈ $3.00 USD (approx)</span>
+                </div>
+            `;
+        }
+    }
+}
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', updatePricingDisplay);
+
+                function initiatePayment() {
+            if (!currentUser || !currentUser.email) {
+                alert('Please log in first');
+                window.location.href = '/';
+                return;
+            }
+
+            const btn = document.getElementById('subscribe-btn');
+            const loading = document.getElementById('loading');
+            
+            if (btn) btn.disabled = true;
+            if (loading) loading.style.display = 'block';
+
+            // 🚀 INTEGRATED WITH SECURE PAYSTACK PROVIDER GATEWAY
+            // Request an automated gateway token link from your Node backend server
+            fetch('/api/initialize-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: currentUser.email,
+                    amount: 3000 // Total cost value in NGN (₦3,000)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.authorization_url) {
+                    // 🚀 FORWARD ACCESSIBILITY STRAIGHT TO THE SECURE PORTAL
+                    window.location.href = data.authorization_url;
+                } else {
+                    alert(data.message || 'Could not launch payment gateway initialization workflow.');
+                    if (btn) btn.disabled = false;
+                    if (loading) loading.style.display = 'none';
+                }
+            })
+            .catch(err => {
+                console.error('Failed to communicate with payment gateway endpoints:', err);
+                alert('A network gateway connection breakdown failure occurred.');
+                if (btn) btn.disabled = false;
+                if (loading) loading.style.display = 'none';
+            });
+        }
+
+        async function handlePaystackCheckout() {
+    // 1. Safety verification check: verify if a user profile is logged in
+    if (typeof currentUser === 'undefined' || !currentUser || !currentUser.email) {
+        alert('Please log in first to purchase a premium subscription!');
+        return;
+    }
+
+    try {
+        const subscribeBtn = document.getElementById('subscribe-btn');
+        const loadingElement = document.getElementById('loading');
+        
+        if (subscribeBtn) subscribeBtn.disabled = true;
+        if (loadingElement) loadingElement.style.display = 'block';
+
+        // 2. Request a secure authorization payment invoice URL from your Node server
+        const response = await fetch('/api/initialize-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: currentUser.email,
+                amount: 3000 // Total cost value in NGN
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.authorization_url) {
+            // 3. 🚀 FORWARD THE USER STRAIGHT TO THE SECURE PORTAL
+            window.location.href = data.authorization_url;
+        } else {
+            alert(data.message || 'Could not launch payment gateway initialization workflow.');
+            if (subscribeBtn) subscribeBtn.disabled = false;
+            if (loadingElement) loadingElement.style.display = 'none';
+        }
+
+    } catch (err) {
+        console.error('Failed to communicate with payment gateway endpoints:', err);
+        alert('A network gateway connection breakdown failure occurred.');
+        
+        const subscribeBtn = document.getElementById('subscribe-btn');
+        const loadingElement = document.getElementById('loading');
+        if (subscribeBtn) subscribeBtn.disabled = false;
+        if (loadingElement) loadingElement.style.display = 'none';
+    }
+}
+
+        function goBack() {
+            window.location.href = '/';
+        }
+
+        // Show message if user is already premium
+        if (currentUser && currentUser.isPremium) {
+            document.querySelector('.card h2').textContent = '✅ You Have Premium Access';
+            document.querySelector('.card p').textContent = 'Enjoy your premium features!';
+            document.getElementById('subscribe-btn').style.display = 'none';
+            const newBtn = document.createElement('button');
+            newBtn.textContent = 'Go to Spy Tools →';
+            newBtn.onclick = () => window.location.href = '/spy';
+            document.querySelector('.card').appendChild(newBtn);
+        }
+        async function handlePaystackCheckout() {
+    // 1. Safety check: Ensure the user is logged in
+    if (typeof currentUser === 'undefined' || !currentUser || !currentUser.email) {
+        showAlert('error', 'Please log in to purchase a subscription!');
+        return;
+    }
+
+    try {
+        showToast('Redirecting to secure gateway...', 'success');
+
+        // 2. Request a payment gateway URL from your backend node server
+        const response = await fetch('/api/initialize-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: currentUser.email,
+                amount: 3000 // ₦3,000 Premium Subscription cost
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.authorization_url) {
+            // 3. 🚀 REDIRECT USER TO SECURE PAYSTACK PAGE
+            window.location.href = data.authorization_url;
+        } else {
+            showAlert('error', data.message || 'Could not launch payment gateway.');
+        }
+
+    } catch (err) {
+        console.error('Failed to communicate with payment API:', err);
+        showAlert('error', 'A network gateway error occurred.');
+    }
+}
+
+// Attach this to your payment button element
+document.getElementById('renew-subscription-btn-id')?.addEventListener('click', handlePaystackCheckout);
+
+    </script>
+</body>
+</html>
