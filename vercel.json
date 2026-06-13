@@ -1,14 +1,8 @@
 {
   "version": 2,
   "builds": [
-    {
-      "src": "api/server.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "public/**/*",
-      "use": "@vercel/static"
-    }
+    { "src": "api/server.js", "use": "@vercel/node" },
+    { "src": "public/**/*", "use": "@vercel/static" }
   ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "api/server.js" },
@@ -18,6 +12,11 @@
     { "source": "/watchlist", "destination": "public/watchlist.html" },
     { "source": "/recommendations", "destination": "public/recommendations.html" },
     { "source": "/spy", "destination": "public/spy.html" },
+    { "source": "/subscribe", "destination": "public/subscribe.html" },
+    
+    
+    { "source": "/account", "destination": "public/account.html" },
+
     { "source": "/(.*)", "destination": "public/$1" }
   ]
 }
