@@ -1127,16 +1127,19 @@ main { max-width: 100%; overflow-x: hidden; }
   .two-col { gap: 1rem; }
   .card { padding: 1rem; border-radius: 10px; }
   
-  /* Player Stats */
-  .card-header-row { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
-  .card-header-row .card-title { width: 100%; margin-bottom: 0; }
-  .controls-row { flex-direction: column; gap: 0.75rem; }
-  .controls-row > * { width: 100%; }
-  .controls-row > select { width: 100%; max-width: 100%; }
-  .controls-row > input[type="search"] { width: 100% !important; max-width: 100%; box-sizing: border-box; }
-  .controls-row .input-with-icon { width: 100%; }
-  .controls-row .filter-tabs { width: 100%; overflow-x: auto; }
-  .input-with-icon input { width: 100% !important; }
+  /* Player Stats - compact single-row layout on small screens */
+  .card-header-row { flex-direction: row; align-items: center; gap: 8px; }
+  .card-header-row .card-title { width: auto; margin-bottom: 0; font-size: 1rem; }
+  .controls-row { flex-direction: row; gap: 6px; flex-wrap: nowrap; align-items: center; }
+  .controls-row > * { width: auto; }
+  .controls-row > select { width: auto; max-width: 140px; }
+  .controls-row > input[type="search"] { width: 140px !important; max-width: 140px; box-sizing: border-box; font-size:0.95rem; }
+  .controls-row .input-with-icon { width: auto; }
+  .controls-row .filter-tabs { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling: touch; }
+  .filter-tabs .filter-tab { padding: 6px 8px; font-size: 0.82rem; min-width: 46px; }
+  .input-with-icon input { width: auto !important; padding-left: 2.5rem; font-size:0.95rem; }
+  /* Compact pagination badge */
+  .page-badge { font-size: 0.72rem; padding: 3px 8px; }
   
   /* Table adjustments */
   .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }

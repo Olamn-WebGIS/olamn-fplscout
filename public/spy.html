@@ -429,7 +429,7 @@ localStorage.setItem('fpl_saved_league_id', leagueId);
     document.getElementById('league-managers').textContent = data.standings.results.length;
     
     // Calculate avg points
-    const avgPts = Math.round(data.standings.results.reduce((sum, r) => sum + (r.total_points || 0), 0) / data.standings.results.length);
+    const avgPts = Math.round(data.standings.results.reduce((sum, r) => sum + ((r.total_points || r.total) || 0), 0) / data.standings.results.length);
     document.getElementById('league-avg-pts').textContent = avgPts;
     
     // Show search section
@@ -481,11 +481,11 @@ async function searchManagers() {
 function renderSearchResults(results) {
   const html = results.map(r => {
     const rank = r.rank || '—';
-    const totalPts = r.total_points || 0;
-    const gwPts = r.event_points || 0;
+    const totalPts = r.total_points ?? r.total ?? 0;
+    const gwPts = r.event_points ?? r.event_total ?? 0;
     const isWatched = isTeamWatched(r.entry);
     
-    return `<div class="card spy-rival-card" style="margin-bottom:1rem;cursor:pointer;" onclick="viewTeam(${r.entry}, '${r.player_name.replace(/'/g, "\\'")}', ${r.total_points}, ${rank})">
+    return `<div class="card spy-rival-card" style="margin-bottom:1rem;cursor:pointer;" onclick="viewTeam(${r.entry}, '${r.player_name.replace(/'/g, "\\'")}', ${totalPts}, ${rank})">
       <div class="rival-header">
         <div class="rival-info" style="flex:1;">
           <div class="rival-name">
@@ -623,8 +623,8 @@ function isTeamWatched(managerId) {
 function renderRivals(rivals) {
   const html = rivals.map((r, idx) => {
     const rank = r.rank || idx + 1;
-    const totalPts = r.total_points || 0;
-    const gwPts = r.event_points || 0;
+    const totalPts = r.total_points ?? r.total ?? 0;
+    const gwPts = r.event_points ?? r.event_total ?? 0;
     const gwRank = r.last_rank || '—';
     const isWatched = isTeamWatched(r.entry);
     

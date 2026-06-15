@@ -1,12 +1,12 @@
 /**
  * Watchlist Notifications Service
  * Monitors watched rival managers for activity and sends notifications
- * Checks every 4 hours for transfers, captain changes, and chip usage
+ * Checks every 5 minutes for transfers, captain changes, and chip usage
  */
 
 const WatchlistNotifications = (() => {
   let checkInterval = null;
-  const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4 hours
+  const CHECK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
   let currentUser = null;
   let watchedRivals = [];
   
@@ -246,12 +246,12 @@ const WatchlistNotifications = (() => {
       return;
     }
     
-    console.log(`📢 Starting watchlist polling every 4 hours`);
+    console.log(`📢 Starting watchlist polling every 5 minutes`);
     
     // Check immediately on first start
     checkAllWatched();
     
-    // Then check every 4 hours
+    // Then check every 5 minutes
     checkInterval = setInterval(checkAllWatched, CHECK_INTERVAL_MS);
   }
   
