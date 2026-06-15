@@ -64,6 +64,7 @@ const WatchlistNotifications = (() => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: currentUser.id,
+          email: currentUser.email,
           managerId: managerId
         })
       });

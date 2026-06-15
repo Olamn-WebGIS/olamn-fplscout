@@ -568,7 +568,7 @@ app.post('/api/verify-otp', async (req, res) => {
             return res.json({ 
                 success: true, 
                 message: 'Account verified successfully!',
-                user: { fullName, email, country, isPremium: false, isAdmin: false }
+                user: { id: newUser.id, fullName, email, country, isPremium: false, isAdmin: false }
             });
         } catch (error) {
             console.error('Error during user registration:', error);
@@ -606,6 +606,7 @@ app.post('/api/signin', async (req, res) => {
                 success: true,
                 message: 'Login successful!',
                 user: {
+                    id: userProfile.id,
                     fullName: userProfile.full_name,
                     email: userProfile.email,
                     country: userProfile.country,
@@ -1358,10 +1359,51 @@ async function payWithPaystack() {
 // Get rival activity snapshot (for change detection)
 app.post('/api/watchlist/check-activity', async (req, res) => {
     try {
-        const { userId, managerId } = req.body;
+        let { userId, managerId, email } = req.body;
         
-        if (!userId || !managerId) {
-            return res.status(400).json({ success: false, message: 'Missing userId or managerId' });
+        // Allow email fallback when userId not present in client session
+        if ((!userId || userId === null) && email) {
+            try {
+                const { data: userRow, error: uErr } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('email', email)
+                    .single();
+                if (userRow && userRow.id) userId = userRow.id;
+            } catch (e) {
+                console.warn('Unable to resolve user id from email:', e.message);
+            }
+        }
+
+        const localOnly = !userId;
+
+        if (!managerId) {
+            return res.status(400).json({ success: false, message: 'Missing managerId' });
+        }
+
+        if (localOnly) {
+            console.log('Watchlist activity check: local-only user (no userId), returning current activity without DB writes');
+            try {
+                const currentGW = cache.get('current_gw') || 1;
+                const [picks, transfers, history] = await Promise.all([
+                    fplFetch(`/entry/${managerId}/event/${currentGW}/picks/`),
+                    fplFetch(`/entry/${managerId}/transfers/`),
+                    fplFetch(`/entry/${managerId}/history/`)
+                ]);
+
+                return res.json({
+                    success: true,
+                    isLocal: true,
+                    currentActivity: {
+                        captains: picks,
+                        transfers: transfers,
+                        chips: history?.chips || []
+                    }
+                });
+            } catch (e) {
+                console.error('Error fetching FPL data for local-only activity check:', e);
+                return res.status(500).json({ success: false, message: e.message });
+            }
         }
         
         // Fetch current activity from FPL API
