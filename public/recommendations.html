@@ -78,13 +78,27 @@
               <h3 class="card-title" style="margin-bottom:0;">Recommended Transfers In</h3>
             </div>
             <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:1.25rem;">Players with favourable upcoming fixtures, rising form, and strong underlying stats.</p>
-            <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
-              <div class="filter-tabs" id="trans-pos-filter">
+            <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">
+              <!-- Desktop filter tabs -->
+              <div class="filter-tabs desktop-only" id="trans-pos-filter">
                 <button class="filter-tab active" data-pos="0">ALL</button>
                 <button class="filter-tab" data-pos="1">GKP</button>
                 <button class="filter-tab" data-pos="2">DEF</button>
                 <button class="filter-tab" data-pos="3">MID</button>
                 <button class="filter-tab" data-pos="4">FWD</button>
+              </div>
+              <!-- Mobile filter dropdown -->
+              <div class="mobile-only" style="position:relative;">
+                <button class="btn btn-ghost btn-sm" id="trans-filter-toggle" style="display:flex;align-items:center;gap:6px;">
+                  🔽 Position <span id="trans-filter-selected">ALL</span>
+                </button>
+                <div id="trans-filter-dropdown" class="filter-dropdown" style="display:none;">
+                  <button class="filter-option" data-pos="0">ALL</button>
+                  <button class="filter-option" data-pos="1">GKP (Goalkeeper)</button>
+                  <button class="filter-option" data-pos="2">DEF (Defender)</button>
+                  <button class="filter-option" data-pos="3">MID (Midfielder)</button>
+                  <button class="filter-option" data-pos="4">FWD (Forward)</button>
+                </div>
               </div>
               <select id="max-price" style="width:auto;padding:0.35rem 0.75rem;font-size:0.8rem;">
                 <option value="0">Any price</option>
@@ -352,12 +366,42 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Desktop filter tabs
   document.querySelectorAll('#trans-pos-filter .filter-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#trans-pos-filter .filter-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       if (bsData) renderTransfers(Number(btn.dataset.pos));
     });
+  });
+
+  // Mobile filter dropdown
+  const transFilterToggle = document.getElementById('trans-filter-toggle');
+  const transFilterDropdown = document.getElementById('trans-filter-dropdown');
+  const transFilterOptions = document.querySelectorAll('#trans-filter-dropdown .filter-option');
+
+  if (transFilterToggle) {
+    transFilterToggle.addEventListener('click', () => {
+      transFilterDropdown.style.display = transFilterDropdown.style.display === 'none' ? 'block' : 'none';
+    });
+
+    transFilterOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const pos = Number(option.dataset.pos);
+        document.getElementById('trans-filter-selected').textContent = option.textContent.split('(')[0].trim() || 'ALL';
+        transFilterOptions.forEach(o => o.classList.remove('active'));
+        option.classList.add('active');
+        transFilterDropdown.style.display = 'none';
+        if (bsData) renderTransfers(pos);
+      });
+    });
+  }
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#trans-filter-toggle') && !e.target.closest('#trans-filter-dropdown')) {
+      transFilterDropdown.style.display = 'none';
+    }
   });
 
   document.getElementById('max-price')?.addEventListener('change', () => {

@@ -2725,3 +2725,96 @@ main { max-width: 100%; overflow-x: hidden; }
     padding: 1px;
     margin: 0 2px;
 }
+
+/* ========================================================================
+   RESPONSIVE FILTER & PAGINATION DROPDOWNS
+   ======================================================================== */
+
+/* Show/hide elements based on screen size */
+.desktop-only {
+  display: block;
+}
+
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+  
+  .mobile-only {
+    display: block !important;
+  }
+}
+
+/* Filter Dropdown Styles */
+.filter-dropdown,
+.page-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  min-width: 160px;
+  margin-top: 4px;
+}
+
+.filter-option,
+.page-option {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.filter-option:hover,
+.page-option:hover {
+  background: var(--bg-hover);
+  color: var(--blue-light);
+}
+
+.filter-option.active,
+.page-option.active {
+  background: var(--blue-light);
+  color: white;
+  font-weight: 600;
+}
+
+.filter-option:first-child,
+.page-option:first-child {
+  border-radius: 7px 7px 0 0;
+}
+
+.filter-option:last-child,
+.page-option:last-child {
+  border-radius: 0 0 7px 7px;
+}
+
+/* Dropdown Toggle Button */
+#filter-toggle,
+#page-dropdown-btn {
+  gap: 8px;
+  min-width: 140px;
+  justify-content: center;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+
+#filter-toggle:hover,
+#page-dropdown-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--blue-light);
+  color: var(--blue-light);
+}
