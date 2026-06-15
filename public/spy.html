@@ -14,6 +14,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>League Spy — FPL Scout</title>
   <meta name="description" content="Spy on your mini-league rivals, analyze their teams, and track transfers in real-time." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://fplscout.name.ng/spy.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="FPL Scout — League Spy & Rival Tracking" />
+  <meta property="og:description" content="Spy on your mini-league rivals, analyze their teams, and track transfers in real-time." />
+  <meta property="og:image" content="/images/logo.png" />
+  <meta property="og:url" content="/spy.html" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="FPL Scout — League Spy & Rival Tracking" />
+  <meta name="twitter:description" content="Spy on your mini-league rivals, analyze their teams, and track transfers in real-time." />
+  <meta name="twitter:image" content="/images/logo.png" />
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebSite","name":"FPL Scout","url":"/","description":"Spy on your mini-league rivals, analyze their teams, and track transfers in real-time.","publisher":{"@type":"Organization","name":"FPL Scout","logo":{"@type":"ImageObject","url":"/images/logo.png"}}}
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
@@ -782,7 +796,13 @@ async function loadManagerActivity(managerId, playerName) {
     // Ensure bootstrap data is available
     if (!bsData) {
       console.warn('⚠️ Bootstrap data not available, attempting to reload...');
-      await bootstrap();
+      try {
+        await bootstrap();
+        console.log('✅ Bootstrap data reloaded successfully');
+      } catch (err) {
+        console.error('❌ Failed to reload bootstrap data:', err);
+        throw new Error('Unable to load bootstrap data for activity');
+      }
     }
     
     // Verify modal elements exist
@@ -794,67 +814,77 @@ async function loadManagerActivity(managerId, playerName) {
     console.log('✓ Transfer element:', transferEl ? 'FOUND' : 'NOT FOUND');
     console.log('✓ Chip element:', chipEl ? 'FOUND' : 'NOT FOUND');
     
+    // If elements not found, warn user
+    if (!captainEl || !transferEl || !chipEl) {
+      console.error('❌ Missing modal elements - cannot display activity data');
+      throw new Error('Activity elements not found in page');
+    }
+    
     // Captain picks
     try {
       console.log('📥 Loading captain picks...');
-      const captainHtml = await loadManagerCaptainPicks(managerId, playerName);
-      console.log('📄 Captain HTML generated:', captainHtml.length, 'chars');
-      const captainElement = document.getElementById('modal-captain-activity');
-      if (captainElement) {
-        captainElement.innerHTML = captainHtml;
+      const captainHtml = await Promise.race([
+        loadManagerCaptainPicks(managerId, playerName),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Captain picks request timeout')), 10000))
+      ]);
+      console.log('📄 Captain HTML generated:', captainHtml ? captainHtml.length : 0, 'chars');
+      if (captainEl) {
+        captainEl.innerHTML = captainHtml;
         console.log('✅ Captain picks displayed');
-      } else {
-        console.error('❌ Captain element not found in DOM');
       }
     } catch (e) {
-      console.error('❌ Failed to load captain picks:', e);
-      const captainElement = document.getElementById('modal-captain-activity');
-      if (captainElement) {
-        captainElement.innerHTML = '<p style="color:var(--text-muted);">Error loading captain data: ' + e.message + '</p>';
+      console.error('❌ Failed to load captain picks:', e.message);
+      if (captainEl) {
+        captainEl.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem;">⚠️ ${e.message}</p>`;
       }
     }
     
     // Recent transfers
     try {
       console.log('📥 Loading transfers...');
-      const transferHtml = await loadManagerTransfers(managerId, playerName);
-      console.log('📄 Transfer HTML generated:', transferHtml.length, 'chars');
-      const transferElement = document.getElementById('modal-transfer-activity');
-      if (transferElement) {
-        transferElement.innerHTML = transferHtml;
+      const transferHtml = await Promise.race([
+        loadManagerTransfers(managerId, playerName),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Transfers request timeout')), 10000))
+      ]);
+      console.log('📄 Transfer HTML generated:', transferHtml ? transferHtml.length : 0, 'chars');
+      if (transferEl) {
+        transferEl.innerHTML = transferHtml;
         console.log('✅ Transfers displayed');
-      } else {
-        console.error('❌ Transfer element not found in DOM');
       }
     } catch (e) {
-      console.error('❌ Failed to load transfers:', e);
-      const transferElement = document.getElementById('modal-transfer-activity');
-      if (transferElement) {
-        transferElement.innerHTML = '<p style="color:var(--text-muted);">Error loading transfers: ' + e.message + '</p>';
+      console.error('❌ Failed to load transfers:', e.message);
+      if (transferEl) {
+        transferEl.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem;">⚠️ ${e.message}</p>`;
       }
     }
     
     // Chip usage
     try {
       console.log('📥 Loading chip usage...');
-      const chipHtml = await loadManagerChipUsage(managerId);
-      console.log('📄 Chip HTML generated:', chipHtml.length, 'chars');
-      const chipElement = document.getElementById('modal-chip-activity');
-      if (chipElement) {
-        chipElement.innerHTML = chipHtml;
+      const chipHtml = await Promise.race([
+        loadManagerChipUsage(managerId),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Chip usage request timeout')), 10000))
+      ]);
+      console.log('📄 Chip HTML generated:', chipHtml ? chipHtml.length : 0, 'chars');
+      if (chipEl) {
+        chipEl.innerHTML = chipHtml;
         console.log('✅ Chip usage displayed');
-      } else {
-        console.error('❌ Chip element not found in DOM');
       }
     } catch (e) {
-      console.error('❌ Failed to load chip usage:', e);
-      const chipElement = document.getElementById('modal-chip-activity');
-      if (chipElement) {
-        chipElement.innerHTML = '<p style="color:var(--text-muted);">Error loading chips: ' + e.message + '</p>';
+      console.error('❌ Failed to load chip usage:', e.message);
+      if (chipEl) {
+        chipEl.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem;">⚠️ ${e.message}</p>`;
       }
     }
   } catch (e) {
     console.error('❌ Failed to load manager activity:', e);
+    showToast(`Activity loading failed: ${e.message}`, 'error');
+    // Show error in all activity elements
+    [captainEl, transferEl, chipEl].forEach(el => {
+      if (el) {
+        el.innerHTML = `<p style="color:#ff4444;font-size:0.85rem;">⚠️ ${e.message}</p>`;
+      }
+    });
   }
 }
 
@@ -873,8 +903,10 @@ async function loadManagerCaptainPicks(managerId, playerName) {
       throw new Error('Bootstrap data not available');
     }
     
+    console.log('📥 Fetching picks for GW', currentGW, 'and manager', managerId);
     const picks = await API.managerPicks(managerId, currentGW);
     console.log('📥 Captain picks response:', picks);
+    console.log('📥 Response type:', typeof picks, 'has picks?', picks ? 'picks' in picks : 'N/A');
     
     if (!picks) {
       console.warn('⚠️ No response from server');
@@ -887,7 +919,7 @@ async function loadManagerCaptainPicks(managerId, playerName) {
     }
     
     if (!picks.picks || !Array.isArray(picks.picks)) {
-      console.warn('⚠️ No picks array in response');
+      console.warn('⚠️ No picks array in response, picks:', picks);
       return '<p style="color:var(--text-muted);font-size:0.85rem;">No picks data available for this gameweek</p>';
     }
     
@@ -896,8 +928,8 @@ async function loadManagerCaptainPicks(managerId, playerName) {
     const captain = picks.picks.find(p => p.is_captain);
     const viceCaptain = picks.picks.find(p => p.is_vice_captain);
     
-    console.log('🎖 Captain:', captain ? captain.element : 'NOT FOUND');
-    console.log('🔹 Vice-Captain:', viceCaptain ? viceCaptain.element : 'NOT FOUND');
+    console.log('🎖 Captain:', captain ? `element ${captain.element}` : 'NOT FOUND');
+    console.log('🔹 Vice-Captain:', viceCaptain ? `element ${viceCaptain.element}` : 'NOT FOUND');
     
     let html = '';
     
@@ -969,16 +1001,25 @@ async function loadManagerTransfers(managerId, playerName) {
     
     const transfers = await API.managerTransfers(managerId);
     console.log('📥 Transfers response:', transfers);
+    console.log('📥 Transfers type:', typeof transfers, 'is array?', Array.isArray(transfers));
     
-    if (!transfers || transfers.length === 0) {
-      console.warn('⚠️ No transfers found');
+    if (!transfers) {
+      console.warn('⚠️ Null response from API');
+      return '<p style="color:var(--text-muted);font-size:0.85rem;">No response from server</p>';
+    }
+    
+    // Handle both array and object responses
+    const transfersArray = Array.isArray(transfers) ? transfers : (transfers.transfers || []);
+    
+    if (!Array.isArray(transfersArray) || transfersArray.length === 0) {
+      console.warn('⚠️ No transfers found or invalid format');
       return '<p style="color:var(--text-muted);font-size:0.85rem;">No recent transfers</p>';
     }
     
-    console.log('✓ Found', transfers.length, 'transfers');
+    console.log('✓ Found', transfersArray.length, 'transfers');
     
     let html = '';
-    const recentTransfers = transfers.slice(0, 5); // Show last 5 transfers
+    const recentTransfers = transfersArray.slice(0, 5); // Show last 5 transfers
     
     for (const transfer of recentTransfers) {
       const playerIn = bsData.elements.find(e => e.id === transfer.element_in);

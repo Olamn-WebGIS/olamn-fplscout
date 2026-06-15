@@ -1105,6 +1105,14 @@ main { max-width: 100%; overflow-x: hidden; }
 }
 
 @media (max-width: 768px) {
+  /* Live Indicator - Mobile Positioning */
+  .live-indicator {
+    bottom: 15px;
+    right: 15px;
+    width: 14px;
+    height: 14px;
+  }
+  
   /* Navigation */
   .navbar { padding: 0 1rem; }
   .nav-links { display: none; position: absolute; top: var(--nav-h); left: 0; right: 0; background: var(--navy); flex-direction: column; padding: 1rem; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 999; }
