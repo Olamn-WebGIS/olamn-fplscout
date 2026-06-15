@@ -624,7 +624,7 @@ function renderRivals(rivals) {
           <small>total pts</small>
         </div>
         <div class="rival-actions">
-          <button class="icon-btn" onclick="viewTeam(${r.entry}, '${r.player_name.replace(/'/g, "\\'")}');" title="View Squad">👁️</button>
+          <button class="icon-btn" onclick="viewTeam(${r.entry}, '${r.player_name.replace(/'/g, "\\'")}', ${totalPts}, ${rank});" title="View Squad">👁️</button>
           <button class="icon-btn" id="star-${r.entry}" onclick="toggleTeamWatchlist(${r.entry}, '${r.player_name.replace(/'/g, "\\'")}', '${r.entry_name.replace(/'/g, "\\'")}', ${totalPts}, ${rank});" title="Add to Watchlist" style="background:${isWatched ? 'var(--green)' : '#f1f5f9'};color:${isWatched ? '#fff' : '#000'};">⭐</button>
         </div>
       </div>
@@ -651,6 +651,7 @@ function renderRivals(rivals) {
 
 async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
   try {
+    console.log(`Loading squad for manager ${managerId}, ${playerName}`);
     showToast(`Loading ${playerName}'s squad...`, 'success');
     
     // Update modal header
@@ -665,11 +666,14 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
     
     // Fetch manager picks
     const picks = await API.managerPicks(managerId, currentGW);
+    console.log('Manager picks loaded:', picks);
     const squad = picks.picks;
     
     // Separate starting XI (first 11) and bench (remaining)
     const starters = squad.filter(p => p.position <= 11);
     const bench = squad.filter(p => p.position > 11).slice(0, 4);
+    
+    console.log(`Starting XI: ${starters.length}, Bench: ${bench.length}`);
     
     // Position colors and labels
     const posColors = { 1: '#f57c00', 2: '#2e7d32', 3: '#4a90d9', 4: '#e53935' };
@@ -730,7 +734,8 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
         <p style="text-align:center; color:var(--text-muted); font-size:0.7rem; margin:0;">No bench players</p>
       </div>`;
     }
-        const targetContentBox = document.getElementById('modal-team-content');
+    
+    const targetContentBox = document.getElementById('modal-team-content');
     if (targetContentBox) {
         targetContentBox.style.width = '100%';
         targetContentBox.style.maxWidth = '100%';
@@ -739,14 +744,16 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
         // 🚀 Add this line to allow clean vertical scrolling if the card layout runs deep:
         targetContentBox.style.overflowY = 'auto'; 
         targetContentBox.innerHTML = startersHtml + benchHtml;
+        console.log('Squad HTML rendered successfully');
     }
     
     // Load recent activity for this manager
     await loadManagerActivity(managerId, playerName);
+    console.log('Activity loaded successfully');
   
     document.getElementById('team-modal').style.display = 'block';
   } catch (e) {
-    console.error(e);
+    console.error('Error in viewTeam:', e);
     showToast('Failed to load team squad', 'error');
   }
 }
@@ -754,29 +761,50 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
 // Load recent activity for a specific manager
 async function loadManagerActivity(managerId, playerName) {
   try {
+    console.log(`Loading activity for manager ${managerId}...`);
+    
     // Captain picks
-    const captainHtml = await loadManagerCaptainPicks(managerId, playerName);
-    document.getElementById('modal-captain-activity').innerHTML = captainHtml;
+    try {
+      const captainHtml = await loadManagerCaptainPicks(managerId, playerName);
+      document.getElementById('modal-captain-activity').innerHTML = captainHtml;
+    } catch (e) {
+      console.error('Failed to load captain picks:', e);
+      document.getElementById('modal-captain-activity').innerHTML = '<p style="color:var(--text-muted);">Error loading captain data</p>';
+    }
     
     // Recent transfers
-    const transferHtml = await loadManagerTransfers(managerId, playerName);
-    document.getElementById('modal-transfer-activity').innerHTML = transferHtml;
+    try {
+      const transferHtml = await loadManagerTransfers(managerId, playerName);
+      document.getElementById('modal-transfer-activity').innerHTML = transferHtml;
+    } catch (e) {
+      console.error('Failed to load transfers:', e);
+      document.getElementById('modal-transfer-activity').innerHTML = '<p style="color:var(--text-muted);">Error loading transfers</p>';
+    }
     
     // Chip usage
-    const chipHtml = await loadManagerChipUsage(managerId);
-    document.getElementById('modal-chip-activity').innerHTML = chipHtml;
+    try {
+      const chipHtml = await loadManagerChipUsage(managerId);
+      document.getElementById('modal-chip-activity').innerHTML = chipHtml;
+    } catch (e) {
+      console.error('Failed to load chip usage:', e);
+      document.getElementById('modal-chip-activity').innerHTML = '<p style="color:var(--text-muted);">Error loading chips</p>';
+    }
   } catch (e) {
     console.error('Failed to load manager activity:', e);
-    document.getElementById('modal-captain-activity').innerHTML = '<p style="color:var(--text-muted);">Failed to load</p>';
-    document.getElementById('modal-transfer-activity').innerHTML = '<p style="color:var(--text-muted);">Failed to load</p>';
-    document.getElementById('modal-chip-activity').innerHTML = '<p style="color:var(--text-muted);">Failed to load</p>';
   }
 }
 
 // Load captain picks for manager (last 5 gameweeks)
 async function loadManagerCaptainPicks(managerId, playerName) {
   try {
+    if (!bsData || !bsData.elements) {
+      console.error('Bootstrap data not available');
+      return '<p style="color:var(--text-muted);">Data not ready</p>';
+    }
+    
     const picks = await API.managerPicks(managerId, currentGW);
+    console.log('Captain picks loaded:', picks);
+    
     const captain = picks.picks.find(p => p.is_captain);
     const viceCaptain = picks.picks.find(p => p.is_vice_captain);
     
@@ -819,14 +847,20 @@ async function loadManagerCaptainPicks(managerId, playerName) {
     return html || '<p style="color:var(--text-muted);font-size:0.85rem;">No captain picks data available</p>';
   } catch (e) {
     console.error('Error loading captain picks:', e);
-    return '<p style="color:var(--text-muted);">Failed to load captain data</p>';
+    return '<p style="color:var(--text-muted);">Error: ' + e.message + '</p>';
   }
 }
 
 // Load recent transfers for manager
 async function loadManagerTransfers(managerId, playerName) {
   try {
+    if (!bsData || !bsData.elements) {
+      console.error('Bootstrap data not available for transfers');
+      return '<p style="color:var(--text-muted);">Data not ready</p>';
+    }
+    
     const transfers = await API.managerTransfers(managerId);
+    console.log('Transfers loaded:', transfers);
     
     if (!transfers || transfers.length === 0) {
       return '<p style="color:var(--text-muted);font-size:0.85rem;">No recent transfers</p>';
@@ -855,7 +889,7 @@ async function loadManagerTransfers(managerId, playerName) {
     return html || '<p style="color:var(--text-muted);font-size:0.85rem;">No recent transfers</p>';
   } catch (e) {
     console.error('Error loading transfers:', e);
-    return '<p style="color:var(--text-muted);">Failed to load transfer data</p>';
+    return '<p style="color:var(--text-muted);">Error: ' + e.message + '</p>';
   }
 }
 
@@ -863,6 +897,7 @@ async function loadManagerTransfers(managerId, playerName) {
 async function loadManagerChipUsage(managerId) {
   try {
     const history = await API.managerHistory(managerId);
+    console.log('Manager history loaded:', history);
     
     if (!history || !history.chips || history.chips.length === 0) {
       return '<p style="color:var(--text-muted);font-size:0.85rem;">No chips used yet</p>';
@@ -887,7 +922,7 @@ async function loadManagerChipUsage(managerId) {
     return html || '<p style="color:var(--text-muted);font-size:0.85rem;">No chips used yet</p>';
   } catch (e) {
     console.error('Error loading chip usage:', e);
-    return '<p style="color:var(--text-muted);">Failed to load chip data</p>';
+    return '<p style="color:var(--text-muted);">Error: ' + e.message + '</p>';
   }
 }
 
