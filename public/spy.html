@@ -1134,10 +1134,38 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Tab switcher for modal
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
+      console.log('📑 TAB CLICK DETECTED');
       const tabName = e.target.getAttribute('data-tab');
-      document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+      console.log('📑 Switching to tab:', tabName);
+      
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.style.display = 'none';
+        console.log('📑 Hidden tab:', tab.id);
+      });
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById(`${tabName}-tab`).style.display = 'block';
+      
+      const targetTab = document.getElementById(`${tabName}-tab`);
+      console.log('📑 Target tab element:', targetTab ? 'FOUND' : 'NOT FOUND', `(${tabName}-tab)`);
+      
+      if (targetTab) {
+        targetTab.style.display = 'block';
+        console.log('📑 Showing tab:', `${tabName}-tab`);
+        
+        // Log content in the activity tab
+        if (tabName === 'activity') {
+          const captain = document.getElementById('modal-captain-activity');
+          const transfer = document.getElementById('modal-transfer-activity');
+          const chip = document.getElementById('modal-chip-activity');
+          console.log('📑 Activity tab content check:');
+          console.log('   Captain element:', captain ? 'FOUND' : 'NOT FOUND');
+          console.log('   Transfer element:', transfer ? 'FOUND' : 'NOT FOUND');
+          console.log('   Chip element:', chip ? 'FOUND' : 'NOT FOUND');
+          if (captain) console.log('   Captain HTML length:', captain.innerHTML.length);
+          if (transfer) console.log('   Transfer HTML length:', transfer.innerHTML.length);
+          if (chip) console.log('   Chip HTML length:', chip.innerHTML.length);
+        }
+      }
+      
       e.target.classList.add('active');
       
       // Update button styling
@@ -1147,6 +1175,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         b.style.borderBottomColor = 'transparent';
         b.style.color = 'var(--text-muted)';
       });
+      console.log('✅ Tab switched successfully');
     });
   });
 
