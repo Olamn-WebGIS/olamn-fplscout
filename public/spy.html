@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-CC276SDKEW"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-CC276SDKEW');
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>League Spy — FPL Scout</title>
@@ -182,6 +191,13 @@
     .watchlist-action.removed {
       color: var(--fwd);
     }
+    .tab-btn {
+      transition: all 0.2s ease;
+    }
+    .tab-btn.active {
+      border-bottom-color: var(--blue-light) !important;
+      color: var(--text-primary) !important;
+    }
   </style>
 </head>
 <body>
@@ -207,7 +223,7 @@
         <input type="number" id="league-id-input" placeholder="e.g. 12345" style="width:100%;padding:0.7rem;border:1.5px solid #e2e8f0;border-radius:var(--radius-sm);font-size:0.95rem;">
       </div>
       <button class="btn btn-green" id="load-league-btn" style="font-weight:700;">Load League</button>
-      <a href="/how-to-findids.html" class="hint-link" style="font-size:0.85rem;">💡 Find League ID</a>
+      <a href="/how-to-findids.html" class="hint-link" style="font-size:0.85rem;">💡 How to Find League ID</a>
     </div>
   </div>
 
@@ -234,6 +250,25 @@
     </div>
     <div style="margin-left:auto;">
       <span class="nav-badge" style="font-size:0.75rem;">LIVE TRACKING</span>
+    </div>
+  </div>
+
+  <!-- Search Rivals -->
+  <div id="search-section" style="margin-bottom:2rem;display:none;">
+    <div class="card">
+      <h2 class="card-title">🔎 Search Managers</h2>
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Manager Name or Team</label>
+          <input type="text" id="manager-search-input" placeholder="Search by manager name or team name..." style="width:100%;padding:0.7rem;border:1.5px solid #e2e8f0;border-radius:var(--radius-sm);font-size:0.95rem;">
+        </div>
+        <button class="btn btn-blue" id="search-btn" style="font-weight:700;">Search</button>
+        <button class="btn btn-outline" id="clear-search-btn" style="font-weight:700;">Show Top 10</button>
+      </div>
+      <div id="search-results" style="margin-top:1.5rem;display:none;">
+        <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1rem;" id="search-info">Found X managers</p>
+        <div id="search-results-container"></div>
+      </div>
     </div>
   </div>
 
@@ -269,12 +304,46 @@
 
   <!-- Team View Modal -->
   <div id="team-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;overflow-y:auto;padding:1rem;">
-    <div style="max-width:800px;margin:2rem auto;background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:2rem;margin-bottom:2rem;">
+    <div style="max-width:900px;margin:2rem auto;background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:2rem;margin-bottom:2rem;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;gap:1rem;">
-        <h2 class="card-title" style="margin:0;font-size:1.1rem;" id="modal-team-name">Team Squad</h2>
+        <div>
+          <h2 class="card-title" style="margin:0;font-size:1.1rem;" id="modal-team-name">Team Squad</h2>
+          <p style="color:var(--text-muted);font-size:0.85rem;margin:0.5rem 0 0 0;" id="modal-manager-info"></p>
+        </div>
         <button onclick="closeTeamModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;flex-shrink:0;">✕</button>
       </div>
-      <div id="modal-team-content" class="loading-block"><div class="spinner"></div><span>Loading squad…</span></div>
+      
+      <!-- Tabs -->
+      <div style="display:flex;gap:1rem;margin-bottom:1.5rem;border-bottom:2px solid #e2e8f0;padding-bottom:1rem;">
+        <button class="tab-btn active" data-tab="squad" style="background:none;border:none;padding:0.5rem 1rem;color:var(--text-primary);font-weight:600;cursor:pointer;border-bottom:3px solid transparent;border-bottom-color:var(--blue-light);">⚽ Squad</button>
+        <button class="tab-btn" data-tab="activity" style="background:none;border:none;padding:0.5rem 1rem;color:var(--text-muted);font-weight:600;cursor:pointer;border-bottom:3px solid transparent;">⚡ Recent Activity</button>
+      </div>
+      
+      <!-- Squad Tab -->
+      <div id="squad-tab" class="tab-content" style="display:block;">
+        <div id="modal-team-content" class="loading-block"><div class="spinner"></div><span>Loading squad…</span></div>
+      </div>
+      
+      <!-- Activity Tab -->
+      <div id="activity-tab" class="tab-content" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+          <!-- Captain Changes -->
+          <div>
+            <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:1rem;color:var(--text-primary);">🎖 Captain Picks</h3>
+            <div id="modal-captain-activity" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
+          </div>
+          <!-- Recent Transfers -->
+          <div>
+            <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:1rem;color:var(--text-primary);">🔄 Recent Transfers</h3>
+            <div id="modal-transfer-activity" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
+          </div>
+          <!-- Chip Usage -->
+          <div style="grid-column:1/-1;">
+            <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:1rem;color:var(--text-primary);">🃏 Chip Usage</h3>
+            <div id="modal-chip-activity" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </main>
@@ -347,6 +416,9 @@ localStorage.setItem('fpl_saved_league_id', leagueId);
     const avgPts = Math.round(data.standings.results.reduce((sum, r) => sum + (r.total_points || 0), 0) / data.standings.results.length);
     document.getElementById('league-avg-pts').textContent = avgPts;
     
+    // Show search section
+    document.getElementById('search-section').style.display = 'block';
+    
     renderRivals(data.standings.results.slice(0, 10)); // Show top 10
     loadRecentActivity(data.standings.results.slice(0, 10));
     showToast('League loaded successfully! 🎯', 'success');
@@ -354,6 +426,85 @@ localStorage.setItem('fpl_saved_league_id', leagueId);
     showToast('Failed to load league. Check the ID and try again.', 'error');
     console.error(e);
   }
+}
+
+// Search managers in the loaded league
+async function searchManagers() {
+  if (!leagueData) {
+    showToast('Please load a league first', 'error');
+    return;
+  }
+  
+  const searchTerm = document.getElementById('manager-search-input').value.toLowerCase().trim();
+  
+  if (!searchTerm) {
+    showToast('Please enter a search term', 'error');
+    return;
+  }
+  
+  // Filter managers by name or team name
+  const results = leagueData.standings.results.filter(r => 
+    r.player_name.toLowerCase().includes(searchTerm) ||
+    (r.entry_name && r.entry_name.toLowerCase().includes(searchTerm))
+  );
+  
+  if (results.length === 0) {
+    showToast('No managers found matching your search', 'error');
+    document.getElementById('search-results').style.display = 'none';
+    return;
+  }
+  
+  // Display search results
+  document.getElementById('search-info').textContent = `Found ${results.length} manager${results.length !== 1 ? 's' : ''}`;
+  renderSearchResults(results);
+  document.getElementById('search-results').style.display = 'block';
+}
+
+function renderSearchResults(results) {
+  const html = results.map(r => {
+    const rank = r.rank || '—';
+    const totalPts = r.total_points || 0;
+    const gwPts = r.event_points || 0;
+    const isWatched = isTeamWatched(r.entry);
+    
+    return `<div class="card spy-rival-card" style="margin-bottom:1rem;cursor:pointer;" onclick="viewTeam(${r.entry}, '${r.player_name.replace(/'/g, "\\'")}', ${r.total_points}, ${rank})">
+      <div class="rival-header">
+        <div class="rival-info" style="flex:1;">
+          <div class="rival-name">
+            <span style="font-size:0.9rem;color:var(--text-muted);">#${rank}</span>
+            ${r.player_name}
+          </div>
+          <div class="rival-rank">${r.entry_name || 'Unnamed Team'}</div>
+        </div>
+        <div class="rival-points">
+          <strong>${totalPts}</strong>
+          <small>total</small>
+        </div>
+        <div class="rival-actions">
+          <button class="icon-btn" title="View Squad" style="background:var(--blue-light);color:#fff;">👁️</button>
+          <button class="icon-btn" id="star-search-${r.entry}" onclick="event.stopPropagation(); toggleTeamWatchlist(${r.entry}, '${r.player_name.replace(/'/g, "\\'")}', '${r.entry_name.replace(/'/g, "\\'")}', ${totalPts}, ${rank});" title="Add to Watchlist" style="background:${isWatched ? 'var(--green)' : '#f1f5f9'};color:${isWatched ? '#fff' : '#000'};">⭐</button>
+        </div>
+      </div>
+      <div class="h2h-comp">
+        <div class="h2h-stat">
+          <span class="h2h-stat-label">GW Points</span>
+          <span class="h2h-stat-value">${gwPts}</span>
+        </div>
+        <div class="h2h-stat">
+          <span class="h2h-stat-label">Rank</span>
+          <span class="h2h-stat-value">${rank}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  
+  document.getElementById('search-results-container').innerHTML = html;
+}
+
+function clearSearch() {
+  document.getElementById('manager-search-input').value = '';
+  document.getElementById('search-results').style.display = 'none';
+  renderRivals(leagueData.standings.results.slice(0, 10));
 }
 
 function isTeamWatched(managerId) {
@@ -498,9 +649,19 @@ function renderRivals(rivals) {
   document.getElementById('alerts-section').style.display = 'block';
 }
 
-async function viewTeam(managerId, playerName) {
+async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
   try {
     showToast(`Loading ${playerName}'s squad...`, 'success');
+    
+    // Update modal header
+    document.getElementById('modal-team-name').textContent = `${playerName}'s Squad`;
+    document.getElementById('modal-manager-info').textContent = `Team Rank: #${rank} | Total Points: ${totalPts}`;
+    
+    // Reset tabs
+    document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('squad-tab').style.display = 'block';
+    document.querySelector('[data-tab="squad"]').classList.add('active');
     
     // Fetch manager picks
     const picks = await API.managerPicks(managerId, currentGW);
@@ -579,11 +740,154 @@ async function viewTeam(managerId, playerName) {
         targetContentBox.style.overflowY = 'auto'; 
         targetContentBox.innerHTML = startersHtml + benchHtml;
     }
+    
+    // Load recent activity for this manager
+    await loadManagerActivity(managerId, playerName);
   
     document.getElementById('team-modal').style.display = 'block';
   } catch (e) {
     console.error(e);
     showToast('Failed to load team squad', 'error');
+  }
+}
+
+// Load recent activity for a specific manager
+async function loadManagerActivity(managerId, playerName) {
+  try {
+    // Captain picks
+    const captainHtml = await loadManagerCaptainPicks(managerId, playerName);
+    document.getElementById('modal-captain-activity').innerHTML = captainHtml;
+    
+    // Recent transfers
+    const transferHtml = await loadManagerTransfers(managerId, playerName);
+    document.getElementById('modal-transfer-activity').innerHTML = transferHtml;
+    
+    // Chip usage
+    const chipHtml = await loadManagerChipUsage(managerId);
+    document.getElementById('modal-chip-activity').innerHTML = chipHtml;
+  } catch (e) {
+    console.error('Failed to load manager activity:', e);
+    document.getElementById('modal-captain-activity').innerHTML = '<p style="color:var(--text-muted);">Failed to load</p>';
+    document.getElementById('modal-transfer-activity').innerHTML = '<p style="color:var(--text-muted);">Failed to load</p>';
+    document.getElementById('modal-chip-activity').innerHTML = '<p style="color:var(--text-muted);">Failed to load</p>';
+  }
+}
+
+// Load captain picks for manager (last 5 gameweeks)
+async function loadManagerCaptainPicks(managerId, playerName) {
+  try {
+    const picks = await API.managerPicks(managerId, currentGW);
+    const captain = picks.picks.find(p => p.is_captain);
+    const viceCaptain = picks.picks.find(p => p.is_vice_captain);
+    
+    let html = '';
+    
+    if (captain) {
+      const player = bsData.elements.find(e => e.id === captain.element);
+      if (player) {
+        const team = bsData.teams.find(t => t.id === player.team);
+        html += `<div style="padding:12px;background:linear-gradient(135deg, #ffd60015 0%, #ffd60005 100%);border-left:4px solid #ffd600;border-radius:8px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:1.2rem;">🎖</div>
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">Captain (GW ${currentGW})</div>
+              <div style="font-size:0.85rem;color:var(--text-muted);">${player.web_name} · ${team?.short_name || '—'}</div>
+            </div>
+            <div style="font-size:1.5rem;font-weight:700;color:#ffd600;">${player.event_points || 0}</div>
+          </div>
+        </div>`;
+      }
+    }
+    
+    if (viceCaptain) {
+      const player = bsData.elements.find(e => e.id === viceCaptain.element);
+      if (player) {
+        const team = bsData.teams.find(t => t.id === player.team);
+        html += `<div style="padding:12px;background:#f8faff;border-left:4px solid #cbd5e1;border-radius:8px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:1.2rem;">🔹</div>
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">Vice Captain (GW ${currentGW})</div>
+              <div style="font-size:0.85rem;color:var(--text-muted);">${player.web_name} · ${team?.short_name || '—'}</div>
+            </div>
+            <div style="font-size:1.5rem;font-weight:700;color:#94a3b8;">${player.event_points || 0}</div>
+          </div>
+        </div>`;
+      }
+    }
+    
+    return html || '<p style="color:var(--text-muted);font-size:0.85rem;">No captain picks data available</p>';
+  } catch (e) {
+    console.error('Error loading captain picks:', e);
+    return '<p style="color:var(--text-muted);">Failed to load captain data</p>';
+  }
+}
+
+// Load recent transfers for manager
+async function loadManagerTransfers(managerId, playerName) {
+  try {
+    const transfers = await API.managerTransfers(managerId);
+    
+    if (!transfers || transfers.length === 0) {
+      return '<p style="color:var(--text-muted);font-size:0.85rem;">No recent transfers</p>';
+    }
+    
+    let html = '';
+    const recentTransfers = transfers.slice(0, 5); // Show last 5 transfers
+    
+    for (const transfer of recentTransfers) {
+      const playerIn = bsData.elements.find(e => e.id === transfer.element_in);
+      const playerOut = bsData.elements.find(e => e.id === transfer.element_out);
+      
+      if (playerIn && playerOut) {
+        html += `<div style="padding:10px;background:#f8faff;border-left:4px solid var(--blue-light);border-radius:8px;margin-bottom:8px;font-size:0.85rem;">
+          <div style="margin-bottom:4px;">
+            <span style="color:var(--fwd);font-weight:700;">OUT:</span> ${playerOut.web_name}
+          </div>
+          <div>
+            <span style="color:var(--green);font-weight:700;">IN:</span> ${playerIn.web_name}
+          </div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:6px;">GW ${transfer.event}</div>
+        </div>`;
+      }
+    }
+    
+    return html || '<p style="color:var(--text-muted);font-size:0.85rem;">No recent transfers</p>';
+  } catch (e) {
+    console.error('Error loading transfers:', e);
+    return '<p style="color:var(--text-muted);">Failed to load transfer data</p>';
+  }
+}
+
+// Load chip usage for manager
+async function loadManagerChipUsage(managerId) {
+  try {
+    const history = await API.managerHistory(managerId);
+    
+    if (!history || !history.chips || history.chips.length === 0) {
+      return '<p style="color:var(--text-muted);font-size:0.85rem;">No chips used yet</p>';
+    }
+    
+    let html = '';
+    const chipEmojis = { 'wildcard': '🎰', 'bboost': '⚡', 'freehit': '🎯', '3xc': '⭐' };
+    const chipNames = { 'wildcard': 'Wildcard', 'bboost': 'Bench Boost', 'freehit': 'Free Hit', '3xc': 'Triple Captain' };
+    
+    for (const chip of history.chips) {
+      const emoji = chipEmojis[chip.name] || '🃏';
+      const displayName = chipNames[chip.name] || chip.name;
+      html += `<div style="padding:12px;background:linear-gradient(135deg, #4a90d915 0%, #4a90d905 100%);border-left:4px solid var(--blue-light);border-radius:8px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+        <div style="font-size:1.5rem;">${emoji}</div>
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">${displayName}</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);">Used in GW ${chip.event}</div>
+        </div>
+      </div>`;
+    }
+    
+    return html || '<p style="color:var(--text-muted);font-size:0.85rem;">No chips used yet</p>';
+  } catch (e) {
+    console.error('Error loading chip usage:', e);
+    return '<p style="color:var(--text-muted);">Failed to load chip data</p>';
   }
 }
 
@@ -659,10 +963,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 1. Existing button listeners
   const loadBtn = document.getElementById('load-league-btn');
   const idInput = document.getElementById('league-id-input');
+  const searchBtn = document.getElementById('search-btn');
+  const clearSearchBtn = document.getElementById('clear-search-btn');
+  const searchInput = document.getElementById('manager-search-input');
   
   if (loadBtn) loadBtn.addEventListener('click', loadLeague);
   if (idInput) idInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') loadLeague();
+  });
+  
+  // Search button listeners
+  if (searchBtn) searchBtn.addEventListener('click', searchManagers);
+  if (clearSearchBtn) clearSearchBtn.addEventListener('click', clearSearch);
+  if (searchInput) searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') searchManagers();
+  });
+  
+  // Tab switcher for modal
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const tabName = e.target.getAttribute('data-tab');
+      document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`${tabName}-tab`).style.display = 'block';
+      e.target.classList.add('active');
+      
+      // Update button styling
+      e.target.style.borderBottomColor = 'var(--blue-light)';
+      e.target.style.color = 'var(--text-primary)';
+      document.querySelectorAll('.tab-btn:not(.active)').forEach(b => {
+        b.style.borderBottomColor = 'transparent';
+        b.style.color = 'var(--text-muted)';
+      });
+    });
   });
 
   // 🚀 NEW: AUTO-RESTORE LEAGUE INPUT ON REFRESH
