@@ -355,19 +355,19 @@
       
       <!-- Activity Tab -->
       <div id="activity-tab" class="tab-content" style="display:none;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
-          <!-- Captain Changes -->
-          <div>
-            <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:1rem;color:var(--text-primary);">🎖 Captain Picks</h3>
-            <div id="modal-captain-activity" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
-          </div>
+        <div class="activity-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
           <!-- Recent Transfers -->
-          <div>
+          <div class="activity-section">
             <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:1rem;color:var(--text-primary);">🔄 Recent Transfers</h3>
             <div id="modal-transfer-activity" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
           </div>
+          <!-- Captain Changes -->
+          <div class="activity-section">
+            <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:1rem;color:var(--text-primary);">🎖 Captain Picks</h3>
+            <div id="modal-captain-activity" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
+          </div>
           <!-- Chip Usage -->
-          <div style="grid-column:1/-1;">
+          <div class="activity-section activity-chip" style="grid-column:1/-1;">
             <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:1rem;color:var(--text-primary);">🃏 Chip Usage</h3>
             <div id="modal-chip-activity" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
           </div>

@@ -2608,6 +2608,47 @@ main { max-width: 100%; overflow-x: hidden; }
     padding: 0.5rem 0.75rem !important;
     font-size: 0.85rem !important;
   }
+
+  #activity-tab .activity-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  #activity-tab .activity-section {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    width: 100% !important;
+  }
+
+  #activity-tab .activity-section.activity-chip {
+    grid-column: 1 / -1 !important;
+  }
+
+  #modal-transfer-activity,
+  #modal-captain-activity,
+  #modal-chip-activity {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    align-items: stretch !important;
+  }
+
+  #modal-transfer-activity > div,
+  #modal-captain-activity > div,
+  #modal-chip-activity > div {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  #modal-transfer-activity .loading-block,
+  #modal-captain-activity .loading-block,
+  #modal-chip-activity .loading-block {
+    grid-column: 1 / -1 !important;
+  }
 }
 
 /* ===== Override: Straight single-column alignment for Recent Activity (mobile) ===== */
