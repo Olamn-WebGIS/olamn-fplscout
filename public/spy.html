@@ -367,6 +367,7 @@
 
 <script src="/utils.js"></script>
 <script src="/layout.js"></script>
+<script src="/watchlist-notifications.js"></script>
 <script>
 
 // ── PREMIUM PAGE ACCESS CHECK ──
@@ -1070,6 +1071,12 @@ async function toggleTeamWatchlist(managerId, playerName, entryName, totalPts, r
       starBtn.style.color = '#000';
     }
     showToast(`${playerName} removed from watchlist`, 'success');
+    
+    // 🔔 Update notification service
+    if (typeof WatchlistNotifications !== 'undefined') {
+      const updatedRivals = Object.values(watchedTeams);
+      WatchlistNotifications.updateWatched(updatedRivals);
+    }
   } else {
     watchedTeams[String(managerId)] = {
       entry: managerId,
@@ -1083,7 +1090,28 @@ async function toggleTeamWatchlist(managerId, playerName, entryName, totalPts, r
       starBtn.style.background = 'var(--green)';
       starBtn.style.color = '#fff';
     }
-    showToast(`${playerName} added to watchlist! 📌`, 'success');
+    showToast(`${playerName} added to watchlist! 📌 You'll get notifications for their activity.`, 'success');
+    
+    // 🔔 Update notification service and request permissions
+    if (typeof WatchlistNotifications !== 'undefined') {
+      const updatedRivals = Object.values(watchedTeams);
+      WatchlistNotifications.updateWatched(updatedRivals);
+      
+      // Ask for notification permissions
+      if (Notification && Notification.permission !== 'granted') {
+        const permBtn = document.createElement('div');
+        permBtn.innerHTML = `
+          <div style="background:var(--blue-light);color:white;padding:10px 15px;border-radius:6px;margin-top:8px;font-size:0.85rem;cursor:pointer;text-align:center;">
+            🔔 Enable Browser Notifications
+          </div>
+        `;
+        permBtn.onclick = async () => {
+          await WatchlistNotifications.requestPermission();
+          permBtn.remove();
+        };
+        // Could append to a notifications area if needed
+      }
+    }
   }
 
   // 3. Save to localStorage

@@ -1352,7 +1352,185 @@ async function payWithPaystack() {
 }
 
 // =========================================================
-// 🛠️ SERVER LIFECYCLE INITIALIZATION BLOCK (CORRECTED)
+// � WATCHLIST ACTIVITY TRACKING ENDPOINTS
+// =========================================================
+
+// Get rival activity snapshot (for change detection)
+app.post('/api/watchlist/check-activity', async (req, res) => {
+    try {
+        const { userId, managerId } = req.body;
+        
+        if (!userId || !managerId) {
+            return res.status(400).json({ success: false, message: 'Missing userId or managerId' });
+        }
+        
+        // Fetch current activity from FPL API
+        const currentGW = cache.get('current_gw') || 1;
+        
+        try {
+            const [picks, transfers, history] = await Promise.all([
+                fplFetch(`/entry/${managerId}/picks/${currentGW}/`),
+                fplFetch(`/entry/${managerId}/transfers/`),
+                fplFetch(`/entry/${managerId}/history/`)
+            ]);
+            
+            // Get or create activity record
+            let { data: activityRecord, error: fetchError } = await supabase
+                .from('watchlist_activity')
+                .select('*')
+                .eq('user_id', userId)
+                .eq('rival_manager_id', managerId)
+                .single();
+            
+            if (!activityRecord) {
+                // Create new activity record
+                const { data: newRecord } = await supabase
+                    .from('watchlist_activity')
+                    .insert({
+                        user_id: userId,
+                        rival_manager_id: managerId,
+                        rival_name: 'Rival',
+                        last_checked_at: new Date(),
+                        recent_transfers: transfers || [],
+                        recent_captains: [picks],
+                        recent_chips: history?.chips || []
+                    })
+                    .select()
+                    .single();
+                
+                return res.json({
+                    success: true,
+                    isNew: true,
+                    currentActivity: {
+                        captains: picks,
+                        transfers: transfers,
+                        chips: history?.chips || []
+                    }
+                });
+            }
+            
+            // Check for changes
+            const changes = {
+                newTransfers: [],
+                newCaptain: null,
+                newChip: null
+            };
+            
+            // Check for new transfers
+            const lastTransferCount = activityRecord.last_transfer_count || 0;
+            if (transfers && transfers.length > lastTransferCount) {
+                changes.newTransfers = transfers.slice(0, transfers.length - lastTransferCount);
+            }
+            
+            // Check for captain change
+            if (picks && activityRecord.last_captain_element_id !== picks.picks[0]?.element) {
+                changes.newCaptain = picks.picks[0]?.element;
+            }
+            
+            // Check for new chips
+            if (history?.chips && history.chips.length > 0) {
+                const lastChip = history.chips[0];
+                if (activityRecord.last_chip_used !== lastChip.name || activityRecord.last_chip_used_gw !== lastChip.event) {
+                    changes.newChip = lastChip;
+                }
+            }
+            
+            // Update activity record
+            await supabase
+                .from('watchlist_activity')
+                .update({
+                    last_checked_at: new Date(),
+                    last_transfer_count: transfers ? transfers.length : 0,
+                    last_captain_element_id: picks?.picks[0]?.element,
+                    last_chip_used: history?.chips?.[0]?.name,
+                    last_chip_used_gw: history?.chips?.[0]?.event,
+                    recent_transfers: transfers || [],
+                    recent_captains: [picks],
+                    recent_chips: history?.chips || []
+                })
+                .eq('user_id', userId)
+                .eq('rival_manager_id', managerId);
+            
+            return res.json({
+                success: true,
+                hasChanges: Object.values(changes).some(c => c),
+                changes: changes,
+                currentActivity: {
+                    captains: picks,
+                    transfers: transfers,
+                    chips: history?.chips || []
+                }
+            });
+            
+        } catch (fplError) {
+            console.error('FPL API error:', fplError);
+            throw fplError;
+        }
+        
+    } catch (error) {
+        console.error('Error checking watchlist activity:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Get all watched rivals for a user
+app.get('/api/watchlist/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        const { data: activities, error } = await supabase
+            .from('watchlist_activity')
+            .select('*')
+            .eq('user_id', userId)
+            .order('last_checked_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        res.json({ success: true, activities: activities || [] });
+    } catch (error) {
+        console.error('Error fetching watchlist:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Record sent notification
+app.post('/api/watchlist/notify-sent', async (req, res) => {
+    try {
+        const { userId, managerId, type, timestamp } = req.body;
+        
+        const { data: activity, error: fetchError } = await supabase
+            .from('watchlist_activity')
+            .select('notifications_sent')
+            .eq('user_id', userId)
+            .eq('rival_manager_id', managerId)
+            .single();
+        
+        if (activity) {
+            const notifications = activity.notifications_sent || [];
+            notifications.push({
+                type: type, // 'transfer', 'captain', 'chip'
+                sentAt: timestamp
+            });
+            
+            await supabase
+                .from('watchlist_activity')
+                .update({
+                    notifications_sent: notifications,
+                    last_notified_at: new Date()
+                })
+                .eq('user_id', userId)
+                .eq('rival_manager_id', managerId);
+        }
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error recording notification:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// =========================================================
+// �🛠️ SERVER LIFECYCLE INITIALIZATION BLOCK (CORRECTED)
 // =========================================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
