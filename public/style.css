@@ -330,6 +330,30 @@ input:focus, select:focus {
   box-shadow: 0 0 0 3px rgba(25,118,210,0.12);
 }
 .input-with-icon input { padding-left: 2.5rem; }
+.input-with-icon input[type="search"] {
+  appearance: none;
+  -webkit-appearance: none;
+}
+.input-with-icon input[type="search"]::-webkit-search-decoration,
+.input-with-icon input[type="search"]::-webkit-search-cancel-button,
+.input-with-icon input[type="search"]::-webkit-search-results-button,
+.input-with-icon input[type="search"]::-webkit-search-results-decoration,
+.input-with-icon input[type="search"]::-ms-clear,
+.input-with-icon input[type="search"]::-ms-reveal {
+  display: none;
+}
+.page-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(25, 118, 210, 0.1);
+  color: var(--blue-light);
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid rgba(25, 118, 210, 0.18);
+}
 .input-row { display: flex; gap: 8px; }
 .input-row input { flex: 1; }
 .success-msg { color: var(--green-dark); font-size: 0.82rem; font-weight: 600; margin-top: 6px; }
