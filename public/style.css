@@ -2708,17 +2708,14 @@ main { max-width: 100%; overflow-x: hidden; }
         box-sizing: border-box !important;
     }
 
-    /* 2. Strip card blocks into simple text-list rows */
-    .player-card, 
-    .squad-row,
-    #team-modal div[class*="player"] {
-        display: flex !important;
-        flex-direction: row !important; /* Keep names beside stats */
-        justify-content: space-between !important;
-        align-items: center !important;
-        width: 100% !important;
-        background: transparent !important; /* Remvoves bulky card background */
-        border: none !important;
+    #team-modal .modal {
+        max-height: calc(100vh - 2rem) !important;
+        overflow-y: auto !important;
+    }
+
+    #team-modal .tab-content.active {
+        display: block !important;
+    }
         border-bottom: 1px solid #eee !important; /* Clean divider line */
         padding: 8px 4px !important;
         margin: 0 !important;

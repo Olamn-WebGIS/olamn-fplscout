@@ -333,7 +333,7 @@
 
   <!-- Team View Modal -->
   <div id="team-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;overflow-y:auto;padding:1rem;">
-    <div style="max-width:900px;margin:2rem auto;background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:2rem;margin-bottom:2rem;">
+    <div class="modal" style="max-width:900px;margin:2rem auto;background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:2rem;margin-bottom:2rem;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;gap:1rem;">
         <div>
           <h2 class="card-title" style="margin:0;font-size:1.1rem;" id="modal-team-name">Team Squad</h2>
@@ -349,7 +349,7 @@
       </div>
       
       <!-- Squad Tab -->
-      <div id="squad-tab" class="tab-content" style="display:block;">
+      <div id="squad-tab" class="tab-content active" style="display:block;">
         <div id="modal-team-content" class="loading-block"><div class="spinner"></div><span>Loading squad…</span></div>
       </div>
       
@@ -694,10 +694,18 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
     document.getElementById('modal-manager-info').textContent = `Team Rank: #${rank} | Total Points: ${totalPts}`;
     
     // Reset tabs
-    document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+    document.querySelectorAll('.tab-content').forEach(tab => {
+      tab.style.display = 'none';
+      tab.classList.remove('active');
+    });
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById('squad-tab').style.display = 'block';
-    document.querySelector('[data-tab="squad"]').classList.add('active');
+    const squadTab = document.getElementById('squad-tab');
+    if (squadTab) {
+      squadTab.style.display = 'block';
+      squadTab.classList.add('active');
+    }
+    const squadBtn = document.querySelector('[data-tab="squad"]');
+    if (squadBtn) squadBtn.classList.add('active');
     // Show modal immediately with loading state to avoid blank screen
     const modal = document.getElementById('team-modal');
     if (modal) modal.style.display = 'block';
@@ -781,7 +789,7 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
     if (targetContentBox) {
       targetContentBox.style.width = '100%';
       targetContentBox.style.maxWidth = '100%';
-      targetContentBox.style.padding = '0px !important';
+      targetContentBox.style.padding = '0';
       targetContentBox.innerHTML = startersHtml + benchHtml;
       console.log('Squad HTML rendered successfully');
     }
@@ -1221,6 +1229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Hide all tabs in this container
     container.querySelectorAll('.tab-content').forEach(tab => {
       tab.style.display = 'none';
+      tab.classList.remove('active');
       console.log('📑 Hidden tab:', tab.id);
     });
     
@@ -1232,6 +1241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (targetTab) {
       targetTab.style.display = 'block';
+      targetTab.classList.add('active');
       console.log('📑 Showing tab:', `#${tabName}-tab`);
       
       // Log content in the activity tab
