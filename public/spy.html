@@ -698,6 +698,15 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.getElementById('squad-tab').style.display = 'block';
     document.querySelector('[data-tab="squad"]').classList.add('active');
+    // Show modal immediately with loading state to avoid blank screen
+    const modal = document.getElementById('team-modal');
+    if (modal) modal.style.display = 'block';
+    const targetContentBox = document.getElementById('modal-team-content');
+    if (targetContentBox) {
+      targetContentBox.style.display = 'block';
+      targetContentBox.style.overflowY = 'auto';
+      targetContentBox.innerHTML = '<div class="loading-block"><div class="spinner"></div><span>Loading squad…</span></div>';
+    }
     
     // Fetch manager picks
     const picks = await API.managerPicks(managerId, currentGW);
@@ -768,23 +777,18 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
       </div>`;
     }
     
-    const targetContentBox = document.getElementById('modal-team-content');
+    // Inject squad HTML
     if (targetContentBox) {
-        targetContentBox.style.width = '100%';
-        targetContentBox.style.maxWidth = '100%';
-        targetContentBox.style.padding = '0px !important';
-        targetContentBox.style.display = 'block';
-        // 🚀 Add this line to allow clean vertical scrolling if the card layout runs deep:
-        targetContentBox.style.overflowY = 'auto'; 
-        targetContentBox.innerHTML = startersHtml + benchHtml;
-        console.log('Squad HTML rendered successfully');
+      targetContentBox.style.width = '100%';
+      targetContentBox.style.maxWidth = '100%';
+      targetContentBox.style.padding = '0px !important';
+      targetContentBox.innerHTML = startersHtml + benchHtml;
+      console.log('Squad HTML rendered successfully');
     }
-    
-    // Load recent activity for this manager
+
+    // Load recent activity for this manager (populate modal activity tabs)
     await loadManagerActivity(managerId, playerName);
     console.log('Activity loaded successfully');
-  
-    document.getElementById('team-modal').style.display = 'block';
   } catch (e) {
     console.error('Error in viewTeam:', e);
     showToast('Failed to load team squad', 'error');
