@@ -2499,6 +2499,64 @@ main { max-width: 100%; overflow-x: hidden; }
   }
 }
 
+@media (max-width: 768px) {
+  #team-modal .modal {
+    width: min(100%, 96vw) !important;
+    max-width: 96vw !important;
+    padding: 1rem !important;
+    margin: 0.75rem auto !important;
+    border-radius: 18px !important;
+    max-height: calc(100vh - 1.2rem) !important;
+    overflow-y: auto !important;
+  }
+
+  #modal-team-content {
+    display: block !important;
+    width: 100% !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    min-height: auto !important;
+  }
+
+  #modal-team-content > div {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  #modal-team-content .player-card,
+  #modal-team-content > div > div {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    padding: 10px !important;
+    border-radius: 10px !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
+  }
+
+  #modal-team-content .player-card {
+    align-items: flex-start !important;
+  }
+
+  #modal-team-content h4,
+  #modal-team-content .player-name,
+  #modal-team-content strong {
+    font-size: 0.8rem !important;
+    white-space: normal !important;
+  }
+
+  #modal-team-content .player-card .position-label,
+  #modal-team-content .badge {
+    font-size: 10px !important;
+  }
+
+  #team-modal .tab-btn {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.85rem !important;
+  }
+}
+
 /* ===== Override: Straight single-column alignment for Recent Activity (mobile) ===== */
 @media (max-width: 768px) {
   /* Container: make sure cards stack and stretch */
@@ -2698,55 +2756,98 @@ main { max-width: 100%; overflow-x: hidden; }
 /* Responsive Overwrites for the Team Squad Modal */
 @media (max-width: 600px) {
     /* 1. Make the modal container fit nicely with safe spacing */
-    #team-modal, 
-    .modal-content, 
-    div:has(> #team-modal) {
-        width: 92% !important;
-        max-width: 95vw !important;
-        padding: 16px !important;
-        margin: 10px auto !important;
-        box-sizing: border-box !important;
+    #team-modal {
+        padding: 0.5rem !important;
     }
 
     #team-modal .modal {
-        max-height: calc(100vh - 2rem) !important;
-        overflow-y: auto !important;
+        width: min(100%, 98vw) !important;
+        max-width: 98vw !important;
+        margin: 0.75rem auto !important;
+        padding: 1rem !important;
+        border-radius: 18px !important;
+        box-shadow: 0 18px 35px rgba(0,0,0,0.18) !important;
+        max-height: calc(100vh - 1.5rem) !important;
+        overflow: visible !important;
+    }
+
+    #team-modal .modal h2 {
+        font-size: 1.1rem !important;
+        line-height: 1.2 !important;
+    }
+
+    #team-modal .tab-btn {
+        padding: 0.45rem 0.75rem !important;
+        font-size: 0.85rem !important;
+    }
+
+    #modal-team-content {
+        max-height: none !important;
+        min-height: 220px !important;
+        overflow: visible !important;
+        padding: 0 !important;
+    }
+
+    #modal-team-content > div {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    #modal-team-content .player-card,
+    #modal-team-content > div > div {
+        width: 100% !important;
+        min-width: 0 !important;
+        height: auto !important;
+        padding: 10px !important;
+        border-radius: 10px !important;
+    }
+
+    #modal-team-content .player-card {
+        align-items: flex-start !important;
+    }
+
+    #modal-team-content h4,
+    #modal-team-content .player-name,
+    #modal-team-content strong {
+        font-size: 0.75rem !important;
+        white-space: normal !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
 
     #team-modal .tab-content.active {
         display: block !important;
     }
 
-    /* 3. Re-align text so names don't overlap with points */
-    .player-name, 
+    .player-name,
     .player-title,
     #team-modal p,
     #team-modal span {
-        font-size: 14px !important;
-        white-space: nowrap !important;
+        font-size: 13px !important;
+        white-space: normal !important;
         overflow: hidden !important;
-        text-overflow: ellipsis !important; /* Adds '...' if name is too long */
+        text-overflow: ellipsis !important;
         text-align: left !important;
         margin: 0 !important;
     }
 
-    /* 4. Display points cleanly on the right side */
-    .player-points, 
+    .player-points,
     .pts-badge,
     #team-modal strong {
-        font-size: 14px !important;
+        font-size: 13px !important;
         text-align: right !important;
         color: #333 !important;
-        min-width: 50px !important;
+        min-width: 40px !important;
     }
 
-    /* 5. Clean up the Starting XI / Bench section labels */
     .section-title,
     #team-modal h3,
     #team-modal h4 {
-        font-size: 16px !important;
-        margin: 14px 0 6px 0 !important;
-        border-bottom: 2px solid var(--green, #0070f3) !important;
+        font-size: 15px !important;
+        margin: 12px 0 6px 0 !important;
+        border-bottom: 1px solid rgba(14, 165, 233, 0.2) !important;
         padding-bottom: 4px !important;
         text-align: left !important;
         width: 100% !important;
