@@ -1411,7 +1411,7 @@ app.post('/api/watchlist/check-activity', async (req, res) => {
         
         try {
             const [picks, transfers, history] = await Promise.all([
-                fplFetch(`/entry/${managerId}/picks/${currentGW}/`),
+                fplFetch(`/entry/${managerId}/event/${currentGW}/picks/`),
                 fplFetch(`/entry/${managerId}/transfers/`),
                 fplFetch(`/entry/${managerId}/history/`)
             ]);
