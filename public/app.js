@@ -13,67 +13,33 @@ const PREMIUM_PRICE_NGN = 3000; // NGN price
 
 async function updatePricingDisplay() {
   try {
-    // 🚀 FIXED: Clean, un-nested proxy link structure
-    const response = await fetch('https://corsproxy.io', {
-      mode: 'cors',
-      headers: { 'Accept': 'application/json' }
-    });
-
-        // If the API endpoint fails, drop directly down into our safe hardcoded fallback logic
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        const rates = data.rates;
-        
-        // Extract USD conversion value cleanly
-        let displayPrice = rates && rates.USD ? `$${rates.USD.toFixed(2)} USD` : '$3.00 USD';
-        
-        // Update on both homepage and subscribe page containers
-        const priceConverted = document.getElementById('price-converted');
-        const subscribePriceDisplay = document.getElementById('subscribe-price-display');
-        
-        if (priceConverted) {
-            priceConverted.textContent = displayPrice;
-        }
-        
-        if (subscribePriceDisplay) {
-            const ngnPrice = typeof PREMIUM_PRICE_NGN !== 'undefined' ? PREMIUM_PRICE_NGN.toLocaleString() : '3,000';
-            subscribePriceDisplay.innerHTML = `
-                <div style="font-size: 1.1rem; color: #999; margin: 1rem 0;">
-                    <strong>Pricing in your region:</strong><br>
-                    <span style="font-size: 2rem; font-weight: bold; color: #0070f3;">₦${ngnPrice}</span> (NGN)<br>
-                    <span style="font-size: 0.95rem; color: #666;">≈ ${displayPrice}</span>
-                </div>
-            `;
-        }
-        
-        // Cache rates locally for instant retrieval references across pages
-        window.exchangeRates = rates;
-        console.log('Exchange rates updated cleanly from database:', rates);
-
-    } catch (error) {
-        console.warn('Handling currency fetch locally via robust backup fallback mechanism:', error);
-        
-        // Secure hardcoded backup templates to prevent the interface from showing blank text
-        const priceConverted = document.getElementById('price-converted');
-        if (priceConverted) {
-            priceConverted.textContent = '$3.00 USD (approx)';
-        }
-
-        const subscribePriceDisplay = document.getElementById('subscribe-price-display');
-        if (subscribePriceDisplay) {
-            const ngnPrice = typeof PREMIUM_PRICE_NGN !== 'undefined' ? PREMIUM_PRICE_NGN.toLocaleString() : '3,000';
-            subscribePriceDisplay.innerHTML = `
-                <div style="font-size: 1.1rem; color: #999; margin: 1rem 0;">
-                    <strong>Pricing in your region:</strong><br>
-                    <span style="font-size: 2rem; font-weight: bold; color: #0070f3;">₦${ngnPrice}</span> (NGN)<br>
-                    <span style="font-size: 0.95rem; color: #666;">≈ $3.00 USD (approx)</span>
-                </div>
-            `;
-        }
+    // Use hardcoded pricing - removed broken corsproxy.io dependency
+    const displayPrice = '$3.00 USD';
+    
+    // Update on both homepage and subscribe page containers
+    const priceConverted = document.getElementById('price-converted');
+    const subscribePriceDisplay = document.getElementById('subscribe-price-display');
+    
+    if (priceConverted) {
+        priceConverted.textContent = displayPrice;
     }
+    
+    if (subscribePriceDisplay) {
+        const ngnPrice = typeof PREMIUM_PRICE_NGN !== 'undefined' ? PREMIUM_PRICE_NGN.toLocaleString() : '3,000';
+        subscribePriceDisplay.innerHTML = `
+            <div style="font-size: 1.1rem; color: #999; margin: 1rem 0;">
+                <strong>Pricing in your region:</strong><br>
+                <span style="font-size: 2rem; font-weight: bold; color: #0070f3;">₦${ngnPrice}</span> (NGN)<br>
+                <span style="font-size: 0.95rem; color: #666;">≈ ${displayPrice}</span>
+            </div>
+        `;
+    }
+
+    console.log('✅ Pricing display updated');
+
+  } catch (error) {
+    console.error('Error updating pricing:', error);
+  }
 }
 
 // Initialize pricing display safely

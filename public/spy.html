@@ -1093,15 +1093,10 @@ function closeTeamModal() {
 
 async function toggleTeamWatchlist(managerId, playerName, entryName, totalPts, rank) {
   
-  // 1. Check if user is logged in using localStorage authentication
+  // Get current user (may be null for local-only users)
   const currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
-  
-  if (!currentUser || !currentUser.email) {
-    showToast('Please log in to save items to your permanent cloud account!', 'error');
-    return;
-  }
 
-  // 2. Update local watchlist state
+  // Update local watchlist state
   const starBtn = document.getElementById(`star-${managerId}`);
   const isWatched = isTeamWatched(managerId);
 
@@ -1131,7 +1126,7 @@ async function toggleTeamWatchlist(managerId, playerName, entryName, totalPts, r
       starBtn.style.background = 'var(--green)';
       starBtn.style.color = '#fff';
     }
-    showToast(`${playerName} added to watchlist! 📌 You'll get notifications for their activity.`, 'success');
+    showToast(`${playerName} added to watchlist! 📌`, 'success');
     
     // 🔔 Update notification service and request permissions
     if (typeof WatchlistNotifications !== 'undefined') {
@@ -1155,22 +1150,25 @@ async function toggleTeamWatchlist(managerId, playerName, entryName, totalPts, r
     }
   }
 
-  // 3. Save to localStorage
+  // Save to localStorage (local persistence - works offline)
   localStorage.setItem('fpl_watched_teams', JSON.stringify(watchedTeams));
+  console.log('✅ Watchlist saved to localStorage:', watchedTeams);
 
-  // 4. Sync to Supabase for cross-device persistence
-  try {
-    await fetch('/api/save-user-data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: currentUser.email,
-        syncedTeam: watchedTeams
-      })
-    });
-    console.log('📤 Team watchlist saved to Supabase');
-  } catch (error) {
-    console.error('Error saving team watchlist to Supabase:', error);
+  // Sync to Supabase for cross-device persistence (only if logged in)
+  if (currentUser && currentUser.email) {
+    try {
+      await fetch('/api/save-user-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: currentUser.email,
+          syncedTeam: watchedTeams
+        })
+      });
+      console.log('📤 Team watchlist synced to Supabase');
+    } catch (error) {
+      console.error('Error syncing to Supabase:', error);
+    }
   }
 }
 
