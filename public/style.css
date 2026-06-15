@@ -2716,12 +2716,6 @@ main { max-width: 100%; overflow-x: hidden; }
     #team-modal .tab-content.active {
         display: block !important;
     }
-        border-bottom: 1px solid #eee !important; /* Clean divider line */
-        padding: 8px 4px !important;
-        margin: 0 !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-    }
 
     /* 3. Re-align text so names don't overlap with points */
     .player-name, 
