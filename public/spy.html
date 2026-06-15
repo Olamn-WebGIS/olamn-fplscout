@@ -435,7 +435,9 @@ localStorage.setItem('fpl_saved_league_id', leagueId);
     document.getElementById('search-section').style.display = 'block';
     
     renderRivals(data.standings.results.slice(0, 10)); // Show top 10
-    loadRecentActivity(data.standings.results.slice(0, 10));
+    // 🚀 OPTIMIZATION: Don't preload activity data for all managers
+    // Only load when user clicks "View Squad" - this prevents API rate limiting
+    // loadRecentActivity(data.standings.results.slice(0, 10));
     showToast('League loaded successfully! 🎯', 'success');
   } catch (e) {
     showToast('Failed to load league. Check the ID and try again.', 'error');
