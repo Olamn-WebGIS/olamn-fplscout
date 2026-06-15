@@ -1140,6 +1140,11 @@ main { max-width: 100%; overflow-x: hidden; }
   .input-with-icon input { width: auto !important; padding-left: 2.5rem; font-size:0.95rem; }
   /* Compact pagination badge */
   .page-badge { font-size: 0.72rem; padding: 3px 8px; }
+  /* Pagination row: keep page-info and controls on single line */
+  .pagination-row { width: 100%; }
+  .pagination-row .pagination-controls { display:flex; align-items:center; gap:8px; }
+  .pagination-row .page-badge { display:inline-flex; min-width:34px; justify-content:center; }
+  .pagination-row .btn-sm { padding: 0.28rem 0.5rem; font-size: 0.78rem; }
   
   /* Table adjustments */
   .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
