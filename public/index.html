@@ -71,22 +71,6 @@
               <button class="filter-tab" data-pos="3">MID</button>
               <button class="filter-tab" data-pos="4">FWD</button>
             </div>
-            <!-- Mobile filter dropdown -->
-            <div class="mobile-only" style="position:relative;">
-              <button class="btn btn-ghost btn-sm" id="filter-toggle" style="display:flex;align-items:center;gap:6px;">
-                🔽 Filters <span id="filter-selected">ALL</span>
-              </button>
-              <div id="filter-dropdown" class="filter-dropdown" style="display:none;">
-                <button class="filter-option" data-pos="0">ALL</button>
-                <button class="filter-option" data-pos="1">GKP (Goalkeeper)</button>
-                <button class="filter-option" data-pos="2">DEF (Defender)</button>
-                <button class="filter-option" data-pos="3">MID (Midfielder)</button>
-                <button class="filter-option" data-pos="4">FWD (Forward)</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- Sort controls -->
         <div class="controls-row">
           <select id="sort-by" style="width:auto;padding:0.4rem 0.8rem;font-size:0.8rem;">
@@ -127,19 +111,14 @@
           </table>
         </div>
 
-        <!-- Pagination -->
-        <div class="controls-row" style="justify-content:space-between;align-items:center;margin-top:1rem;font-size:0.82rem;color:var(--text-muted);flex-wrap:wrap;gap:12px;">
-          <span id="page-info"></span>
-          <div style="position:relative;">
-            <button class="btn btn-ghost btn-sm" id="page-dropdown-btn" style="display:flex;align-items:center;gap:6px;">
-              📄 Page <span id="current-page-display">1</span> 🔽
-            </button>
-            <div id="page-dropdown" class="page-dropdown" style="display:none;">
-              <!-- Pages populated by JavaScript -->
-            </div>
-          </div>
-        </div>
-      </div>
+        <div class="controls-row" style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:0.82rem; color:var(--text-muted); flex-wrap:wrap; gap:12px;">
+  <span id="page-info">Showing page 1 of X</span>
+  
+  <div style="display:flex; gap:8px;">
+    <button class="btn btn-sm" id="prev-page-btn" disabled>← Prev</button>
+    <button class="btn btn-sm" id="next-page-btn">Next →</button>
+  </div>
+</div>
 
     <!-- ── Right: Sync Sidebar ───────────────────────────────── -->
     <aside>
