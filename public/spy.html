@@ -680,9 +680,9 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
     const posLabels = { 1: 'GKP', 2: 'DEF', 3: 'MID', 4: 'FWD' };
     
     // Build starting XI HTML - Fixed 4-column compact grid matrix
-    let startersHtml = `<div style="margin-top: -1.5rem !important; margin-bottom: 1rem; width: 100%;">
-      <h4 style="font-size:0.8rem; margin:0 0 0.5rem 0; color:var(--text-primary); text-align:left;">⚽ Starting XI</h4>
-      <div style="display:grid !important; grid-template-columns:repeat(4, 1fr) !important; gap:4px !important; width:100% !important; box-sizing:border-box;">`;
+    let startersHtml = `<div style="margin-top: 0; margin-bottom: 1rem; width: 100%; box-sizing: border-box;">
+      <h4 style="font-size:0.8rem; margin:0 0 0.75rem 0; color:var(--text-primary); text-align:left; font-weight:700;">⚽ Starting XI</h4>
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; width:100%; box-sizing:border-box;">`;
     
     starters.forEach(pick => {
       const player = bsData.elements.find(p => p.id === pick.element);
@@ -693,11 +693,11 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
         // Split the name string safely and take the last element name
         const shortName = player.web_name ? player.web_name.split(' ').pop() : 'Player';
         
-        startersHtml += `<div style="position:relative; padding:4px 2px; background:linear-gradient(135deg, ${posColor}15 0%, ${posColor}05 100%); border-top:2px solid ${posColor}; border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box; width:100%; min-width:0; text-align:center;">
+        startersHtml += `<div style="position:relative; padding:8px 4px; background:linear-gradient(135deg, ${posColor}15 0%, ${posColor}05 100%); border-top:2px solid ${posColor}; border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box; text-align:center; min-height:60px;">
           ${capBadge}
-          <div style="font-weight:700; font-size:0.58rem; color:var(--text-primary); line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; padding:0 2px;">${shortName}</div>
-          <div style="font-size:0.48rem; color:var(--text-muted); margin-top:1px;">${posLabels[player.element_type]}</div>
-          <div style="font-size:0.52rem; color:var(--text-muted); font-weight:600; margin-top:1px;">£${(player.now_cost/10).toFixed(1)}m</div>
+          <div style="font-weight:700; font-size:0.6rem; color:var(--text-primary); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; padding:0 2px;">${shortName}</div>
+          <div style="font-size:0.5rem; color:var(--text-muted); margin-top:2px;">${posLabels[player.element_type]}</div>
+          <div style="font-size:0.55rem; color:var(--text-muted); font-weight:600; margin-top:2px;">£${(player.now_cost/10).toFixed(1)}m</div>
         </div>`;
       }
     });
@@ -707,10 +707,9 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
         // Build bench HTML - Compact 4-column row display layout
     let benchHtml = '';
     if (bench.length > 0) {
-      // 🚀 FIXED: Increased margin-top to 2.5rem !important to push the bench down independently
-      benchHtml = `<div style="margin-top: 2.5rem !important; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; width: 100%; display: block !important; clear: both !important;">
-        <h4 style="font-size:0.8rem; margin:0 0 0.5rem 0; color:var(--text-muted); text-align:left;">🔄 Bench</h4>
-        <div style="display:grid !important; grid-template-columns:repeat(4, 1fr) !important; gap:4px !important; width:100% !important; box-sizing:border-box;">`;
+      benchHtml = `<div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; width: 100%; box-sizing:border-box;">
+        <h4 style="font-size:0.8rem; margin:0 0 0.75rem 0; color:var(--text-muted); text-align:left; font-weight:700;">🔄 Bench</h4>
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; width:100%; box-sizing:border-box;">`;
       
       bench.forEach(pick => {
         const player = bsData.elements.find(p => p.id === pick.element);
@@ -718,19 +717,18 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
           const posColor = posColors[player.element_type];
           const shortName = player.web_name ? player.web_name.split(' ').pop() : 'Player';
           
-          benchHtml += `<div style="padding:4px 2px; background:linear-gradient(135deg, ${posColor}10 0%, ${posColor}02 100%); border-top:2px solid ${posColor}; opacity:0.85; border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box; width:100%; min-width:0; text-align:center;">
-            <div style="font-weight:700; font-size:0.58rem; color:var(--text-primary); line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; padding:0 2px;">${shortName}</div>
-            <div style="font-size:0.48rem; color:var(--text-muted); margin-top:1px;">${posLabels[player.element_type]}</div>
-            <div style="font-size:0.52rem; color:var(--text-muted); font-weight:600; margin-top:1px;">£${(player.now_cost/10).toFixed(1)}m</div>
+          benchHtml += `<div style="padding:8px 4px; background:linear-gradient(135deg, ${posColor}10 0%, ${posColor}02 100%); border-top:2px solid ${posColor}; opacity:0.85; border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box; text-align:center; min-height:60px;">
+            <div style="font-weight:700; font-size:0.6rem; color:var(--text-primary); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; padding:0 2px;">${shortName}</div>
+            <div style="font-size:0.5rem; color:var(--text-muted); margin-top:2px;">${posLabels[player.element_type]}</div>
+            <div style="font-size:0.55rem; color:var(--text-muted); font-weight:600; margin-top:2px;">£${(player.now_cost/10).toFixed(1)}m</div>
           </div>`;
         }
       });
       
       benchHtml += `</div></div>`;
     } else {
-      // 🚀 FIXED: Added margin-top here as well for empty bench layouts
-      benchHtml = `<div style="margin-top: 2.5rem !important; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; width: 100%;">
-        <h4 style="font-size:0.8rem; margin:0 0 0.5rem 0; color:var(--text-muted); text-align:left;">🔄 Bench</h4>
+      benchHtml = `<div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; width: 100%; box-sizing:border-box;">
+        <h4 style="font-size:0.8rem; margin:0 0 0.5rem 0; color:var(--text-muted); text-align:left; font-weight:700;">🔄 Bench</h4>
         <p style="text-align:center; color:var(--text-muted); font-size:0.7rem; margin:0;">No bench players</p>
       </div>`;
     }
