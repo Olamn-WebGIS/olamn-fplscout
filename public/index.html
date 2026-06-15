@@ -71,6 +71,7 @@
               <button class="filter-tab" data-pos="3">MID</button>
               <button class="filter-tab" data-pos="4">FWD</button>
             </div>
+          </div>
         <!-- Sort controls -->
         <div class="controls-row">
           <select id="sort-by" style="width:auto;padding:0.4rem 0.8rem;font-size:0.8rem;">
@@ -89,6 +90,7 @@
             <option value="100">100 per page</option>
           </select>
         </div>
+      </div>
 
         <div class="table-wrap">
           <table id="players-table" aria-label="FPL player statistics">
@@ -621,11 +623,16 @@ function renderTable() {
 
 function updatePagination() {
   const total = filtered.length;
-  const totalPages = Math.ceil(total / perPage);
   const start = Math.min((currentPage - 1) * perPage + 1, total);
   const end   = Math.min(currentPage * perPage, total);
   document.getElementById('page-info').textContent = total ? `Showing ${start}–${end} of ${total} players` : '';
-  document.getElementById('current-page-display').textContent = currentPage;
+  updatePageButtons();
+}
+
+function updatePageButtons() {
+  const totalPages = Math.ceil(filtered.length / perPage);
+  document.getElementById('prev-page-btn').disabled = currentPage <= 1;
+  document.getElementById('next-page-btn').disabled = currentPage >= totalPages || totalPages === 0;
 }
 
 /* ── Watchlist ─────────────────────────────────────────────────── */
@@ -891,6 +898,23 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('sort-by').addEventListener('change', e => { sortField = e.target.value; applyFilters(); });
   document.getElementById('team-filter').addEventListener('change', e => { teamFilter = e.target.value; applyFilters(); });
   document.getElementById('per-page').addEventListener('change', e => { perPage = Number(e.target.value); applyFilters(); });
+
+  document.getElementById('prev-page-btn').addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage -= 1;
+      renderTable();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
+
+  document.getElementById('next-page-btn').addEventListener('click', () => {
+    const totalPages = Math.ceil(filtered.length / perPage);
+    if (currentPage < totalPages) {
+      currentPage += 1;
+      renderTable();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
 
   // Desktop filter tabs
   document.querySelectorAll('#pos-filters .filter-tab').forEach(btn => {
