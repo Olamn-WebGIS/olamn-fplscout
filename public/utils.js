@@ -1,17 +1,83 @@
 /* ── FPL Scout — Shared JS utilities ────────────────────────── */
 
 const API = {
-  bootstrap:       ()     => fetch('/api/bootstrap').then(r => r.json()),
-  manager:         (id)   => fetch(`/api/manager/${id}`).then(r => r.json()),
-  managerHistory:  (id)   => fetch(`/api/manager/${id}/history`).then(r => r.json()),
-  managerPicks:    (id,gw)=> fetch(`/api/manager/${id}/picks/${gw}`).then(r => r.json()),
-  managerTransfers:(id)   => fetch(`/api/manager/${id}/transfers`).then(r => r.json()),
-  analyzeTransfers:(id,gw)=> fetch(`/api/analyze-transfers/${id}/${gw}`).then(r => r.json()),
-  league:          (id,p) => fetch(`/api/league/${id}?page=${p||1}`).then(r => r.json()),
-  spy:             (id)   => fetch(`/api/spy/${id}`).then(r => r.json()),
-  live:            (gw)   => fetch(`/api/live/${gw}`).then(r => r.json()),
-  player:          (id)   => fetch(`/api/player/${id}`).then(r => r.json()),
-  fixtures:        (gw)   => fetch(`/api/fixtures${gw?`?gw=${gw}`:''}`).then(r => r.json()),
+  bootstrap:       ()     => fetch('/api/bootstrap').then(r => {
+    if (!r.ok) throw new Error(`API Error: ${r.status}`);
+    return r.json();
+  }).catch(e => {
+    console.error('Bootstrap fetch failed:', e);
+    throw e;
+  }),
+  manager:         (id)   => fetch(`/api/manager/${id}`).then(r => {
+    if (!r.ok) throw new Error(`API Error: ${r.status}`);
+    return r.json();
+  }).catch(e => {
+    console.error(`Manager ${id} fetch failed:`, e);
+    throw e;
+  }),
+  managerHistory:  (id)   => fetch(`/api/manager/${id}/history`).then(r => {
+    if (!r.ok) throw new Error(`API Error: ${r.status}`);
+    return r.json();
+  }).catch(e => {
+    console.error(`Manager history ${id} fetch failed:`, e);
+    throw e;
+  }),
+  managerPicks:    (id,gw)=> fetch(`/api/manager/${id}/picks/${gw}`).then(r => {
+    if (!r.ok) throw new Error(`API Error: ${r.status}`);
+    return r.json();
+  }).catch(e => {
+    console.error(`Manager picks ${id} GW${gw} fetch failed:`, e);
+    throw e;
+  }),
+  managerTransfers:(id)   => fetch(`/api/manager/${id}/transfers`).then(r => {
+    if (!r.ok) throw new Error(`API Error: ${r.status}`);
+    return r.json();
+  }).catch(e => {
+    console.error(`Manager transfers ${id} fetch failed:`, e);
+    throw e;
+  }),
+  analyzeTransfers:(id,gw)=> fetch(`/api/analyze-transfers/${id}/${gw}`).then(r => {
+    if (!r.ok) throw new Error(`API Error: ${r.status}`);
+    return r.json();
+  }).catch(e => {
+    console.error(`Analyze transfers ${id} GW${gw} fetch failed:`, e);
+    throw e;
+  }),
+  league:          (id,p) => fetch(`/api/league/${id}?page=${p||1}`).then(r => {
+    if (!r.ok) throw new Error(`API Error: ${r.status}`);
+    return r.json();
+  }).catch(e => {
+    console.error(`League ${id} fetch failed:`, e);
+    throw e;
+  }),
+  spy:             (id)   => fetch(`/api/spy/${id}`).then(r => {
+    if (!r.ok) throw new Error(`API Error: ${r.status}`);
+    return r.json();
+  }).catch(e => {
+    console.error(`Spy ${id} fetch failed:`, e);
+    throw e;
+  }),
+  live:            (gw)   => fetch(`/api/live/${gw}`).then(r => {
+    if (!r.ok) throw new Error(`API Error: ${r.status}`);
+    return r.json();
+  }).catch(e => {
+    console.error(`Live GW${gw} fetch failed:`, e);
+    throw e;
+  }),
+  player:          (id)   => fetch(`/api/player/${id}`).then(r => {
+    if (!r.ok) throw new Error(`API Error: ${r.status}`);
+    return r.json();
+  }).catch(e => {
+    console.error(`Player ${id} fetch failed:`, e);
+    throw e;
+  }),
+  fixtures:        (gw)   => fetch(`/api/fixtures${gw?`?gw=${gw}`:''}`).then(r => {
+    if (!r.ok) throw new Error(`API Error: ${r.status}`);
+    return r.json();
+  }).catch(e => {
+    console.error(`Fixtures fetch failed:`, e);
+    throw e;
+  }),
 };
 
 /* ── LocalStorage helpers ────────────────────────────────────── */
