@@ -952,7 +952,7 @@ async function loadManagerCaptainPicks(managerId, playerName) {
       const player = bsData.elements.find(e => e.id === captain.element);
       if (player) {
         const team = bsData.teams.find(t => t.id === player.team);
-        html += `<div style="padding:12px;background:linear-gradient(135deg, #ffd60015 0%, #ffd60005 100%);border-left:4px solid #ffd600;border-radius:8px;margin-bottom:8px;">
+        html += `<div class="captain-card" style="padding:12px;background:linear-gradient(135deg, #ffd60015 0%, #ffd60005 100%);border-left:4px solid #ffd600;border-radius:8px;margin-bottom:8px;">
           <div style="display:flex;align-items:center;gap:10px;">
             <div style="font-size:1.2rem;">🎖</div>
             <div style="flex:1;">

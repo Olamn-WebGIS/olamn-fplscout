@@ -455,6 +455,46 @@ table {
 #team-modal #squad-tab * {
   font-size: inherit;
 }
+
+/* Modal sizing: make white modal 70% of viewport height */
+#team-modal .modal {
+  max-height: 70vh !important;
+  height: 70vh !important;
+  overflow-y: auto !important;
+  margin: 15vh auto !important; /* centers vertically roughly */
+}
+
+/* Ensure captain card is visible and compact */
+.captain-card {
+  display: block !important;
+  padding: 10px !important;
+  font-size: 0.86rem !important;
+}
+
+#modal-captain-activity .captain-card div { align-items: center; }
+
+/* Further reduce all activity cards (transfers, captain, chips) */
+#modal-transfer-activity > *,
+#modal-captain-activity > *,
+#modal-chip-activity > * {
+  padding: 6px !important;
+  margin-bottom: 6px !important;
+  border-radius: 8px !important;
+  font-size: 0.82rem !important;
+  line-height: 1.2 !important;
+}
+
+/* Also reduce nested content sizes inside activity containers */
+#modal-transfer-activity *,
+#modal-captain-activity *,
+#modal-chip-activity * {
+  font-size: 0.82rem !important;
+}
+
+/* Reduce emoji/icon sizes within activity tab */
+#team-modal #activity-tab .activity-grid [style*="font-size"] {
+  font-size: 1rem !important;
+}
 thead th {
   text-align: left; padding: 0.6rem 0.75rem;
   font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px;
