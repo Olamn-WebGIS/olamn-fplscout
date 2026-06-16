@@ -1202,12 +1202,13 @@ main { max-width: 100%; overflow-x: hidden; }
 }
 
 @media (max-width: 768px) {
-  /* Live Indicator - Mobile Positioning (below navbar) */
+  /* Live Indicator - Mobile Positioning (bottom-right corner) */
   .live-indicator {
-    bottom: auto !important;
-    left: auto !important;
-    top: 76px !important;
+    display: block !important;
+    bottom: 30px !important;
     right: 12px !important;
+    top: auto !important;
+    left: auto !important;
     width: 14px;
     height: 14px;
     z-index: 1001 !important;
@@ -1682,7 +1683,6 @@ main { max-width: 100%; overflow-x: hidden; }
 /* Hide any duplicate Live Data buttons in the page content */
 @media (max-width: 768px) {
   /* Targets any live badge that does not have the header class we created */
-  #live-badge:not(.header-live-badge),
   .nav-badge:not(.header-live-badge),
   .card [id="live-badge"],
   .card .nav-badge {
@@ -3255,11 +3255,13 @@ main { max-width: 100%; overflow-x: hidden; }
 /* Ensure visibility on very small/mobile screens by moving indicator below navbar */
 @media (max-width: 480px) {
   .live-indicator {
-    top: calc(var(--nav-h) + 8px);
+    display: block !important;
+    bottom: 30px;
     right: 12px;
-    bottom: auto;
+    top: auto;
+    left: auto;
     width: 14px;
     height: 14px;
-    z-index: 1100; /* above navbar */
+    z-index: 1100;
   }
 }

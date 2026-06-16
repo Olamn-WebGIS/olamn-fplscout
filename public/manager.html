@@ -205,9 +205,11 @@
     const pos = player ? groupLabels[player.element_type] : groupLabels[pick.element_type] || '—';
     const points = player ? player.event_points || 0 : 0;
     const multiplier = pick.multiplier || 1;
+    const photoUrl = player && player.photo ? `https://resources.premierleague.com/premierleague/photos/players/${player.photo}` : '';
+    
     return `<div style="position:relative;padding:14px;background:#fff;border:1px solid #e6eefc;border-radius:16px;display:flex;gap:12px;align-items:center;min-height:72px;box-shadow:0 1px 4px rgba(15,23,42,.05);">
       ${pick.is_captain ? '<div style="position:absolute;top:10px;right:10px;padding:2px 8px;background:#ffd600;color:#102a43;border-radius:999px;font-size:0.75rem;font-weight:700;">C</div>' : ''}
-      <div style="width:42px;height:42px;flex-shrink:0;border-radius:12px;background:#f1f8ff;display:flex;align-items:center;justify-content:center;font-weight:700;color:#1d4ed8;">${player ? '' : '#'}</div>
+      ${photoUrl ? `<img src="${photoUrl}" alt="${name}" style="width:42px;height:42px;flex-shrink:0;border-radius:12px;object-fit:cover;background:#f1f8ff;" onerror="this.style.display='none';" />` : '<div style="width:42px;height:42px;flex-shrink:0;border-radius:12px;background:#f1f8ff;display:flex;align-items:center;justify-content:center;font-weight:700;color:#1d4ed8;">#</div>'}
       <div style="flex:1;min-width:0;">
         <div style="font-size:0.95rem;font-weight:700;color:#102a43;line-height:1.2;">${name}</div>
         <div style="font-size:0.78rem;color:#64748b;margin-top:4px;">${pos} · ${player ? `£${(player.now_cost / 10).toFixed(1)}m` : 'Unknown cost'}</div>

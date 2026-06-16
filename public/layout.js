@@ -24,7 +24,7 @@
   </div>
 </nav>
 
-<span class="live-indicator" id="live-badge" title="Server Status: Online"></span>`;
+<span class="live-indicator header-live-badge" id="live-badge" title="Server Status: Online"></span>`;
 
   // 2. Complete Visual Footer Layout (Maintained Styles & Targets)
   const FOOTER_HTML = `
