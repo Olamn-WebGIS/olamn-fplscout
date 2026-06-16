@@ -379,14 +379,34 @@ function renderTeams() {
   document.getElementById('teams-container').innerHTML = html;
 }
 
+let lastWatchedPlayersState = localStorage.getItem(STORAGE_KEYS.watchedPlayers);
+let lastWatchedTeamsState = localStorage.getItem(STORAGE_KEYS.watchedTeams);
+
 function refreshWatchlistUI() {
   renderPlayers();
   renderTeams();
 }
 
+function checkForWatchlistUpdates() {
+  try {
+    const currentPlayersState = localStorage.getItem(STORAGE_KEYS.watchedPlayers);
+    const currentTeamsState = localStorage.getItem(STORAGE_KEYS.watchedTeams);
+
+    if (currentPlayersState !== lastWatchedPlayersState || currentTeamsState !== lastWatchedTeamsState) {
+      lastWatchedPlayersState = currentPlayersState;
+      lastWatchedTeamsState = currentTeamsState;
+      refreshWatchlistUI();
+    }
+  } catch (err) {
+    console.error('Error checking watchlist update state:', err);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   await bootstrap();
   refreshWatchlistUI();
+  checkForWatchlistUpdates();
+  setInterval(checkForWatchlistUpdates, 2500);
 });
 
 // Listen for storage changes from other tabs/pages (e.g. added from Spy page)
@@ -394,7 +414,7 @@ window.addEventListener('storage', (e) => {
   if (!e.key) return;
   try {
     if (e.key === STORAGE_KEYS.watchedPlayers || e.key === STORAGE_KEYS.watchedTeams) {
-      refreshWatchlistUI();
+      checkForWatchlistUpdates();
     }
   } catch (err) {
     console.error('Error handling storage event on watchlist page:', err);
@@ -403,21 +423,21 @@ window.addEventListener('storage', (e) => {
 
 window.addEventListener('pageshow', (e) => {
   if (e.persisted || document.visibilityState === 'visible') {
-    refreshWatchlistUI();
+    checkForWatchlistUpdates();
   }
 });
 
 window.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
-    refreshWatchlistUI();
+    checkForWatchlistUpdates();
   }
 });
 
-window.addEventListener('focus', refreshWatchlistUI);
+window.addEventListener('focus', checkForWatchlistUpdates);
 
 // Also listen for custom events or BroadcastChannel messages (same-tab and cross-tab)
 window.addEventListener('fpl_watched_teams_changed', (e) => {
-  try { refreshWatchlistUI(); } catch (err) { console.error(err); }
+  try { checkForWatchlistUpdates(); } catch (err) { console.error(err); }
 });
 
 if (typeof BroadcastChannel !== 'undefined') {
@@ -425,7 +445,7 @@ if (typeof BroadcastChannel !== 'undefined') {
     const bc = new BroadcastChannel('fpl_watchlist_channel');
     bc.onmessage = (ev) => {
       if (ev.data && ev.data.type === 'watched_teams_updated') {
-        try { refreshWatchlistUI(); } catch (err) { console.error(err); }
+        try { checkForWatchlistUpdates(); } catch (err) { console.error(err); }
       }
     };
   } catch (err) {
