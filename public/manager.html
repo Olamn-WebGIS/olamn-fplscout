@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Manager View — FPL Scout</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    #manager-tabs {
+      display: flex;
+      gap: 1rem;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    #manager-tabs .tab-btn {
+      background: none;
+      border: none;
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      color: inherit;
+      font: inherit;
+    }
+    #manager-tabs .tab-btn.active {
+      color: var(--blue-light);
+      border-bottom-color: var(--blue-light);
+    }
+    .tab-content {
+      display: none !important;
+    }
+    .tab-content.active {
+      display: block !important;
+    }
+    /* Captain / Vice-Captain box styling */
+    .captain-box {
+      padding: 14px;
+      background: linear-gradient(135deg,#ffd60015 0%,#ffd60005 100%);
+      border-left: 4px solid #ffd600;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: space-between;
+    }
+    .captain-item { display:flex; align-items:center; gap:10px; }
+    .captain-icon { font-size:1.4rem; }
+    .captain-stats { font-size:0.95rem; font-weight:700; color:#975a16; }
+    @media (max-width: 640px) {
+      .captain-box { flex-direction:row; justify-content:flex-start; }
+      .captain-stats { margin-left:auto; }
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main class="page-wrap">
+    <div style="max-width:900px;margin:1.5rem auto;">
+      <button id="back-btn" class="btn btn-ghost">← Back</button>
+      <h1 id="manager-title" style="margin-top:0.5rem;">Manager</h1>
+      <p id="manager-meta" style="color:var(--text-muted)"></p>
+
+      <div style="margin-top:1rem;">
+        <div id="manager-tabs" style="display:flex;gap:1rem;padding-bottom:0.75rem;margin-bottom:1rem;">
+          <button class="tab-btn active" data-tab="squad" style="background:none;border:none;padding:0.4rem 0.8rem;cursor:pointer;">⚽ Squad</button>
+          <button class="tab-btn" data-tab="activity" style="background:none;border:none;padding:0.4rem 0.8rem;cursor:pointer;">⚡ Recent Activity</button>
+        </div>
+
+        <div id="squad-tab" class="tab-content active">
+          <div id="squad-content"><div class="loading-block"><div class="spinner"></div><span>Loading squad…</span></div></div>
+        </div>
+
+        <div id="activity-tab" class="tab-content">
+          <h3 style="font-size:0.95rem;margin-bottom:0.5rem;">🔄 Recent Transfers</h3>
+          <div id="transfer-alerts"></div>
+          <h3 style="font-size:0.95rem;margin:1rem 0 0.5rem 0;">🎖 Captain Picks</h3>
+          <div id="captain-alerts"></div>
+          <h3 style="font-size:0.95rem;margin:1rem 0 0.5rem 0;">🃏 Chip Usage</h3>
+          <div id="chip-alerts"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/utils.js"></script>
+  <script src="/layout.js"></script>
+  <script>
+  function getQueryParam(name) {
+    return new URL(location.href).searchParams.get(name);
+  }
+
+  const groupLabels = ['', 'GKP', 'DEF', 'MID', 'FWD'];
+  const chipNames = { wildcard: 'Wildcard', bboost: 'Bench Boost', freehit: 'Free Hit', '3xc': 'Triple Captain' };
+
+  function activateTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(tc => {
+      tc.classList.remove('active');
+      tc.style.setProperty('display', 'none', 'important');
+    });
+    const tabBtn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+    const tabPane = document.getElementById(`${tabName}-tab`);
+    if (tabBtn) tabBtn.classList.add('active');
+    if (tabPane) {
+      tabPane.classList.add('active');
+      tabPane.style.setProperty('display', 'block', 'important');
+    }
+  }
+
+  function attachTabHandlers() {
+    document.querySelectorAll('.tab-btn').forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tab = button.getAttribute('data-tab');
+        activateTab(tab);
+      });
+    });
+  }
+
+  // Remove any inline underline styles that might have been left on buttons
+  function normalizeTabButtons() {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.style.removeProperty('border-bottom');
+    });
+  }
+
+  function attachBackButton() {
+    const backBtn = document.getElementById('back-btn');
+    if (backBtn) backBtn.addEventListener('click', () => history.back());
+  }
+
+  async function renderManagerPage() {
+    const id = getQueryParam('id') || getQueryParam('entry');
+    if (!id) {
+      document.getElementById('manager-title').textContent = 'Manager not specified';
+      document.getElementById('squad-content').innerHTML = '<p style="color:var(--text-muted)">Missing manager ID.</p>';
+      document.getElementById('transfer-alerts').innerHTML = '<p style="color:var(--text-muted)">No recent transfers</p>';
+      document.getElementById('captain-alerts').innerHTML = '<p style="color:var(--text-muted)">No captain data</p>';
+      document.getElementById('chip-alerts').innerHTML = '<p style="color:var(--text-muted)">No chips data</p>';
+      return;
+    }
+
+    try {
+      const bs = await API.bootstrap();
+      const manager = await API.manager(id);
+      const currentGW = manager.current_event || bs.events.find(e => e.is_current)?.id || bs.events[bs.events.length - 1]?.id || 1;
+      const managerName = `${manager.player_first_name || manager.player_name || 'Manager'} ${manager.player_last_name || ''}`.trim();
+      document.getElementById('manager-title').textContent = `${managerName}'s Squad`;
+      document.getElementById('manager-meta').textContent = `Team Rank: #${manager.summary_overall_rank || manager.entry_rank || manager.rank || manager.summary_rank || '—'} | Total Points: ${manager.summary_overall_points || manager.total_points || manager.summary_total || manager.points || '—'}`;
+
+      let picks = [];
+      const picksResp = await API.managerPicks(id, currentGW).catch(() => null);
+      if (picksResp) {
+        if (Array.isArray(picksResp.picks)) picks = picksResp.picks;
+        else if (Array.isArray(picksResp)) picks = picksResp;
+        else if (Array.isArray(picksResp.results)) picks = picksResp.results;
+      }
+      if (picks.length === 0 && manager.current_event) {
+        const fallback = await API.managerPicks(id, manager.current_event).catch(() => null);
+        if (fallback && Array.isArray(fallback.picks)) picks = fallback.picks;
+      }
+
+      renderSquad(bs, picks);
+      const transfers = await API.managerTransfers(id).catch(() => []);
+      document.getElementById('transfer-alerts').innerHTML = renderTransfers(bs, transfers);
+      document.getElementById('captain-alerts').innerHTML = renderCaptain(bs, picks, currentGW);
+      const history = await API.managerHistory(id).catch(() => null);
+      document.getElementById('chip-alerts').innerHTML = renderChips(history);
+      activateTab('squad');
+    } catch (err) {
+      console.error('Manager page load failed', err);
+      document.getElementById('squad-content').innerHTML = `<p style="color:var(--text-muted)">Failed to load manager data. ${err.message || ''}</p>`;
+      document.getElementById('transfer-alerts').innerHTML = '<p style="color:var(--text-muted)">Failed to load transfers.</p>';
+      document.getElementById('captain-alerts').innerHTML = '<p style="color:var(--text-muted)">Failed to load captain pick.</p>';
+      document.getElementById('chip-alerts').innerHTML = '<p style="color:var(--text-muted)">Failed to load chips.</p>';
+    }
+  }
+
+  function renderSquad(bs, picks) {
+    if (!Array.isArray(picks) || picks.length === 0) {
+      document.getElementById('squad-content').innerHTML = '<p style="color:var(--text-muted)">No squad data available.</p>';
+      return;
+    }
+
+    const starters = picks.filter(p => typeof p.position !== 'undefined' ? p.position <= 11 : true).slice(0, 11);
+    const bench = picks.filter(p => typeof p.position !== 'undefined' ? p.position > 11 : false).slice(0, 4);
+
+    let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">';
+    starters.forEach(pick => html += renderPlayerCard(bs, pick));
+    html += '</div>';
+
+    if (bench.length > 0) {
+      html += '<div style="margin-top:18px;"><h3 style="margin:0 0 10px 0;font-size:0.95rem;color:var(--text-primary);">🔄 Bench</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">';
+      bench.forEach(pick => html += renderPlayerCard(bs, pick, true));
+      html += '</div></div>';
+    }
+
+    document.getElementById('squad-content').innerHTML = html;
+  }
+
+  function renderPlayerCard(bs, pick, isBench = false) {
+    const pid = pick.element || pick.id || pick.player || null;
+    const player = pid !== null ? bs.elements.find(e => String(e.id) === String(pid)) : null;
+    const name = player ? player.web_name : `ID ${pid || 'unknown'}`;
+    const pos = player ? groupLabels[player.element_type] : groupLabels[pick.element_type] || '—';
+    const points = player ? player.event_points || 0 : 0;
+    const multiplier = pick.multiplier || 1;
+    return `<div style="position:relative;padding:14px;background:#fff;border:1px solid #e6eefc;border-radius:16px;display:flex;gap:12px;align-items:center;min-height:72px;box-shadow:0 1px 4px rgba(15,23,42,.05);">
+      ${pick.is_captain ? '<div style="position:absolute;top:10px;right:10px;padding:2px 8px;background:#ffd600;color:#102a43;border-radius:999px;font-size:0.75rem;font-weight:700;">C</div>' : ''}
+      <div style="width:42px;height:42px;flex-shrink:0;border-radius:12px;background:#f1f8ff;display:flex;align-items:center;justify-content:center;font-weight:700;color:#1d4ed8;">${player ? '' : '#'}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.95rem;font-weight:700;color:#102a43;line-height:1.2;">${name}</div>
+        <div style="font-size:0.78rem;color:#64748b;margin-top:4px;">${pos} · ${player ? `£${(player.now_cost / 10).toFixed(1)}m` : 'Unknown cost'}</div>
+      </div>
+      <div style="text-align:right;min-width:48px;">
+        <div style="font-size:0.95rem;font-weight:700;color:#0f172a;">${points}</div>
+        <div style="font-size:0.75rem;color:#64748b;">x${multiplier}</div>
+      </div>
+    </div>`;
+  }
+
+  function renderTransfers(bs, transfers) {
+    if (!Array.isArray(transfers) || transfers.length === 0) return '<p style="color:var(--text-muted)">No recent transfers</p>';
+    return transfers.slice(0, 6).map(t => {
+      const playerIn = bs.elements.find(e => e.id === t.element_in);
+      const playerOut = bs.elements.find(e => e.id === t.element_out);
+      return `<div style="padding:12px;background:#f8faff;border-radius:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+        <div style="min-width:0;"><div style="font-size:0.92rem;font-weight:700;color:#102a43;">${playerOut ? playerOut.web_name : 'Unknown'} → ${playerIn ? playerIn.web_name : 'Unknown'}</div><div style="font-size:0.8rem;color:#64748b;">GW ${t.event || '—'}</div></div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderCaptain(bs, picks, currentGW) {
+    if (!Array.isArray(picks) || picks.length === 0) return '<p style="color:var(--text-muted)">No captain data available</p>';
+    const captain = picks.find(p => p.is_captain) || picks[0];
+    const vice = picks.find(p => p.is_vice || p.is_vice_captain || p.is_viceCaptain || p.is_vice || p.vice) || null;
+    if (!captain) return '<p style="color:var(--text-muted)">No captain data available</p>';
+    const player = bs.elements.find(e => e.id === (captain.element || captain.id || captain.player));
+    const vicePlayer = vice ? bs.elements.find(e => e.id === (vice.element || vice.id || vice.player)) : null;
+    const playerName = player ? `${player.web_name} · ${bs.teams.find(t => t.id === player.team)?.short_name || '—'}` : `ID ${captain.element || captain.id || 'unknown'}`;
+    const captainPoints = player ? (player.event_points || 0) : 0;
+
+    return `<div class="captain-box">
+      <div style="display:flex;flex-direction:column;gap:8px;min-width:0;">
+        <div class="captain-item"><div class="captain-icon">🎖</div><div style="min-width:0;"><div style="font-size:0.95rem;font-weight:700;color:#102a43;">Captain (GW ${currentGW})</div><div style="font-size:0.82rem;color:#475569;">${playerName}</div></div></div>
+        ${vicePlayer ? `<div class="captain-item"><div class="captain-icon">👥</div><div style="min-width:0;"><div style="font-size:0.86rem;font-weight:700;color:#102a43;">Vice Captain</div><div style="font-size:0.78rem;color:#475569;">${vicePlayer.web_name} · ${bs.teams.find(t => t.id === vicePlayer.team)?.short_name || '—'}</div></div></div>` : ''}
+      </div>
+      <div class="captain-stats">${captainPoints}</div>
+    </div>`;
+  }
+
+  function renderChips(history) {
+    if (!history || !Array.isArray(history.chips) || history.chips.length === 0) return '<p style="color:var(--text-muted)">No chips used yet</p>';
+    return history.chips.slice(-3).reverse().map(chip => `<div style="padding:12px;background:#eff6ff;border-radius:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+      <div><div style="font-weight:700;color:#1d4ed8;">${chipNames[chip.name] || chip.name}</div><div style="font-size:0.82rem;color:#475569;">Used in GW ${chip.event}</div></div><div style="font-size:1.2rem;">🃏</div>
+    </div>`).join('');
+  }
+
+  normalizeTabButtons();
+  attachBackButton();
+  attachTabHandlers();
+  renderManagerPage();
+  </script>
+</body>
+</html>

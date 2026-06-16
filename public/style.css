@@ -1202,12 +1202,15 @@ main { max-width: 100%; overflow-x: hidden; }
 }
 
 @media (max-width: 768px) {
-  /* Live Indicator - Mobile Positioning */
+  /* Live Indicator - Mobile Positioning (below navbar) */
   .live-indicator {
-    bottom: 15px;
-    right: 15px;
+    bottom: auto !important;
+    left: auto !important;
+    top: 76px !important;
+    right: 12px !important;
     width: 14px;
     height: 14px;
+    z-index: 1001 !important;
   }
   
   /* Navigation */
@@ -3247,4 +3250,16 @@ main { max-width: 100%; overflow-x: hidden; }
 /* This fixes the chip section which previously spanned the full grid width */
 .activity-chip {
     grid-column: auto !important;       /* Removes grid override for flex layout */
+}
+
+/* Ensure visibility on very small/mobile screens by moving indicator below navbar */
+@media (max-width: 480px) {
+  .live-indicator {
+    top: calc(var(--nav-h) + 8px);
+    right: 12px;
+    bottom: auto;
+    width: 14px;
+    height: 14px;
+    z-index: 1100; /* above navbar */
+  }
 }

@@ -684,10 +684,25 @@ function renderWatchlistMini() {
   ).join('') + (watchlist.length > 6 ? `<p style="font-size:0.75rem;color:var(--text-muted);margin-top:6px;">+${watchlist.length - 6} more</p>` : '');
 }
 /* ── Player Stats Modal ─────────────────────────────────────────── */
-function showPlayerStats(playerId) {
+async function showPlayerStats(playerId) {
   const player = allPlayers.find(p => p.id === playerId);
   if (!player) return;
-  
+
+  // Try to fetch detailed element-summary to compute accurate appearances
+  let computedAppearances = 0;
+  try {
+    const details = await API.player(playerId);
+    // appearances this season: count of history entries with minutes > 0
+    const thisSeason = Array.isArray(details.history) ? details.history.filter(h => (h.minutes || 0) > 0).length : 0;
+    // past seasons appearances (history_past entries have `appearances`)
+    const past = Array.isArray(details.history_past) ? details.history_past.reduce((a, b) => a + (b.appearances || 0), 0) : 0;
+    computedAppearances = thisSeason + past;
+  } catch (e) {
+    console.warn('Failed to fetch player details for appearances:', e);
+  }
+
+  const appearances = (player.appearances ?? computedAppearances) || 0;
+
   const statsHtml = `
 <div style="display:grid;grid-template-columns:1fr;gap:10px;font-size:0.9rem;text-align:left;">
   <div style="padding:8px;background:#f8faff;border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #4a90d9;">
@@ -708,7 +723,7 @@ function showPlayerStats(playerId) {
   </div>
   <div style="padding:8px;background:#f8faff;border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #757575;">
     <strong>Appearances:</strong>
-    <span>${player.appearances || 0}</span>
+    <span>${appearances}</span>
   </div>
   <div style="padding:8px;background:#f8faff;border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #00c853;">
     <strong>Bonus Points:</strong>
@@ -720,7 +735,7 @@ function showPlayerStats(playerId) {
   </div>
 </div>
   `;
-  
+
   document.getElementById('player-stats-name').textContent = player.web_name;
   document.getElementById('player-stats-content').innerHTML = statsHtml;
   document.getElementById('player-stats-modal').style.display = 'block';

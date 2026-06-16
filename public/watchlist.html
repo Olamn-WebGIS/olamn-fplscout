@@ -401,6 +401,24 @@ window.addEventListener('storage', (e) => {
     console.error('Error handling storage event on watchlist page:', err);
   }
 });
+
+// Also listen for custom events or BroadcastChannel messages (same-tab and cross-tab)
+window.addEventListener('fpl_watched_teams_changed', (e) => {
+  try { renderTeams(); } catch (err) { console.error(err); }
+});
+
+if (typeof BroadcastChannel !== 'undefined') {
+  try {
+    const bc = new BroadcastChannel('fpl_watchlist_channel');
+    bc.onmessage = (ev) => {
+      if (ev.data && ev.data.type === 'watched_teams_updated') {
+        try { renderTeams(); } catch (err) { console.error(err); }
+      }
+    };
+  } catch (err) {
+    console.warn('BroadcastChannel init failed on watchlist page', err);
+  }
+}
 </script>
 <script src="app.js?v=2"></script>
 </body>

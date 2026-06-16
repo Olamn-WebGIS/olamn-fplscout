@@ -4,8 +4,19 @@ const API = {
   bootstrap:       ()     => fetch('/api/bootstrap').then(r => {
     if (!r.ok) throw new Error(`API Error: ${r.status}`);
     return r.json();
+  }).then(data => {
+    try { localStorage.setItem('fpl_bootstrap_cache', JSON.stringify(data)); } catch (e) { }
+    return data;
   }).catch(e => {
     console.error('Bootstrap fetch failed:', e);
+    try {
+      const cached = localStorage.getItem('fpl_bootstrap_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        try { showToast('Using cached data (offline mode)', 'error'); } catch(e){}
+        return parsed;
+      }
+    } catch (err) { /* ignore */ }
     throw e;
   }),
   manager:         (id)   => fetch(`/api/manager/${id}`).then(r => {

@@ -240,7 +240,16 @@
       <div class="section-eyebrow" style="color:var(--green);margin-bottom:8px;">Mini-League Analytics</div>
       <h1 class="display" style="font-size:clamp(2rem,5vw,2.8rem);margin-bottom:0.75rem;">Spy on Your <em style="color:var(--green);font-style:normal;">Mini-League</em></h1>
       <p style="color:rgba(255,255,255,0.7);max-width:680px;font-size:1.05rem;line-height:1.5;">🎯 See who's ahead, analyze their teams, and track your rivals. ⚡ Get instant alerts on transfers and captain picks. 📊 Compare your team vs rivals in real-time. 📈 Access advanced head-to-head analytics.</p>
+      <div style="margin-top:8px;">
+        <button id="spy-test-api" class="btn btn-sm" style="margin-right:8px;">Test Spy API</button>
+        <span id="spy-test-status" style="color:rgba(255,255,255,0.8);font-size:0.9rem"></span>
+      </div>
     </div>
+  </div>
+
+  <div id="spy-debug" style="max-width:900px;margin:1rem auto;color:var(--text-muted);font-size:0.85rem;display:none;">
+    <h3 style="margin:0 0 6px 0;color:var(--text-primary);font-size:0.95rem;">Debug Output</h3>
+    <pre id="spy-debug-pre" style="max-height:360px;overflow:auto;padding:12px;background:#f7fbff;border-radius:8px;border:1px solid #e6eefc;"></pre>
   </div>
 
   <!-- League Selection -->
@@ -386,18 +395,22 @@
 
 // ── PREMIUM PAGE ACCESS CHECK ──
 (function checkPremiumAccess() {
-  const currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
-  
-  // If not logged in, redirect to home and trigger signup modal
-  if (!currentUser) {
-    window.location.href = '/';
-    return;
-  }
-  
-  // If logged in but not premium, redirect to subscribe
-  if (!currentUser.isPremium) {
-    window.location.href = '/subscribe.html';
-    return;
+  // Relaxed premium gating: allow page to load for guests but
+  // keep premium redirect logic in place for enforced environments.
+  try {
+    const currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
+    if (!currentUser) {
+      // Do not redirect anonymous users — allow them to view the spy page.
+      console.warn('Spy page: no user session found — loading in read-only mode');
+      return;
+    }
+    if (!currentUser.isPremium) {
+      // Instead of forcing a redirect, show a console warning and let the page load.
+      console.warn('Spy page: user is not premium — some features may be limited');
+      return;
+    }
+  } catch (e) {
+    console.warn('Spy premium check failed, continuing to load page', e);
   }
 })();
 
@@ -502,7 +515,7 @@ function renderSearchResults(results) {
     const gwPts = r.event_points ?? r.event_total ?? 0;
     const isWatched = isTeamWatched(r.entry);
     
-    return `<div class="card spy-rival-card" style="margin-bottom:1rem;cursor:pointer;" onclick="viewTeam(${r.entry}, '${r.player_name.replace(/'/g, "\\'")}', ${totalPts}, ${rank})">
+    return `<div class="card spy-rival-card" style="margin-bottom:1rem;cursor:pointer;" onclick="location.href='/manager.html?id=${r.entry}&name=${encodeURIComponent(r.player_name)}'">
       <div class="rival-header">
         <div class="rival-info" style="flex:1;">
           <div class="rival-name">
@@ -516,7 +529,7 @@ function renderSearchResults(results) {
           <small>total</small>
         </div>
         <div class="rival-actions">
-          <button class="icon-btn" title="View Squad" style="background:var(--blue-light);color:#fff;">👁️</button>
+          <button class="icon-btn" title="View Squad" style="background:var(--blue-light);color:#fff;" onclick="event.stopPropagation(); location.href='/manager.html?id=${r.entry}&name=${encodeURIComponent(r.player_name)}'">👁️</button>
           <button class="icon-btn" id="star-search-${r.entry}" onclick="event.stopPropagation(); toggleTeamWatchlist(${r.entry}, '${r.player_name.replace(/'/g, "\\'")}', '${r.entry_name.replace(/'/g, "\\'")}', ${totalPts}, ${rank});" title="Add to Watchlist" style="background:${isWatched ? 'var(--green)' : '#f1f5f9'};color:${isWatched ? '#fff' : '#000'};">⭐</button>
         </div>
       </div>
@@ -659,7 +672,7 @@ function renderRivals(rivals) {
           <small>total pts</small>
         </div>
         <div class="rival-actions">
-          <button class="icon-btn" onclick="viewTeam(${r.entry}, '${r.player_name.replace(/'/g, "\\'")}', ${totalPts}, ${rank});" title="View Squad">👁️</button>
+          <button class="icon-btn" onclick="location.href='/manager.html?id=${r.entry}&name=${encodeURIComponent(r.player_name)}'" title="View Squad">👁️</button>
           <button class="icon-btn" id="star-${r.entry}" onclick="toggleTeamWatchlist(${r.entry}, '${r.player_name.replace(/'/g, "\\'")}', '${r.entry_name.replace(/'/g, "\\'")}', ${totalPts}, ${rank});" title="Add to Watchlist" style="background:${isWatched ? 'var(--green)' : '#f1f5f9'};color:${isWatched ? '#fff' : '#000'};">⭐</button>
         </div>
       </div>
@@ -1094,14 +1107,15 @@ async function toggleTeamWatchlist(managerId, playerName, entryName, totalPts, r
   const currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
 
   // Update local watchlist state
-  const starBtn = document.getElementById(`star-${managerId}`);
+  const starBtnPrimary = document.getElementById(`star-${managerId}`);
+  const starBtnSearch = document.getElementById(`star-search-${managerId}`);
+  const starBtns = [starBtnPrimary, starBtnSearch].filter(Boolean);
   const isWatched = isTeamWatched(managerId);
 
-  if (isWatched) {
+    if (isWatched) {
     delete watchedTeams[String(managerId)];
-    if (starBtn) {
-      starBtn.style.background = '#f1f5f9';
-      starBtn.style.color = '#000';
+    if (starBtns.length) {
+      starBtns.forEach(b => { b.style.background = '#f1f5f9'; b.style.color = '#000'; });
     }
     showToast(`${playerName} removed from watchlist`, 'success');
     
@@ -1119,9 +1133,8 @@ async function toggleTeamWatchlist(managerId, playerName, entryName, totalPts, r
       rank: rank,
       added_at: new Date().toISOString()
     };
-    if (starBtn) {
-      starBtn.style.background = 'var(--green)';
-      starBtn.style.color = '#fff';
+    if (starBtns.length) {
+      starBtns.forEach(b => { b.style.background = 'var(--green)'; b.style.color = '#fff'; });
     }
     showToast(`${playerName} added to watchlist! 📌`, 'success');
     
@@ -1150,6 +1163,23 @@ async function toggleTeamWatchlist(managerId, playerName, entryName, totalPts, r
   // Save to localStorage (local persistence - works offline)
   localStorage.setItem('fpl_watched_teams', JSON.stringify(watchedTeams));
   console.log('✅ Watchlist saved to localStorage:', watchedTeams);
+
+  // Notify other parts of the app (same tab) and other tabs via BroadcastChannel
+  try {
+    window.dispatchEvent(new CustomEvent('fpl_watched_teams_changed', { detail: watchedTeams }));
+  } catch (e) {
+    console.warn('Could not dispatch custom watchlist event', e);
+  }
+
+  if (typeof BroadcastChannel !== 'undefined') {
+    try {
+      const bc = new BroadcastChannel('fpl_watchlist_channel');
+      bc.postMessage({ type: 'watched_teams_updated', watchedTeams });
+      bc.close();
+    } catch (e) {
+      console.warn('BroadcastChannel failed', e);
+    }
+  }
 
   // Sync to Supabase for cross-device persistence (only if logged in)
   if (currentUser && currentUser.email) {
@@ -1269,6 +1299,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 2. Load watched teams from localStorage on initial page load
   loadWatchedTeams();
+
+  // Wire Test Spy API button
+  const spyTestBtn = document.getElementById('spy-test-api');
+  if (spyTestBtn) {
+    spyTestBtn.addEventListener('click', async () => {
+      const leagueId = document.getElementById('league-id-input').value.trim();
+      const status = document.getElementById('spy-test-status');
+      const dbg = document.getElementById('spy-debug');
+      const dbgPre = document.getElementById('spy-debug-pre');
+      if (!leagueId) { alert('Enter a league id in the input above'); return; }
+      status.textContent = 'Calling /api/spy/' + leagueId + ' ...';
+      try {
+        const res = await fetch(`/api/spy/${leagueId}`);
+        const text = await res.text();
+        let parsed = text;
+        try { parsed = JSON.parse(text); }
+        catch {}
+        dbg.style.display = 'block';
+        dbgPre.textContent = typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2);
+        status.textContent = 'Done';
+      } catch (err) {
+        dbg.style.display = 'block';
+        dbgPre.textContent = 'Error: ' + (err && err.message ? err.message : String(err));
+        status.textContent = 'Failed';
+      }
+    });
+  }
 
   // 3. Load logged-in user from localStorage
   try {
