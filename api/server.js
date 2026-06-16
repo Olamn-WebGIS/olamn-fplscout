@@ -66,19 +66,27 @@ async function fplFetch(endpoint, ttl = 120) {
   const cached = cache.get(key);
   if (cached) return cached;
 
-  const res = await fetch(`${FPL_BASE}${endpoint}`, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; FPLScout/1.0)',
-      'Accept': 'application/json',
-      'Accept-Language': 'en-GB,en;q=0.9',
-      'Referer': 'https://fantasy.premierleague.com/',
-    },
-  });
+  try {
+    const res = await fetch(`${FPL_BASE}${endpoint}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; FPLScout/1.0)',
+        'Accept': 'application/json',
+        'Accept-Language': 'en-GB,en;q=0.9',
+        'Referer': 'https://fantasy.premierleague.com/',
+      },
+    });
 
-  if (!res.ok) throw new Error(`FPL API ${res.status}: ${endpoint}`);
-  const data = await res.json();
-  cache.set(key, data, ttl);
-  return data;
+    if (!res.ok) {
+      console.error(`❌ FPL API Error ${res.status} on ${endpoint}`);
+      throw new Error(`FPL API ${res.status}: ${endpoint}`);
+    }
+    const data = await res.json();
+    cache.set(key, data, ttl);
+    return data;
+  } catch (err) {
+    console.error(`❌ fplFetch failed for ${endpoint}:`, err.message);
+    throw err;
+  }
 }
 
 function apiError(res, err) {
