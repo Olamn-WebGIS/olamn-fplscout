@@ -2616,11 +2616,14 @@ main { max-width: 100%; overflow-x: hidden; }
     overflow-x: auto !important;
     width: 100% !important;
     padding-bottom: 0.5rem !important;
+    scroll-snap-type: x mandatory !important;
   }
 
-  #activity-tab .activity-section {
+  #activity-tab .activity-grid > .activity-section {
     display: block !important;
     width: 100% !important;
+    scroll-snap-align: start !important;
+    min-width: 260px !important;
   }
 
   #activity-tab .activity-section.activity-chip {
@@ -2637,6 +2640,7 @@ main { max-width: 100%; overflow-x: hidden; }
     width: 100% !important;
     overflow-x: auto !important;
     padding-bottom: 10px !important;
+    scroll-snap-type: x mandatory !important;
   }
 
   #modal-transfer-activity > div,
@@ -2645,6 +2649,7 @@ main { max-width: 100%; overflow-x: hidden; }
     width: 100% !important;
     min-width: 240px !important;
     box-sizing: border-box !important;
+    scroll-snap-align: start !important;
   }
 
   #modal-transfer-activity .loading-block,
