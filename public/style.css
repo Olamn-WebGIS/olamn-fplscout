@@ -2733,8 +2733,17 @@ main { max-width: 100%; overflow-x: hidden; }
     justify-content: center; align-items: center; z-index: 1000;
 }
 .modal-content {
-    background: #fff; padding: 30px; border-radius: 12px;
-    width: 90%; max-width: 400px; min-height: 500px; position: relative; color: #333;
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    
+    /* ADD THESE LINES */
+    height: 70vh;        /* Uses 70% of the screen height */
+    overflow-y: auto;    /* Allows scrolling inside if content is long */
+    position: relative;
+    color: #333;
 }
 #close-modal-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; }
 .auth-tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #eee; }
