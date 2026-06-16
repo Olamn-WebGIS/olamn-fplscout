@@ -967,27 +967,9 @@ async function loadManagerCaptainPicks(managerId, playerName) {
       }
     }
     
-    if (viceCaptain) {
-      const player = bsData.elements.find(e => e.id === viceCaptain.element);
-      if (player) {
-        const team = bsData.teams.find(t => t.id === player.team);
-        html += `<div style="padding:12px;background:#f8faff;border-left:4px solid #cbd5e1;border-radius:8px;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div style="font-size:1.2rem;">🔹</div>
-            <div style="flex:1;">
-              <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">Vice Captain (GW ${currentGW})</div>
-              <div style="font-size:0.85rem;color:var(--text-muted);">${player.web_name} · ${team?.short_name || '—'}</div>
-            </div>
-            <div style="font-size:1.5rem;font-weight:700;color:#94a3b8;">${player.event_points || 0}</div>
-          </div>
-        </div>`;
-      } else {
-        console.warn('⚠️ Vice-captain player not found in bootstrap data');
-      }
-    }
-    
-    if (!captain && !viceCaptain) {
-      console.warn('⚠️ No captain or vice-captain found in picks');
+    // Only show the main captain pick in the modal (hide vice-captain)
+    if (!captain) {
+      console.warn('⚠️ No captain found in picks');
       return '<p style="color:var(--text-muted);font-size:0.85rem;">No captain picks data available for this gameweek</p>';
     }
     
