@@ -2733,14 +2733,12 @@ main { max-width: 100%; overflow-x: hidden; }
     justify-content: center; align-items: center; z-index: 1000;
 }
 .modal-content {
-    background: #fff !important; 
-    padding: 30px !important; 
-    border-radius: 12px !important;
-    width: 90% !important; 
-    max-width: 400px !important; 
-    min-height: 600px !important; /* Force a tall height */
-    border: 5px solid red !important; /* IF YOU SEE A RED BORDER, THE FILE IS WORKING */
-    position: relative; 
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    position: relative;
     color: #333;
 }
 #close-modal-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; }
@@ -3127,4 +3125,23 @@ main { max-width: 100%; overflow-x: hidden; }
   background: var(--bg-hover);
   border-color: var(--blue-light);
   color: var(--blue-light);
+}
+/* Update these selectors to control your Activity Tab layout */
+.activity-grid {
+    display: flex !important;           /* Forces sections into a horizontal row */
+    flex-direction: row !important;     /* Ensures side-by-side alignment */
+    overflow-x: auto !important;        /* Enables horizontal scrolling */
+    gap: 1.5rem !important;             /* Maintains spacing between sections */
+    padding-bottom: 15px !important;    /* Adds space for the scrollbar */
+    white-space: nowrap !important;     /* Prevents content from wrapping */
+}
+
+.activity-section {
+    min-width: 250px !important;        /* Prevents cards from squishing on mobile */
+    flex: 0 0 auto !important;          /* Keeps sections at their set width */
+}
+
+/* This fixes the chip section which previously spanned the full grid width */
+.activity-chip {
+    grid-column: auto !important;       /* Removes grid override for flex layout */
 }
