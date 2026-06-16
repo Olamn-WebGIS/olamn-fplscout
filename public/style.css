@@ -2733,16 +2733,14 @@ main { max-width: 100%; overflow-x: hidden; }
     justify-content: center; align-items: center; z-index: 1000;
 }
 .modal-content {
-    background: #fff;
-    padding: 30px;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 400px;
-    
-    /* ADD THESE LINES */
-    height: 70vh;        /* Uses 70% of the screen height */
-    overflow-y: auto;    /* Allows scrolling inside if content is long */
-    position: relative;
+    background: #fff !important; 
+    padding: 30px !important; 
+    border-radius: 12px !important;
+    width: 90% !important; 
+    max-width: 400px !important; 
+    min-height: 600px !important; /* Force a tall height */
+    border: 5px solid red !important; /* IF YOU SEE A RED BORDER, THE FILE IS WORKING */
+    position: relative; 
     color: #333;
 }
 #close-modal-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; }
