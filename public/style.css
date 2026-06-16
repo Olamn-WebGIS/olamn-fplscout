@@ -398,6 +398,63 @@ table {
   width: 100%; border-collapse: collapse;
   font-size: 0.875rem;
 }
+
+/* Compact styles for the Team Modal Recent Activity tab only */
+#team-modal #activity-tab {
+  /* overall text scale for activity tab */
+  font-size: 0.82rem !important;
+}
+
+#team-modal #activity-tab .activity-grid { gap: 0.6rem !important; }
+
+/* Compact individual activity cards injected via JS */
+#modal-transfer-activity > div,
+#modal-captain-activity > div,
+#modal-chip-activity > div {
+  padding: 6px !important;
+  margin-bottom: 6px !important;
+  border-radius: 8px !important;
+  font-size: 0.82rem !important;
+  line-height: 1.25 !important;
+  border-left-width: 3px !important;
+}
+
+/* Reduce emoji / icon sizes inside activity cards */
+#modal-chip-activity > div > div:first-child,
+#modal-captain-activity > div > div:first-child,
+#modal-transfer-activity > div > div:first-child {
+  font-size: 1rem !important;
+}
+
+/* Tiny meta text */
+#team-modal #activity-tab .activity-section p,
+#team-modal #activity-tab .activity-section span,
+#team-modal #activity-tab .activity-section .stat-label {
+  font-size: 0.72rem !important;
+  color: var(--text-muted) !important;
+}
+
+/* Ensure chip rows use smaller spacing */
+#modal-chip-activity {
+  display: block;
+}
+#modal-chip-activity .watchlist-player-card,
+#modal-transfer-activity .watchlist-player-card,
+#modal-captain-activity .watchlist-player-card {
+  padding: 6px !important;
+}
+
+/* Buttons and badges in activity tab should be compact */
+#team-modal #activity-tab button,
+#team-modal #activity-tab .badge {
+  font-size: 0.72rem !important;
+  padding: 4px 8px !important;
+}
+
+/* Make sure squad tab is unaffected */
+#team-modal #squad-tab * {
+  font-size: inherit;
+}
 thead th {
   text-align: left; padding: 0.6rem 0.75rem;
   font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px;

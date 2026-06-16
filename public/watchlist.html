@@ -384,6 +384,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderPlayers();
   renderTeams();
 });
+
+// Listen for storage changes from other tabs/pages (e.g. added from Spy page)
+window.addEventListener('storage', (e) => {
+  if (!e.key) return;
+  try {
+    if (e.key === 'fpl_watchlist') {
+      // Re-render players list
+      renderPlayers();
+    }
+    if (e.key === 'fpl_watched_teams') {
+      // Re-render teams list
+      renderTeams();
+    }
+  } catch (err) {
+    console.error('Error handling storage event on watchlist page:', err);
+  }
+});
 </script>
 <script src="app.js?v=2"></script>
 </body>
