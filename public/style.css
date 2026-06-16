@@ -2734,7 +2734,7 @@ main { max-width: 100%; overflow-x: hidden; }
 }
 .modal-content {
     background: #fff; padding: 30px; border-radius: 12px;
-    width: 90%; max-width: 400px; position: relative; color: #333;
+    width: 90%; max-width: 400px; min-height: 500px; position: relative; color: #333;
 }
 #close-modal-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; }
 .auth-tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #eee; }
