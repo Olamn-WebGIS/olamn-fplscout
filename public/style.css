@@ -2611,10 +2611,11 @@ main { max-width: 100%; overflow-x: hidden; }
 
   #activity-tab .activity-grid {
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: repeat(3, minmax(260px, 1fr)) !important;
     gap: 1.5rem !important;
+    overflow-x: auto !important;
     width: 100% !important;
-    align-items: stretch !important;
+    padding-bottom: 0.5rem !important;
   }
 
   #activity-tab .activity-section {
@@ -2630,18 +2631,19 @@ main { max-width: 100%; overflow-x: hidden; }
   #modal-captain-activity,
   #modal-chip-activity {
     display: grid !important;
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(3, minmax(240px, 1fr)) !important;
+    grid-auto-rows: auto !important;
     gap: 10px !important;
     width: 100% !important;
-    align-items: stretch !important;
+    overflow-x: auto !important;
+    padding-bottom: 10px !important;
   }
 
   #modal-transfer-activity > div,
   #modal-captain-activity > div,
   #modal-chip-activity > div {
-    display: block !important;
     width: 100% !important;
-    min-width: 0 !important;
+    min-width: 240px !important;
     box-sizing: border-box !important;
   }
 
