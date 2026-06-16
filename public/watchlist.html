@@ -379,32 +379,45 @@ function renderTeams() {
   document.getElementById('teams-container').innerHTML = html;
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  await bootstrap();
+function refreshWatchlistUI() {
   renderPlayers();
   renderTeams();
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await bootstrap();
+  refreshWatchlistUI();
 });
 
 // Listen for storage changes from other tabs/pages (e.g. added from Spy page)
 window.addEventListener('storage', (e) => {
   if (!e.key) return;
   try {
-    if (e.key === 'fpl_watchlist') {
-      // Re-render players list
-      renderPlayers();
-    }
-    if (e.key === 'fpl_watched_teams') {
-      // Re-render teams list
-      renderTeams();
+    if (e.key === STORAGE_KEYS.watchedPlayers || e.key === STORAGE_KEYS.watchedTeams) {
+      refreshWatchlistUI();
     }
   } catch (err) {
     console.error('Error handling storage event on watchlist page:', err);
   }
 });
 
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted || document.visibilityState === 'visible') {
+    refreshWatchlistUI();
+  }
+});
+
+window.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    refreshWatchlistUI();
+  }
+});
+
+window.addEventListener('focus', refreshWatchlistUI);
+
 // Also listen for custom events or BroadcastChannel messages (same-tab and cross-tab)
 window.addEventListener('fpl_watched_teams_changed', (e) => {
-  try { renderTeams(); } catch (err) { console.error(err); }
+  try { refreshWatchlistUI(); } catch (err) { console.error(err); }
 });
 
 if (typeof BroadcastChannel !== 'undefined') {
@@ -412,7 +425,7 @@ if (typeof BroadcastChannel !== 'undefined') {
     const bc = new BroadcastChannel('fpl_watchlist_channel');
     bc.onmessage = (ev) => {
       if (ev.data && ev.data.type === 'watched_teams_updated') {
-        try { renderTeams(); } catch (err) { console.error(err); }
+        try { refreshWatchlistUI(); } catch (err) { console.error(err); }
       }
     };
   } catch (err) {
