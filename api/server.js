@@ -1037,6 +1037,15 @@ app.post('/api/save-user-data', async (req, res) => {
     if (error) {
       console.error('Supabase upsert error:', error);
       return res.status(500).json({ success: false, message: error.message });
+    }
+
+    return res.json({ success: true, message: 'User data saved successfully' });
+  } catch (error) {
+    console.error('Error saving user data:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // ── Load User Data (Watchlist, Synced Team) ───────────────────
 app.post('/api/user-data', async (req, res) => {
   try {
