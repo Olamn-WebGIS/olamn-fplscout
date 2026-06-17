@@ -1179,6 +1179,26 @@ async function toggleTeamWatchlist(managerId, playerName, entryName, totalPts, r
     console.warn('Could not dispatch custom watchlist event', e);
   }
 
+  // If logged in, create the activity row in Supabase immediately when adding a team
+  if (!isWatched && currentUser && currentUser.email) {
+    try {
+      await fetch('/api/watchlist/check-activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          managerId,
+          email: currentUser.email,
+          rivalName: playerName,
+          rivalTeamName: entryName
+        })
+      });
+      console.log('📤 Watchlist activity row created in Supabase');
+    } catch (error) {
+      console.error('Error creating watchlist activity row:', error);
+    }
+  }
+
   if (typeof BroadcastChannel !== 'undefined') {
     try {
       const bc = new BroadcastChannel('fpl_watchlist_channel');

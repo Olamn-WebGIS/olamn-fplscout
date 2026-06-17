@@ -1288,7 +1288,7 @@ async function payWithPaystack() {
 // Get rival activity snapshot (for change detection)
 app.post('/api/watchlist/check-activity', async (req, res) => {
     try {
-        let { userId, managerId, email } = req.body;
+        let { userId, managerId, email, rivalName, rivalTeamName } = req.body;
         
         // Allow email fallback when userId not present in client session
         if ((!userId || userId === null) && email) {
@@ -1355,12 +1355,13 @@ app.post('/api/watchlist/check-activity', async (req, res) => {
             
             if (!activityRecord) {
                 // Create new activity record
-                const { data: newRecord } = await supabase
+                const { data: newRecord, error: insertError } = await supabase
                     .from('watchlist_activity')
                     .insert({
                         user_id: userId,
                         rival_manager_id: managerId,
-                        rival_name: 'Rival',
+                        rival_name: rivalName || 'Rival',
+                        rival_team_name: rivalTeamName || null,
                         last_checked_at: new Date(),
                         recent_transfers: transfers || [],
                         recent_captains: [picks],
@@ -1369,6 +1370,7 @@ app.post('/api/watchlist/check-activity', async (req, res) => {
                     .select()
                     .single();
                 
+                if (insertError) throw insertError;
                 return res.json({
                     success: true,
                     isNew: true,
