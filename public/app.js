@@ -5,7 +5,6 @@ const appState = {
 
 // Tracking active user session memory across browser page reloads
 let currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
-let tempSignUpData = null;
 let intendedPremiumPage = null; // Track which premium page user is trying to access
 
 // ── Currency Exchange & Pricing ──────────────────────────────
@@ -219,14 +218,12 @@ function setupPremiumLocks() {
             const tabSignIn = document.getElementById('tab-signin');
             const signInForm = document.getElementById('signin-form');
             const signUpForm = document.getElementById('signup-form');
-            const otpForm = document.getElementById('otp-form');
             const authTabsDiv = document.getElementById('auth-tabs');
             
             // Reset modal to show signup tab
             if (authTabsDiv) authTabsDiv.classList.remove('form-hidden');
             if (signInForm) signInForm.classList.add('form-hidden');
             if (signUpForm) signUpForm.classList.remove('form-hidden');
-            if (otpForm) otpForm.classList.add('form-hidden');
             if (tabSignUp) tabSignUp.classList.add('active-tab');
             if (tabSignIn) tabSignIn.classList.remove('active-tab');
             
@@ -264,7 +261,6 @@ function setupModalInterface() {
     const tabSignUp = document.getElementById('tab-signup');
     const signInForm = document.getElementById('signin-form');
     const signUpForm = document.getElementById('signup-form');
-    const otpForm = document.getElementById('otp-form');
     const authTabsDiv = document.getElementById('auth-tabs');
 
     if (closeModalBtn && authModal) {
@@ -282,90 +278,50 @@ function setupModalInterface() {
         });
     }
 
-    // Handle Zoho Email OTP Signup Trigger
+    // Handle signup form submission without sending a verification OTP
     if (signUpForm) {
         signUpForm.addEventListener('submit', async (e) => {
-            e.preventDefault(); 
+            e.preventDefault();
 
             const fullName = document.getElementById('signup-name').value;
             const email = document.getElementById('signup-email').value;
             const country = document.getElementById('signup-country').value;
             const password = document.getElementById('signup-password').value;
-
-            tempSignUpData = { fullName, email, country, password };
-
             const submitBtn = signUpForm.querySelector('.auth-btn');
-            submitBtn.innerText = "Sending code...";
+            const authModal = document.getElementById('auth-modal');
+
+            submitBtn.innerText = "Creating account...";
             submitBtn.disabled = true;
 
             try {
-                const response = await fetch('/api/send-otp', {
+                const response = await fetch('/api/signup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email })
+                    body: JSON.stringify({ fullName, email, country, password })
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    document.getElementById('otp-target-email').innerText = email;
-                    if (signInForm) signInForm.classList.add('form-hidden');
-                    if (signUpForm) signUpForm.classList.add('form-hidden');
-                    if (authTabsDiv) authTabsDiv.classList.add('form-hidden');
-                    if (otpForm) otpForm.classList.remove('form-hidden');
-                } else {
-                    alert("Error sending email: " + data.message);
-                    submitBtn.innerText = "Send Verification OTP";
-                    submitBtn.disabled = false;
-                }
-            } catch (error) {
-                console.error("Connection Error:", error);
-                alert("Could not connect to the server.");
-                submitBtn.innerText = "Send Verification OTP";
-                submitBtn.disabled = false;
-            }
-        });
-    }
-
-    // Handle OTP Code Match Verification
-    if (otpForm) {
-        otpForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const typedOtp = document.getElementById('otp-input').value;
-
-            try {
-                const response = await fetch('/api/verify-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: tempSignUpData.email,
-                        otp: typedOtp,
-                        fullName: tempSignUpData.fullName,
-                        country: tempSignUpData.country,
-                        password: tempSignUpData.password 
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    alert("Account verified and created successfully!");
+                    alert("Account created successfully!");
                     currentUser = data.user;
                     localStorage.setItem('fpl_user_session', JSON.stringify(data.user));
-                    
+
                     const accountNavItem = document.getElementById('account-nav-item');
                     if (accountNavItem) accountNavItem.classList.remove('account-hidden');
                     if (authModal) authModal.classList.add('modal-hidden');
-                    
-                    // New users are not premium by default, redirect to subscription
-                    // If they came from a premium page click, they'll need to subscribe first
-                    window.location.href = "/subscribe.html"; 
+
+                    window.location.href = "/subscribe.html";
                 } else {
-                    alert("Invalid OTP code. Please check your email and try again.");
+                    alert("Signup failed: " + data.message);
+                    submitBtn.innerText = "Create Account";
+                    submitBtn.disabled = false;
                 }
             } catch (error) {
-                console.error("Verification Error:", error);
-                alert("Something went wrong during verification.");
+                console.error("Signup Error:", error);
+                alert("Could not connect to the server.");
+                submitBtn.innerText = "Create Account";
+                submitBtn.disabled = false;
             }
         });
     }

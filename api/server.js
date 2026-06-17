@@ -463,130 +463,63 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Temporary memory to hold OTPs before they are verified (We will replace this with the database later)
+// Temporary memory to hold OTPs used for email change verification
 let tempOtpStore = {};
-let registeredUsersStore = {}; // 🆕 Temporary memory store for verified users
 
-// 2. Create the API Route to handle Sign-Up and send the email
-app.post('/api/send-otp', async (req, res) => {
-    try {
-        const { email } = req.body;
+// 2. Create the API Route to handle Sign-Up without requiring email verification
+app.post('/api/signup', async (req, res) => {
+  const { fullName, email, country, password } = req.body;
 
-        if (!email) {
-            return res.status(400).json({ success: false, message: 'Email is required' });
-        }
+  if (!fullName || !email || !country || !password) {
+    return res.status(400).json({ success: false, message: 'All fields are required.' });
+  }
 
-        // Verify transporter is working
-        const verified = await transporter.verify();
-        if (!verified) {
-            console.error('Zoho transporter verification failed');
-            return res.status(500).json({ success: false, message: 'Email service is not configured properly.' });
-        }
+  try {
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
 
-        // Generate a random 6-digit number
-        const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-        
-        // Save it temporarily linked to their email address
-        tempOtpStore[email] = generatedOtp;
-        console.log(`Generated OTP for ${email}: ${generatedOtp}`);
-
-        // Define the email appearance
-        const mailOptions = {
-            from: `"League Spy Team" <${process.env.ZOHO_EMAIL || 'info@fplscout.name.ng'}>`,
-            to: email,
-            subject: 'Verify Your League Spy Account',
-            html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px; max-width: 500px;">
-                    <h2 style="color: #0070f3;">Email Verification</h2>
-                    <p>Thank you for registering. Use the 6-digit security code below to complete your verification:</p>
-                    <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; text-align: center; margin: 30px 0; color: #333;">
-                        ${generatedOtp}
-                    </div>
-                    <p style="font-size: 12px; color: #777;">If you did not request this code, please ignore this email.</p>
-                </div>
-            `
-        };
-
-        // Send the email physically via Zoho
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`OTP sent successfully to ${email}. Message ID: ${info.messageId}`);
-        res.json({ success: true, message: 'OTP sent successfully!' });
-    } catch (error) {
-        console.error('Zoho Email Error:', error.message);
-        res.status(500).json({ success: false, message: `Failed to send verification email: ${error.message}` });
+    if (!checkError && existingUser) {
+      return res.status(400).json({ success: false, message: 'User with this email already exists.' });
     }
+
+    const { data: newUser, error: insertError } = await supabase
+      .from('users')
+      .insert([
+        {
+          full_name: fullName,
+          email,
+          country,
+          password,
+          is_premium: false,
+          is_admin: false,
+          created_at: new Date()
+        }
+      ])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Supabase insert error:', insertError);
+      return res.status(500).json({ success: false, message: 'Failed to create user account.' });
+    }
+
+    console.log(`User registered successfully: ${email}`);
+
+    return res.json({
+      success: true,
+      message: 'Account created successfully!',
+      user: { id: newUser.id, fullName, email, country, isPremium: false, isAdmin: false }
+    });
+  } catch (error) {
+    console.error('Signup error:', error);
+    return res.status(500).json({ success: false, message: 'An unexpected error occurred.' });
+  }
 });
-// 3. Create the API Route to verify the OTP and complete account creation
-app.post('/api/verify-otp', async (req, res) => {
-    const { email, otp, fullName, country, password } = req.body;
-    const correctOtp = tempOtpStore[email];
-    
-    // Remove all spaces from the entered OTP for comparison
-    const cleanOtp = otp.replace(/\s+/g, '').trim();
 
-    if (!correctOtp) {
-        console.error(`OTP verification failed: No OTP found for ${email}`);
-        return res.status(400).json({ success: false, message: 'OTP expired or not requested.' });
-    }
-
-    console.log(`OTP Verification - Email: ${email}, Expected: ${correctOtp}, Received (cleaned): ${cleanOtp}`);
-
-    if (cleanOtp === correctOtp) {
-        delete tempOtpStore[email]; // Clear OTP from memory
-
-        try {
-            // Check if user already exists
-            const { data: existingUser, error: checkError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('email', email)
-                .single();
-
-            if (!checkError && existingUser) {
-                return res.status(400).json({ success: false, message: 'User with this email already exists.' });
-            }
-
-            // Insert new user into Supabase
-            const { data: newUser, error: insertError } = await supabase
-                .from('users')
-                .insert([
-                    {
-                        full_name: fullName,
-                        email: email,
-                        country: country,
-                        password: password,
-                        is_premium: false,
-                        is_admin: false,
-                        created_at: new Date()
-                    }
-                ])
-                .select()
-                .single();
-
-            if (insertError) {
-                console.error('Supabase insert error:', insertError);
-                return res.status(500).json({ success: false, message: 'Failed to create user account.' });
-            }
-
-            // Also save to memory store for backward compatibility
-            registeredUsersStore[email] = newUser;
-
-            console.log(`User verified and registered successfully: ${email}`);
-
-            return res.json({ 
-                success: true, 
-                message: 'Account verified successfully!',
-                user: { id: newUser.id, fullName, email, country, isPremium: false, isAdmin: false }
-            });
-        } catch (error) {
-            console.error('Error during user registration:', error);
-            return res.status(500).json({ success: false, message: 'An unexpected error occurred.' });
-        }
-    } else {
-        return res.status(400).json({ success: false, message: 'Invalid validation code.' });
-    }
-});
-// 4. Create the API Route to handle Sign-In Login
+// ── Password Reset Flow ─────────────────────────────────────
 app.post('/api/signin', async (req, res) => {
     const { email, password } = req.body;
 

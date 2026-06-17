@@ -149,18 +149,33 @@
                     <span class="password-toggle-btn" onclick="togglePasswordVisibility('signup-password', this)">👁️</span>
                 </div>
             </div>
-            <button type="submit" class="auth-btn">Send Verification OTP</button>
+            <button type="submit" class="auth-btn">Create Account</button>
         </form>
 
-        <!-- 3. OTP VERIFICATION FORM -->
-        <form id="otp-form" class="auth-form form-hidden">
-            <h2>Enter Verification Code</h2>
-            <p>We sent a 6-digit OTP to <b id="otp-target-email" style="color: #0070f3;">your email</b> to confirm your account status.</p>
+        <!-- 3. FORGOT PASSWORD EMAIL FORM -->
+        <form id="forgot-password-form" class="auth-form form-hidden">
+            <h2>Reset Password</h2>
+            <p>Enter your email address and we'll send you a verification code.</p>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="forgot-password-email" required placeholder="Enter your email">
+            </div>
+            <button type="submit" class="auth-btn">Send Reset Code</button>
+            <p style="text-align: center; margin-top: 1rem; font-size: 0.85rem;">
+                <a href="#" id="back-to-signin-link" style="color: #0070f3; cursor: pointer; text-decoration: none;">Back to Sign In</a>
+            </p>
+        </form>
+
+        <!-- 5. RESET PASSWORD OTP FORM -->
+        <form id="reset-otp-form" class="auth-form form-hidden">
+            <h2>Verify Your Code</h2>
+            <p>We sent a 6-digit code to <b id="reset-otp-target-email" style="color: #0070f3;">your email</b>.</p>
+            <p style="font-size: 0.85rem; color: #666; margin: 10px 0;">💡 <em>Tip: If you don't see the email, please check your <strong>Spam</strong> or <strong>Junk</strong> folder.</em></p>
             <div class="form-group">
                 <label>6-Digit Code</label>
-                <input type="text" id="otp-input" maxlength="6" required placeholder="123456" style="text-align: center; font-size: 24px; letter-spacing: 5px;">
+                <input type="text" id="reset-otp-input" maxlength="6" required placeholder="123456" style="text-align: center; font-size: 24px; letter-spacing: 5px;">
             </div>
-            <button type="submit" class="auth-btn">Verify & Create Account</button>
+            <button type="submit" class="auth-btn">Verify Code</button>
         </form>
     </div>
 </div>
