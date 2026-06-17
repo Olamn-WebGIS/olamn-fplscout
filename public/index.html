@@ -964,7 +964,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterDropdown = document.getElementById('filter-dropdown');
   const filterOptions = document.querySelectorAll('.filter-option');
 
-  if (filterToggle) {
+  if (filterToggle && filterDropdown) {
     filterToggle.addEventListener('click', () => {
       filterDropdown.style.display = filterDropdown.style.display === 'none' ? 'block' : 'none';
     });
@@ -973,7 +973,10 @@ document.addEventListener('DOMContentLoaded', () => {
       option.addEventListener('click', () => {
         const pos = Number(option.dataset.pos);
         activePosFilter = pos;
-        document.getElementById('filter-selected').textContent = option.textContent.split('(')[0].trim() || 'ALL';
+        const filterSelected = document.getElementById('filter-selected');
+        if (filterSelected) {
+          filterSelected.textContent = option.textContent.split('(')[0].trim() || 'ALL';
+        }
         filterOptions.forEach(o => o.classList.remove('active'));
         option.classList.add('active');
         filterDropdown.style.display = 'none';
@@ -1005,7 +1008,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  if (pageDropdownBtn) {
+  if (pageDropdownBtn && pageDropdown) {
     pageDropdownBtn.addEventListener('click', () => {
       if (pageDropdown.style.display === 'none') {
         updatePageDropdown();
@@ -1018,10 +1021,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Close dropdowns when clicking outside
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('#filter-toggle') && !e.target.closest('#filter-dropdown')) {
+    if (filterDropdown && !e.target.closest('#filter-toggle') && !e.target.closest('#filter-dropdown')) {
       filterDropdown.style.display = 'none';
     }
-    if (!e.target.closest('#page-dropdown-btn') && !e.target.closest('#page-dropdown')) {
+    if (pageDropdown && !e.target.closest('#page-dropdown-btn') && !e.target.closest('#page-dropdown')) {
       pageDropdown.style.display = 'none';
     }
   });

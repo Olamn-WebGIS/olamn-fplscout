@@ -240,7 +240,7 @@
         return;
       }
 
-      fetch('/api/bootstrap', { method: 'HEAD', cache: 'no-store' })
+      fetch('/api/health', { method: 'HEAD', cache: 'no-store' })
         .then(response => {
           if (response.ok) {
             indicator.className = 'live-indicator online';

@@ -148,6 +148,41 @@
       min-width: 40px;
       text-align: center;
     }
+    .watchlist-activity-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      padding: 1.2rem;
+      background: linear-gradient(135deg, #f5f8ff 0%, #eef5ff 100%);
+      border: 1.5px solid #dfe7f1;
+      border-radius: var(--radius-md);
+      margin-bottom: 1rem;
+    }
+    .watchlist-activity-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .watchlist-activity-title {
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+    .watchlist-activity-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .watchlist-activity-tag {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #fff;
+      background: var(--blue-light);
+    }
     .team-info {
       flex: 1;
     }
@@ -230,6 +265,16 @@
         </div>
       </div>
     </div>
+
+    <div style="margin-top:3rem;">
+      <h2 class="card-title" style="margin-bottom:1.5rem;">📌 Watchlist Activity</h2>
+      <div id="activity-container">
+        <div class="empty-state">
+          <div class="empty-state-icon">⏱️</div>
+          <p>No activity loaded yet. Login and add a rival team to start tracking changes in Supabase.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -237,6 +282,7 @@
 
 <script src="/utils.js"></script>
 <script src="/layout.js"></script>
+<script src="/watchlist-notifications.js"></script>
 <script>
 /* ── Watchlist ────────────────────────────────────────────────── */
 
@@ -379,6 +425,103 @@ function renderTeams() {
   document.getElementById('teams-container').innerHTML = html;
 }
 
+async function loadSupabaseWatchlistState() {
+  const currentUser = Store.get('fpl_user_session', null);
+  if (!currentUser || !currentUser.email) return;
+
+  try {
+    const response = await fetch('/api/user-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: currentUser.email })
+    });
+
+    const data = await response.json();
+    if (!data.success) return;
+
+    if (Array.isArray(data.watchlist)) {
+      saveWatchedPlayers(data.watchlist);
+    }
+
+    if (data.syncedTeam && typeof data.syncedTeam === 'object') {
+      saveWatchedTeams(data.syncedTeam);
+    }
+
+    if (typeof WatchlistNotifications !== 'undefined') {
+      const watchedTeams = Object.values(getWatchedTeams());
+      WatchlistNotifications.updateWatched(watchedTeams);
+    }
+  } catch (err) {
+    console.error('Failed to load watchlist state from Supabase:', err);
+  }
+}
+
+function createActivityCard(activity) {
+  const lastChecked = activity.last_checked_at ? new Date(activity.last_checked_at).toLocaleString() : 'Unknown';
+  const transfers = Array.isArray(activity.recent_transfers) ? activity.recent_transfers : [];
+  const chips = Array.isArray(activity.recent_chips) ? activity.recent_chips : [];
+  const latestTransfer = transfers[0];
+  const latestChip = chips[0];
+  const captain = Array.isArray(activity.recent_captains) && activity.recent_captains[0]?.picks
+      ? activity.recent_captains[0].picks.find(p => p.is_captain)
+      : null;
+
+  return `
+    <div class="watchlist-activity-card">
+      <div class="watchlist-activity-header">
+        <div>
+          <div class="watchlist-activity-title">${activity.rival_name || 'Rival Team'}</div>
+          <div class="watchlist-activity-meta">${activity.rival_team_name || 'No team name'} · Last checked ${lastChecked}</div>
+        </div>
+        <span class="watchlist-activity-tag">${activity.rival_manager_id || 'ID missing'}</span>
+      </div>
+      <div class="watchlist-activity-meta">
+        <div><strong>Last transfer:</strong> ${latestTransfer ? `${latestTransfer.element_out} → ${latestTransfer.element_in} (GW ${latestTransfer.event})` : 'No transfer data'}</div>
+        <div><strong>Last captain:</strong> ${captain ? `Player ID ${captain.element}` : 'No captain data'}</div>
+        <div><strong>Last chip:</strong> ${latestChip ? `${latestChip.name} (GW ${latestChip.event})` : 'No chip data'}</div>
+      </div>
+    </div>
+  `;
+}
+
+async function loadWatchlistActivities() {
+  const currentUser = Store.get('fpl_user_session', null);
+  const container = document.getElementById('activity-container');
+  if (!currentUser || !currentUser.id) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">🔒</div>
+        <p>Log in to view activity for watched rivals and keep your Supabase activity table up to date.</p>
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/watchlist_activity/${currentUser.id}`);
+    const data = await response.json();
+
+    if (data.success && Array.isArray(data.activities) && data.activities.length > 0) {
+      container.innerHTML = data.activities.map(createActivityCard).join('');
+    } else {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">⏳</div>
+          <p>No rival activity has been recorded yet. Add a manager to your watchlist from the League Spy page to start tracking changes.</p>
+        </div>
+      `;
+    }
+  } catch (err) {
+    console.error('Error loading watchlist activity:', err);
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">⚠️</div>
+        <p>Unable to load activity from Supabase right now. Please refresh the page.</p>
+      </div>
+    `;
+  }
+}
+
 let lastWatchedPlayersState = localStorage.getItem(STORAGE_KEYS.watchedPlayers);
 let lastWatchedTeamsState = localStorage.getItem(STORAGE_KEYS.watchedTeams);
 
@@ -396,6 +539,7 @@ function checkForWatchlistUpdates() {
       lastWatchedPlayersState = currentPlayersState;
       lastWatchedTeamsState = currentTeamsState;
       refreshWatchlistUI();
+      loadWatchlistActivities().catch(err => console.error('Error refreshing watchlist activity after update:', err));
     }
   } catch (err) {
     console.error('Error checking watchlist update state:', err);
@@ -404,7 +548,9 @@ function checkForWatchlistUpdates() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   await bootstrap();
+  await loadSupabaseWatchlistState();
   refreshWatchlistUI();
+  await loadWatchlistActivities();
   checkForWatchlistUpdates();
   setInterval(checkForWatchlistUpdates, 2500);
 });

@@ -1140,7 +1140,7 @@ app.post('/api/watchlist', async (req, res) => {
 // =========================================================
 // 🔒 SECURED WATCHLIST RETRIEVAL ENDPOINT (WITH MIDDLEWARE)
 // =========================================================
-app.get('/api/watchlist/:userId', requirePremiumUser, async (req, res) => {
+app.get('/api/watchlists/:userId', requirePremiumUser, async (req, res) => {
     try {
         const { userId } = req.params;
         const { data, error } = await supabase
@@ -1354,7 +1354,7 @@ app.post('/api/watchlist/check-activity', async (req, res) => {
                 .single();
             
             if (!activityRecord) {
-                // Create new activity record
+                // Create new activity record with baseline snapshot values
                 const { data: newRecord, error: insertError } = await supabase
                     .from('watchlist_activity')
                     .insert({
@@ -1363,6 +1363,10 @@ app.post('/api/watchlist/check-activity', async (req, res) => {
                         rival_name: rivalName || 'Rival',
                         rival_team_name: rivalTeamName || null,
                         last_checked_at: new Date(),
+                        last_transfer_count: transfers ? transfers.length : 0,
+                        last_captain_element_id: picks?.picks?.[0]?.element || null,
+                        last_chip_used: history?.chips?.[0]?.name || null,
+                        last_chip_used_gw: history?.chips?.[0]?.event || null,
                         recent_transfers: transfers || [],
                         recent_captains: [picks],
                         recent_chips: history?.chips || []
@@ -1446,8 +1450,8 @@ app.post('/api/watchlist/check-activity', async (req, res) => {
     }
 });
 
-// Get all watched rivals for a user
-app.get('/api/watchlist/:userId', async (req, res) => {
+// Get all watched rival activities for a user
+app.get('/api/watchlist_activity/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
         
@@ -1461,7 +1465,7 @@ app.get('/api/watchlist/:userId', async (req, res) => {
         
         res.json({ success: true, activities: activities || [] });
     } catch (error) {
-        console.error('Error fetching watchlist:', error);
+        console.error('Error fetching watchlist activity:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
