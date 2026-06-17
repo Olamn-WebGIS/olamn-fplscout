@@ -411,7 +411,6 @@ let allTeams = [];
 let currentGW = 1;
 let bsData = null;
 let watchedTeams = {};
-let fallbackStorage = {};
 
 async function bootstrap() {
   const data = await API.bootstrap();
@@ -422,13 +421,24 @@ async function bootstrap() {
   return data;
 }
 
+function getCookieValue(name) {
+  const matches = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
+  return matches ? decodeURIComponent(matches[1]) : null;
+}
+
+function setCookieValue(name, value, days = 365) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+}
+
 function safeLocalStorageGet(key, defaultValue = null) {
   try {
     const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : defaultValue;
   } catch (err) {
     console.warn(`LocalStorage read failed for ${key}:`, err);
-    return Object.prototype.hasOwnProperty.call(fallbackStorage, key) ? fallbackStorage[key] : defaultValue;
+    const cookieValue = getCookieValue(key);
+    return cookieValue ? JSON.parse(cookieValue) : defaultValue;
   }
 }
 
@@ -438,7 +448,7 @@ function safeLocalStorageSet(key, value) {
     return true;
   } catch (err) {
     console.warn(`LocalStorage write failed for ${key}:`, err);
-    fallbackStorage[key] = value;
+    setCookieValue(key, JSON.stringify(value));
     return true;
   }
 }
