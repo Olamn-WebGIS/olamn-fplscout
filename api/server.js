@@ -1089,11 +1089,6 @@ app.post('/api/user-data', async (req, res) => {
   }
 });
 
-// ── SPA fallback ──────────────────────────────────────────────
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
-});
-
 // =========================================================
 // 🚀 WATCHLIST ENDPOINTS (PASTED HERE)
 // =========================================================

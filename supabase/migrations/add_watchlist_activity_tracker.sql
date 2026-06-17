@@ -30,25 +30,12 @@ CREATE TABLE IF NOT EXISTS watchlist_activity (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   
   UNIQUE(user_id, rival_manager_id),
-  FOREIGN KEY(user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+  FOREIGN KEY(user_id) REFERENCES public.users(id) ON DELETE CASCADE
 );
 
 -- Index for faster queries
 CREATE INDEX IF NOT EXISTS idx_watchlist_activity_user ON watchlist_activity(user_id);
 CREATE INDEX IF NOT EXISTS idx_watchlist_activity_checked ON watchlist_activity(last_checked_at);
 
--- Enable RLS
-ALTER TABLE watchlist_activity ENABLE ROW LEVEL SECURITY;
-
--- Users can only see their own watchlist activity
-CREATE POLICY "Users can view own watchlist activity" ON watchlist_activity
-  FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own watchlist activity" ON watchlist_activity
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update own watchlist activity" ON watchlist_activity
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete own watchlist activity" ON watchlist_activity
-  FOR DELETE USING (auth.uid() = user_id);
+-- Disable RLS for watchlist_activity because this app does not use Supabase Auth
+ALTER TABLE watchlist_activity DISABLE ROW LEVEL SECURITY;

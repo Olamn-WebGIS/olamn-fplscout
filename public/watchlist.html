@@ -491,7 +491,7 @@ async function loadWatchlistActivities() {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">🔒</div>
-        <p>Log in to view activity for watched rivals and keep your Supabase activity table up to date.</p>
+        <p>Log in to view activity for watched rivals.</p>
       </div>
     `;
     return;
@@ -516,7 +516,7 @@ async function loadWatchlistActivities() {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">⚠️</div>
-        <p>Unable to load activity from Supabase right now. Please refresh the page.</p>
+        <p>Unable to load activity from Server right now. Please refresh the page.</p>
       </div>
     `;
   }
