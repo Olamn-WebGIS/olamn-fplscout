@@ -388,7 +388,7 @@
   // Relaxed premium gating: allow page to load for guests but
   // keep premium redirect logic in place for enforced environments.
   try {
-    const currentUser = safeLocalStorageGet('fpl_user_session', null);
+    const currentUser = Store.get('fpl_user_session', null);
     if (!currentUser) {
       // Do not redirect anonymous users — allow them to view the spy page.
       console.warn('Spy page: no user session found — loading in read-only mode');
@@ -410,7 +410,11 @@ let allPlayers = [];
 let allTeams = [];
 let currentGW = 1;
 let bsData = null;
-let watchedTeams = {};
+let watchedTeams = Store.getWatchedTeams();
+const STORAGE_KEYS = {
+  watchedTeams: 'fpl_watched_teams',
+  savedLeagueId: 'fpl_saved_league_id'
+};
 
 async function bootstrap() {
   const data = await API.bootstrap();
@@ -421,40 +425,8 @@ async function bootstrap() {
   return data;
 }
 
-function getCookieValue(name) {
-  const matches = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
-  return matches ? decodeURIComponent(matches[1]) : null;
-}
-
-function setCookieValue(name, value, days = 365) {
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
-}
-
-function safeLocalStorageGet(key, defaultValue = null) {
-  try {
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : defaultValue;
-  } catch (err) {
-    console.warn(`LocalStorage read failed for ${key}:`, err);
-    const cookieValue = getCookieValue(key);
-    return cookieValue ? JSON.parse(cookieValue) : defaultValue;
-  }
-}
-
-function safeLocalStorageSet(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-    return true;
-  } catch (err) {
-    console.warn(`LocalStorage write failed for ${key}:`, err);
-    setCookieValue(key, JSON.stringify(value));
-    return true;
-  }
-}
-
 function loadWatchedTeams() {
-  watchedTeams = safeLocalStorageGet('fpl_watched_teams', {});
+  watchedTeams = Store.getWatchedTeams();
 }
 
 async function loadLeague() {
@@ -463,7 +435,7 @@ async function loadLeague() {
     showToast('Please enter a league ID', 'error');
     return;
   }
-  safeLocalStorageSet('fpl_saved_league_id', leagueId);
+  Store.setSavedLeagueId(leagueId);
   try {
     await bootstrap();
     loadWatchedTeams();
@@ -574,10 +546,6 @@ function clearSearch() {
   document.getElementById('manager-search-input').value = '';
   document.getElementById('search-results').style.display = 'none';
   renderRivals(leagueData.standings.results.slice(0, 10));
-}
-
-function isTeamWatched(managerId) {
-  return String(managerId) in watchedTeams;
 }
 
 async function loadRecentActivity(rivals) {
@@ -1125,7 +1093,7 @@ function closeTeamModal() {
 async function toggleTeamWatchlist(managerId, playerName, entryName, totalPts, rank) {
   
   // Get current user (may be null for local-only users)
-  const currentUser = safeLocalStorageGet('fpl_user_session', null);
+  const currentUser = Store.get('fpl_user_session', null);
 
   // Update local watchlist state
   const starBtnPrimary = document.getElementById(`star-${managerId}`);
@@ -1200,12 +1168,9 @@ async function toggleTeamWatchlist(managerId, playerName, entryName, totalPts, r
     }
   }
 
-  // Save to localStorage (local persistence - works offline)
-  if (safeLocalStorageSet('fpl_watched_teams', watchedTeams)) {
-    console.log('✅ Watchlist saved to localStorage:', watchedTeams);
-  } else {
-    console.warn('⚠️ Watchlist could not be saved to localStorage; continuing with in-memory state');
-  }
+  // Save watchlist persistently
+  Store.setWatchedTeams(watchedTeams);
+  console.log('✅ Watchlist saved via Store:', watchedTeams);
 
   // Notify other parts of the app (same tab) and other tabs via BroadcastChannel
   try {
@@ -1328,7 +1293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 🚀 NEW: AUTO-RESTORE LEAGUE INPUT ON REFRESH
   if (idInput) {
-    const savedLeagueId = safeLocalStorageGet('fpl_saved_league_id', null);
+    const savedLeagueId = Store.get(STORAGE_KEYS.savedLeagueId, null);
     if (savedLeagueId) {
       idInput.value = savedLeagueId; // Put the number back into the input box
       console.log(`Auto-restoring league ID on refresh: ${savedLeagueId}`);
@@ -1340,12 +1305,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 2. Load watched teams from localStorage on initial page load
+  // 2. Load watched teams on initial page load
   loadWatchedTeams();
 
-  // 3. Load logged-in user from localStorage safely
+  // 3. Load logged-in user from Store safely
   try {
-    currentUser = safeLocalStorageGet('fpl_user_session', null);
+    currentUser = Store.get('fpl_user_session', null);
     
     if (currentUser && currentUser.email) {
       console.log("Logged in user identified:", currentUser.email);
@@ -1379,7 +1344,7 @@ async function loadSyncedTeamFromSupabase(email) {
         if (data.success && data.syncedTeam) {
             // Restore watched teams from Supabase
             watchedTeams = data.syncedTeam;
-            safeLocalStorageSet('fpl_watched_teams', watchedTeams);
+            Store.setWatchedTeams(watchedTeams);
             console.log('📥 Team watchlist restored from Supabase:', watchedTeams);
         }
     } catch (err) {

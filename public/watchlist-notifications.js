@@ -212,7 +212,7 @@ const WatchlistNotifications = (() => {
   
   // Initialize notification service
   async function init() {
-    currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
+    currentUser = Store.get('fpl_user_session', null);
     
     if (!currentUser) {
       console.log('📢 Notifications: User not logged in');
@@ -222,9 +222,9 @@ const WatchlistNotifications = (() => {
     // Try to get request notification permission
     const hasPermission = await requestNotificationPermission();
     
-    // Load watched rivals from localStorage (for now)
+    // Load watched rivals from Store
     try {
-      const watchedData = JSON.parse(localStorage.getItem('fpl_watched_teams') || '{}');
+      const watchedData = Store.get('fpl_watched_teams', {});
       watchedRivals = Object.values(watchedData);
       console.log(`📢 Watchlist notifications initialized. Watching ${watchedRivals.length} rivals`);
     } catch (e) {
