@@ -1023,41 +1023,20 @@ app.post('/api/save-user-data', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email required' });
     }
 
-    // Update user's user_data table with watchlist and synced team
-    const { data, error } = await supabase
+    // Upsert the user's user_data row so new users are created when needed
+    const { error } = await supabase
       .from('user_data')
-      .update({
+      .upsert([{
+        email,
         watchlist: watchlist || null,
         synced_team: syncedTeam || null,
         preferences: preferences || null,
         updated_at: new Date().toISOString()
-      })
-      .eq('email', email);
+      }], { onConflict: ['email'] });
 
     if (error) {
-      console.error('Supabase update error:', error);
-      // Try to insert if row doesn't exist
-      const { error: insertError } = await supabase
-        .from('user_data')
-        .insert([{
-          email,
-          watchlist: watchlist || null,
-          synced_team: syncedTeam || null,
-          preferences: preferences || null
-        }]);
-      
-      if (insertError) {
-        return res.status(500).json({ success: false, message: insertError.message });
-      }
-    }
-
-    res.json({ success: true, message: 'User data saved successfully' });
-  } catch (error) {
-    console.error('Error saving user data:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
+      console.error('Supabase upsert error:', error);
+      return res.status(500).json({ success: false, message: error.message });
 // ── Load User Data (Watchlist, Synced Team) ───────────────────
 app.post('/api/user-data', async (req, res) => {
   try {
