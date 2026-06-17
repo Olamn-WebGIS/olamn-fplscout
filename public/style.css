@@ -376,9 +376,19 @@ input:focus, select:focus {
 
 /* ── Filter Tabs ────────────────────────────────────────────── */
 .filter-tabs {
-  display: flex; gap: 4px; flex-wrap: wrap;
+  display: flex; gap: 0.5rem; flex-wrap: wrap;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.2rem;
+}
+.filter-tabs::-webkit-scrollbar {
+  height: 5px;
+}
+.filter-tabs::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.15);
+  border-radius: 999px;
 }
 .filter-tab {
+  white-space: nowrap;
   padding: 0.35rem 0.9rem; border-radius: 20px;
   font-size: 0.8rem; font-weight: 600;
   background: #f1f5f9; color: var(--text-secondary);
