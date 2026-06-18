@@ -60,6 +60,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(process.cwd(), 'public')));
 
+// 1. Configure your Zoho SMTP Email Transporter
+const transporter = nodemailer.createTransport({
+  host: 'smtp.zoho.com',
+  port: 465,
+  secure: true, 
+  auth: {
+    user: process.env.ZOHO_EMAIL,
+    pass: process.env.ZOHO_PASSWORD
+  }
+});
+
 // ── Helpers ───────────────────────────────────────────────────
 async function fplFetch(endpoint, ttl = 120) {
   const key = endpoint;
@@ -426,6 +437,137 @@ app.get('/api/analyze-transfers/:id/:gw', async (req, res) => {
 
 // ── Health check ──────────────────────────────────────────────
 app.get('/api/health', (req, res) => res.json({ status: 'ok', ts: Date.now() }));
+
+// ── Static pages for client-side routing ─────────────────────────
+app.get('/blog', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'blog.html'));
+});
+app.get('/blog/:slug', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'blog.html'));
+});
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
+});
+
+// ── Blog API ──────────────────────────────────────────────────
+app.get('/api/posts', async (req, res) => {
+  try {
+    const { data: posts, error } = await supabase
+      .from('posts')
+      .select('id, title, slug, summary, author, published_at')
+      .order('published_at', { ascending: false });
+
+    if (error) throw error;
+    return res.json(posts || []);
+  } catch (err) {
+    console.error('Fetch posts error:', err);
+    return res.status(500).json({ success: false, message: 'Unable to load blog posts.' });
+  }
+});
+
+app.get('/api/posts/:slug', async (req, res) => {
+  try {
+    const { data: post, error } = await supabase
+      .from('posts')
+      .select('id, title, slug, summary, content, author, published_at')
+      .eq('slug', req.params.slug)
+      .single();
+
+    if (error || !post) {
+      return res.status(404).json({ success: false, message: 'Blog post not found.' });
+    }
+
+    return res.json(post);
+  } catch (err) {
+    console.error('Fetch post error:', err);
+    return res.status(500).json({ success: false, message: 'Unable to load the requested post.' });
+  }
+});
+
+app.post('/api/subscribe-newsletter', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ success: false, message: 'Valid email is required.' });
+    }
+
+    const { error } = await supabase
+      .from('newsletter_subscribers')
+      .upsert({ email: email.toLowerCase(), is_subscribed: true })
+      .select();
+
+    if (error) throw error;
+    return res.json({ success: true, message: 'You are subscribed to the newsletter.' });
+  } catch (err) {
+    console.error('Newsletter subscribe error:', err);
+    return res.status(500).json({ success: false, message: 'Could not subscribe at this time.' });
+  }
+});
+
+app.post('/api/admin/posts', async (req, res) => {
+  try {
+    const { title, slug, summary, content, adminPassword } = req.body;
+    const secret = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS;
+
+    if (!adminPassword || adminPassword !== secret) {
+      return res.status(401).json({ success: false, message: 'Invalid admin password.' });
+    }
+
+    if (!title || !slug || !summary || !content) {
+      return res.status(400).json({ success: false, message: 'All fields are required.' });
+    }
+
+    const { data: insertedPost, error: insertError } = await supabase
+      .from('posts')
+      .insert([{ title, slug, summary, content, author: 'FPL Scout' }])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Create post error:', insertError);
+      return res.status(500).json({ success: false, message: 'Could not create the blog post.' });
+    }
+
+    const { data: subscribers, error: subError } = await supabase
+      .from('newsletter_subscribers')
+      .select('email')
+      .eq('is_subscribed', true)
+      .limit(500);
+
+    if (subError) {
+      console.error('Load subscribers error:', subError);
+    }
+
+    const emails = (subscribers || []).map((row) => row.email).filter(Boolean);
+    if (emails.length) {
+      const message = {
+        from: process.env.ZOHO_EMAIL,
+        to: process.env.ZOHO_EMAIL,
+        bcc: emails.join(','),
+        subject: `New FPL Scout post: ${title}`,
+        html: `<p>Hello FPL Scout manager,</p>
+          <p>A new article is live:</p>
+          <h2>${title}</h2>
+          <p>${summary}</p>
+          <p><a href="https://fplscout.name.ng/blog/${slug}">Read it now on FPL Scout</a></p>
+          <p>Thanks,<br/>FPL Scout Team</p>`
+      };
+
+      transporter.sendMail(message, (err, info) => {
+        if (err) {
+          console.error('Newsletter email error:', err);
+        } else {
+          console.log('Newsletter sent to subscribers:', info.response);
+        }
+      });
+    }
+
+    return res.json({ success: true, message: 'Blog post published.', post: insertedPost });
+  } catch (err) {
+    console.error('Admin publish error:', err);
+    return res.status(500).json({ success: false, message: 'Could not publish the post.' });
+  }
+});
 
 // ── Page routes ──────────────────────────────────────────────
 app.get('/recommendations', (req, res) => {

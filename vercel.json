@@ -15,7 +15,9 @@
     
     
     { "source": "/account", "destination": "public/account.html" },
-
+    { "source": "/blog", "destination": "public/blog.html" },
+    { "source": "/blog/:slug", "destination": "public/blog.html" },
+    { "source": "/admin", "destination": "public/admin.html" },
     { "source": "/(.*)", "destination": "public/$1" }
   ]
 }

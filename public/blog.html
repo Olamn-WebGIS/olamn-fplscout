@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FPL Scout Blog</title>
+  <meta name="description" content="FPL Scout blog articles, transfer advice, and premium strategy for Fantasy Premier League managers." />
+  <meta property="og:title" content="FPL Scout Blog" />
+  <meta property="og:description" content="FPL Scout blog articles, transfer advice, and premium strategy for Fantasy Premier League managers." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://fplscout.name.ng/blog" />
+  <meta property="og:image" content="https://fplscout.name.ng/images/blog-share.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="FPL Scout Blog" />
+  <meta name="twitter:description" content="FPL Scout blog articles, transfer advice, and premium strategy for Fantasy Premier League managers." />
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .blog-page { max-width: 980px; margin: 0 auto; padding: 2rem 1rem; }
+    .blog-list-item, .blog-post { background: #fff; border-radius: 16px; box-shadow: 0 14px 40px rgba(0,0,0,0.08); margin-bottom: 1.75rem; padding: 1.75rem; }
+    .blog-list-item h2, .blog-post h1 { margin: 0 0 1rem; font-size: clamp(1.5rem, 2.4vw, 2.1rem); }
+    .blog-list-item p, .blog-post p { line-height: 1.75; color: #444; }
+    .blog-meta { display: flex; flex-wrap: wrap; gap: 1rem; color: #777; margin: 1rem 0; }
+    .blog-actions { margin-top: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+    .btn-share, .btn-subscribe { cursor: pointer; padding: 0.85rem 1.35rem; border-radius: 999px; border: none; background: #0070f3; color: #fff; font-weight: 600; }
+    #subscribe-modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.55); z-index: 9999; opacity: 0; pointer-events: none; transition: opacity .25s ease; }
+    #subscribe-modal.active { opacity: 1; pointer-events: all; }
+    #subscribe-modal .modal-card { background: white; border-radius: 20px; padding: 2rem; max-width: 420px; width: 100%; text-align: center; }
+    #subscribe-modal input { width: 100%; padding: 0.9rem 1rem; margin: 1rem 0; border: 1px solid #ddd; border-radius: 12px; }
+    #subscribe-modal button { width: 100%; }
+  </style>
+</head>
+<body>
+  <div class="blog-page">
+    <div id="blog-list-container"></div>
+    <div id="blog-post-container" style="display:none"></div>
+  </div>
+
+  <div id="subscribe-modal" class="subscribe-modal">
+    <div class="modal-card">
+      <h2>Stay updated with FPL Scout</h2>
+      <p>Subscribe to receive blog summaries and transfer alerts straight to your inbox.</p>
+      <input id="newsletter-email" type="email" placeholder="Enter your email" />
+      <button id="newsletter-submit" class="btn-subscribe">Subscribe</button>
+      <button id="newsletter-close" style="margin-top:0.75rem; background:#f2f2f2; color:#111;">Close</button>
+      <p style="font-size:0.85rem; color:#666; margin-top:1rem;">We only send FPL insights and new article alerts.</p>
+    </div>
+  </div>
+
+  <script src="/blog.js"></script>
+  <script src="/layout.js"></script>
+</body>
+</html>

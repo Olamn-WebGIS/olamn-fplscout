@@ -4,10 +4,14 @@ const URLS_TO_CACHE = [
   '/index.html',
   '/recommendations',
   '/spy',
+  '/blog',
+  '/admin',
   '/style.css',
   '/utils.js',
   '/layout.js',
-  '/app.js'
+  '/app.js',
+  '/blog.js',
+  '/admin.js'
 ];
 
 // Install Service Worker
