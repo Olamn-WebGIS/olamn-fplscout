@@ -223,14 +223,6 @@
         </div>
       </div>
 
-      <div class="card" style="margin-top:0;">
-        <h3 class="card-title">Your Watchlist</h3>
-        <div id="watchlist-mini">
-          <p style="font-size:0.82rem;color:var(--text-muted);">No players saved yet. Click ☆ next to any player to add them.</p>
-        </div>
-        <a href="/watchlist" class="btn btn-outline btn-sm" style="margin-top:10px;width:100%;justify-content:center;">View full watchlist →</a>
-      </div>
-
       <!-- Quick league spy link -->
       <div class="card" style="background:var(--navy);color:#fff;text-align:center;">
         <div style="font-size:2rem;margin-bottom:8px;">🕵️</div>
@@ -267,10 +259,6 @@
             <li style="margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
               <span style="font-size: 1.5rem;">⚡</span>
               <span>Real-time Player Predictions</span>
-            </li>
-            <li style="margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 1.5rem;">📋</span>
-              <span>Unlimited Watchlist Management</span>
             </li>
             <li style="margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
               <span style="font-size: 1.5rem;">🎯</span>
@@ -404,11 +392,6 @@
         <h3>Advanced FDR Matrix</h3>
         <p style="font-size:0.83rem;color:var(--text-secondary);margin-top:6px;line-height:1.5;">Standard fixture difficulty ratings change slowly. Our model adjusts instantly based on a team's defensive or offensive spikes, highlighting true clean sheet and goal probabilities.</p>
       </div>
-      <div class="card" style="text-align:center;">
-        <div class="feature-icon yellow" style="margin:0 auto 0.75rem;">🔖</div>
-        <h3>Personalized Watchlists</h3>
-        <p style="font-size:0.83rem;color:var(--text-secondary);margin-top:6px;line-height:1.5;">Save players to your profile to watch their market velocity and point predictions over multi-gameweek horizons before committing your valuable free transfers.</p>
-      </div>
     </div>
   </div>
 </section>
@@ -422,7 +405,6 @@
 let allPlayers = [], allTeams = [], allEvents = [];
 let filtered = [], currentPage = 1, perPage = 20;
 let activePosFilter = 0, activeSearch = '', sortField = 'total_points', teamFilter = 0;
-let watchlist = Store.getWatchlist();
 
 /* ── Boot ──────────────────────────────────────────────────────── */
 async function boot() {
@@ -435,7 +417,6 @@ async function boot() {
     populateTeamFilter();
     updateHeroStats(data);
     applyFilters();
-    renderWatchlistMini();
     restoreManager();
   } catch (e) {
     console.error(e);
@@ -601,7 +582,6 @@ function renderTable() {
 
   tbody.innerHTML = page.map(p => {
     const team = allTeams.find(t => t.id === p.team);
-    const inWatchlist = watchlist.some(w => w.id === p.id);
     return `<tr style="cursor:pointer;" onclick="showPlayerStats(${p.id})">
       <td>
         <div class="player-cell">
@@ -623,14 +603,7 @@ function renderTable() {
       <td style="font-size:0.82rem;">${p.selected_by_percent}%</td>
       <td style="font-size:0.9rem;font-weight:600;">${p.event_points}</td>
       <td class="pts-cell">${p.total_points}</td>
-      <td>
-        <button class="star-btn ${inWatchlist ? 'active' : ''}"
-          data-id="${p.id}" data-name="${p.web_name}" data-pos="${p.element_type}"
-          data-team="${team ? team.short_name : ''}" data-cost="${p.now_cost}"
-          onclick="event.stopPropagation(); toggleWatchlist(this)" aria-label="${inWatchlist ? 'Remove from' : 'Add to'} watchlist">
-          ${inWatchlist ? '★' : '☆'}
-        </button>
-      </td>
+      <td></td>
     </tr>`;
   }).join('');
 
@@ -653,36 +626,6 @@ function updatePageButtons() {
   document.getElementById('next-page-btn').disabled = currentPage >= totalPages || totalPages === 0;
 }
 
-/* ── Watchlist ─────────────────────────────────────────────────── */
-function toggleWatchlist(btn) {
-  const id   = Number(btn.dataset.id);
-  const idx  = watchlist.findIndex(w => w.id === id);
-  if (idx === -1) {
-    watchlist.push({ id, name: btn.dataset.name, pos: btn.dataset.pos, team: btn.dataset.team, cost: btn.dataset.cost });
-    btn.textContent = '★'; btn.classList.add('active');
-    showToast(`${btn.dataset.name} added to watchlist`);
-  } else {
-    watchlist.splice(idx, 1);
-    btn.textContent = '☆'; btn.classList.remove('active');
-    showToast(`${btn.dataset.name} removed from watchlist`, 'error');
-  }
-  Store.setWatchlist(watchlist);
-  renderWatchlistMini();
-}
-
-function renderWatchlistMini() {
-  const el = document.getElementById('watchlist-mini');
-  if (!watchlist.length) {
-    el.innerHTML = `<p style="font-size:0.82rem;color:var(--text-muted);">No players saved yet. Click ☆ next to any player to add them.</p>`;
-    return;
-  }
-  el.innerHTML = watchlist.slice(0, 6).map(p =>
-    `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:0.82rem;">
-      <span style="font-weight:600;">${p.name}</span>
-      <span style="color:var(--text-muted);">${p.team} · ${posBadge(p.pos)}</span>
-    </div>`
-  ).join('') + (watchlist.length > 6 ? `<p style="font-size:0.75rem;color:var(--text-muted);margin-top:6px;">+${watchlist.length - 6} more</p>` : '');
-}
 /* ── Player Stats Modal ─────────────────────────────────────────── */
 async function showPlayerStats(playerId) {
   const player = allPlayers.find(p => p.id === playerId);

@@ -101,13 +101,8 @@ const Store = {
   setManagerId:  (id)=> Store.set('fpl_manager_id', id),
   getLeagueId:   ()  => Store.get('fpl_league_id', null),
   setLeagueId:   (id)=> Store.set('fpl_league_id', id),
-  getWatchlist:      ()  => Store.get('fpl_watchlist', []),
-  setWatchlist:      (w) => Store.set('fpl_watchlist', w),
   getWatching:       ()  => Store.get('fpl_watching_ids', []),
   setWatching:       (w) => Store.set('fpl_watching_ids', w),
-  getWatchedTeams:   ()  => Store.get('fpl_watched_teams', {}),
-  setWatchedTeams:   (w) => Store.set('fpl_watched_teams', w),
-  removeWatchedTeams:()  => Store.remove('fpl_watched_teams'),
   getSavedLeagueId:  ()  => Store.get('fpl_saved_league_id', null),
   setSavedLeagueId:  (id)=> Store.set('fpl_saved_league_id', id),
 };

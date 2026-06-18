@@ -177,34 +177,6 @@
       text-transform: uppercase;
       font-weight: 600;
     }
-    .watchlist-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      background: #f8faff;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      border-left: 3px solid var(--green);
-    }
-    .watchlist-item.removed {
-      border-left-color: var(--fwd);
-      background: #fff8f8;
-    }
-    .watchlist-action {
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: 3px;
-    }
-    .watchlist-action.added {
-      color: var(--green);
-    }
-    .watchlist-action.removed {
-      color: var(--fwd);
-    }
     .tab-btn {
       transition: all 0.2s ease;
     }
@@ -380,7 +352,6 @@
 
 <script src="/utils.js"></script>
 <script src="/layout.js"></script>
-<script src="/watchlist-notifications.js"></script>
 <script>
 
 // ── PREMIUM PAGE ACCESS CHECK ──
@@ -410,9 +381,7 @@ let allPlayers = [];
 let allTeams = [];
 let currentGW = 1;
 let bsData = null;
-let watchedTeams = Store.getWatchedTeams();
 const STORAGE_KEYS = {
-  watchedTeams: 'fpl_watched_teams',
   savedLeagueId: 'fpl_saved_league_id'
 };
 
@@ -425,10 +394,6 @@ async function bootstrap() {
   return data;
 }
 
-function loadWatchedTeams() {
-  watchedTeams = Store.getWatchedTeams();
-}
-
 async function loadLeague() {
   const leagueId = document.getElementById('league-id-input').value.trim();
   if (!leagueId) {
@@ -438,7 +403,6 @@ async function loadLeague() {
   Store.setSavedLeagueId(leagueId);
   try {
     await bootstrap();
-    loadWatchedTeams();
     const data = await API.league(leagueId, 1);
     leagueData = data;
     
@@ -506,7 +470,6 @@ function renderSearchResults(results) {
     const rank = r.rank || '—';
     const totalPts = r.total_points ?? r.total ?? 0;
     const gwPts = r.event_points ?? r.event_total ?? 0;
-    const isWatched = isTeamWatched(r.entry);
     
     return `<div class="card spy-rival-card" style="margin-bottom:1rem;cursor:pointer;" onclick="location.href='/manager.html?id=${r.entry}&name=${encodeURIComponent(r.player_name)}'">
       <div class="rival-header">
@@ -523,7 +486,6 @@ function renderSearchResults(results) {
         </div>
         <div class="rival-actions">
           <button class="icon-btn" title="View Squad" style="background:var(--blue-light);color:#fff;" onclick="event.stopPropagation(); location.href='/manager.html?id=${r.entry}&name=${encodeURIComponent(r.player_name)}'">👁️</button>
-          <button class="icon-btn" id="star-search-${r.entry}" onclick="event.stopPropagation(); toggleTeamWatchlist(${r.entry}, '${r.player_name.replace(/'/g, "\\'")}', '${r.entry_name.replace(/'/g, "\\'")}', ${totalPts}, ${rank});" title="Add to Watchlist" style="background:${isWatched ? 'var(--green)' : '#f1f5f9'};color:${isWatched ? '#fff' : '#000'};">⭐</button>
         </div>
       </div>
       <div class="h2h-comp">
@@ -635,17 +597,12 @@ async function loadRecentActivity(rivals) {
   }
 }
 
-function isTeamWatched(managerId) {
-  return String(managerId) in watchedTeams;
-}
-
 function renderRivals(rivals) {
   const html = rivals.map((r, idx) => {
     const rank = r.rank || idx + 1;
     const totalPts = r.total_points ?? r.total ?? 0;
     const gwPts = r.event_points ?? r.event_total ?? 0;
     const gwRank = r.last_rank || '—';
-    const isWatched = isTeamWatched(r.entry);
     
     return `<div class="card spy-rival-card" style="margin-bottom:1.5rem;">
       <div class="rival-header">
@@ -662,7 +619,6 @@ function renderRivals(rivals) {
         </div>
         <div class="rival-actions">
           <button class="icon-btn" onclick="location.href='/manager.html?id=${r.entry}&name=${encodeURIComponent(r.player_name)}'" title="View Squad">👁️</button>
-          <button class="icon-btn" id="star-${r.entry}" onclick="toggleTeamWatchlist(${r.entry}, '${r.player_name.replace(/'/g, "\\'")}', '${r.entry_name.replace(/'/g, "\\'")}', ${totalPts}, ${rank});" title="Add to Watchlist" style="background:${isWatched ? 'var(--green)' : '#f1f5f9'};color:${isWatched ? '#fff' : '#000'};">⭐</button>
         </div>
       </div>
       
@@ -1090,143 +1046,6 @@ function closeTeamModal() {
   document.getElementById('team-modal').style.display = 'none';
 }
 
-async function toggleTeamWatchlist(managerId, playerName, entryName, totalPts, rank) {
-  
-  // Get current user (may be null for local-only users)
-  const currentUser = Store.get('fpl_user_session', null);
-
-  // Update local watchlist state
-  const starBtnPrimary = document.getElementById(`star-${managerId}`);
-  const starBtnSearch = document.getElementById(`star-search-${managerId}`);
-  const starBtns = [starBtnPrimary, starBtnSearch].filter(Boolean);
-  const isWatched = isTeamWatched(managerId);
-
-    if (isWatched) {
-    delete watchedTeams[String(managerId)];
-    if (starBtns.length) {
-      starBtns.forEach(b => { b.style.background = '#f1f5f9'; b.style.color = '#000'; });
-    }
-    showToast(`${playerName} removed from watchlist`, 'success');
-    
-    // 🔔 Update notification service
-    if (typeof WatchlistNotifications !== 'undefined') {
-      const updatedRivals = Object.values(watchedTeams);
-      WatchlistNotifications.updateWatched(updatedRivals);
-    }
-  } else {
-    watchedTeams[String(managerId)] = {
-      entry: managerId,
-      player_name: playerName,
-      entry_name: entryName,
-      total_points: totalPts,
-      rank: rank,
-      added_at: new Date().toISOString()
-    };
-    if (starBtns.length) {
-      starBtns.forEach(b => { b.style.background = 'var(--green)'; b.style.color = '#fff'; });
-    }
-    showToast(`${playerName} added to watchlist! 📌`, 'success');
-    
-    // 🔔 Update notification service and request permissions
-    if (typeof WatchlistNotifications !== 'undefined') {
-      const updatedRivals = Object.values(watchedTeams);
-      WatchlistNotifications.updateWatched(updatedRivals);
-      
-      // Ask for notification permissions
-      if (Notification && Notification.permission !== 'granted') {
-        const permBtn = document.createElement('div');
-        permBtn.id = 'watchlist-notification-permission-prompt';
-        permBtn.style.position = 'fixed';
-        permBtn.style.left = '1rem';
-        permBtn.style.right = '1rem';
-        permBtn.style.bottom = '1rem';
-        permBtn.style.zIndex = '99999';
-        permBtn.style.background = 'var(--blue-light)';
-        permBtn.style.color = '#fff';
-        permBtn.style.padding = '14px 18px';
-        permBtn.style.borderRadius = '14px';
-        permBtn.style.boxShadow = '0 12px 30px rgba(0,0,0,0.18)';
-        permBtn.style.fontSize = '0.95rem';
-        permBtn.style.textAlign = 'center';
-        permBtn.style.cursor = 'pointer';
-        permBtn.style.display = 'flex';
-        permBtn.style.alignItems = 'center';
-        permBtn.style.justifyContent = 'center';
-        permBtn.textContent = '🔔 Enable browser notifications';
-        permBtn.onclick = async () => {
-          const granted = await WatchlistNotifications.requestPermission();
-          if (granted) {
-            permBtn.textContent = '✅ Notifications enabled';
-            setTimeout(() => permBtn.remove(), 2200);
-          } else {
-            permBtn.textContent = '⚠️ Notification permission denied';
-            setTimeout(() => permBtn.remove(), 3200);
-          }
-        };
-        document.body.appendChild(permBtn);
-      }
-    }
-  }
-
-  // Save watchlist persistently
-  Store.setWatchedTeams(watchedTeams);
-  console.log('✅ Watchlist saved via Store:', watchedTeams);
-
-  // Notify other parts of the app (same tab) and other tabs via BroadcastChannel
-  try {
-    window.dispatchEvent(new CustomEvent('fpl_watched_teams_changed', { detail: watchedTeams }));
-  } catch (e) {
-    console.warn('Could not dispatch custom watchlist event', e);
-  }
-
-  // If logged in, create the activity row in Supabase immediately when adding a team
-  if (!isWatched && currentUser && currentUser.email) {
-    try {
-      await fetch('/api/watchlist/check-activity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: currentUser.id,
-          managerId,
-          email: currentUser.email,
-          rivalName: playerName,
-          rivalTeamName: entryName
-        })
-      });
-      console.log('📤 Watchlist activity row created in Supabase');
-    } catch (error) {
-      console.error('Error creating watchlist activity row:', error);
-    }
-  }
-
-  if (typeof BroadcastChannel !== 'undefined') {
-    try {
-      const bc = new BroadcastChannel('fpl_watchlist_channel');
-      bc.postMessage({ type: 'watched_teams_updated', watchedTeams });
-      bc.close();
-    } catch (e) {
-      console.warn('BroadcastChannel failed', e);
-    }
-  }
-
-  // Sync to Supabase for cross-device persistence (only if logged in)
-  if (currentUser && currentUser.email) {
-    try {
-      await fetch('/api/save-user-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: currentUser.email,
-          syncedTeam: watchedTeams
-        })
-      });
-      console.log('📤 Team watchlist synced to Supabase');
-    } catch (error) {
-      console.error('Error syncing to Supabase:', error);
-    }
-  }
-}
-
 // Close modal when clicking outside
 document.addEventListener('click', (e) => {
   const modal = document.getElementById('team-modal');
@@ -1325,9 +1144,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 2. Load watched teams on initial page load
-  loadWatchedTeams();
-
   // 3. Load logged-in user from Store safely
   try {
     currentUser = Store.get('fpl_user_session', null);
@@ -1340,37 +1156,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (accountNavItem) {
         accountNavItem.classList.remove('account-hidden');
       }
-      
-      // Load user's team watchlist from Supabase
-      await loadSyncedTeamFromSupabase(currentUser.email);
-    } else {
-      console.warn("No logged-in user found in localStorage");
     }
-  } catch (authError) {
-    console.error("Failed to load user from localStorage:", authError);
+  } catch (e) {
+    console.error('Failed to load user session:', e);
   }
 });
 
-async function loadSyncedTeamFromSupabase(email) {
-    try {
-        const response = await fetch('/api/user-data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-        });
-        
-        const data = await response.json();
-
-        if (data.success && data.syncedTeam) {
-            // Restore watched teams from Supabase
-            watchedTeams = data.syncedTeam;
-            Store.setWatchedTeams(watchedTeams);
-            console.log('📥 Team watchlist restored from Supabase:', watchedTeams);
-        }
-    } catch (err) {
-        console.error("Error loading team watchlist from Supabase:", err);
-    }
-}
 </script>
 <script src="app.js?v=2"></script>
 </body>

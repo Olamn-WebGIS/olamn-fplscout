@@ -448,11 +448,6 @@ table {
 #modal-chip-activity {
   display: block;
 }
-#modal-chip-activity .watchlist-player-card,
-#modal-transfer-activity .watchlist-player-card,
-#modal-captain-activity .watchlist-player-card {
-  padding: 6px !important;
-}
 
 /* Buttons and badges in activity tab should be compact */
 #team-modal #activity-tab button,

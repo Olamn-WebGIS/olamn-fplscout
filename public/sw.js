@@ -4,7 +4,6 @@ const URLS_TO_CACHE = [
   '/index.html',
   '/recommendations',
   '/spy',
-  '/watchlist',
   '/style.css',
   '/utils.js',
   '/layout.js',

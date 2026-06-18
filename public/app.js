@@ -1,7 +1,5 @@
 // ── App State ────────────────────────────────────────────────
-const appState = {
-    watchlist: JSON.parse(localStorage.getItem('fpl_watchlist') || '[]')
-};
+const appState = {};
 
 // Tracking active user session memory across browser page reloads
 let currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
@@ -50,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── Watchlist Management ─────────────────────────────────────
 async function loadUserDataFromSupabase(email) {
     try {
-        // Fetch user's watchlist and sync data from Supabase
+        // Fetch user's stored account data from Supabase
         const response = await fetch('/api/user-data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -60,13 +58,6 @@ async function loadUserDataFromSupabase(email) {
         const data = await response.json();
         
         if (data.success) {
-            // Restore watchlist from Supabase
-            if (data.watchlist && Array.isArray(data.watchlist)) {
-                appState.watchlist = data.watchlist;
-                localStorage.setItem('fpl_watchlist', JSON.stringify(data.watchlist));
-                console.log('📥 Watchlist restored from Supabase:', data.watchlist);
-            }
-            
             // Restore synced team data from Supabase
             if (data.syncedTeam) {
                 localStorage.setItem('fpl_synced_team', JSON.stringify(data.syncedTeam));
@@ -84,19 +75,6 @@ async function loadUserDataFromSupabase(email) {
     }
 }
 
-async function saveWatchlistToSupabase(email, watchlist) {
-    try {
-        await fetch('/api/save-user-data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, watchlist })
-        });
-        console.log('📤 Watchlist saved to Supabase');
-    } catch (error) {
-        console.error('Error saving watchlist to Supabase:', error);
-    }
-}
-
 async function saveSyncedTeamToSupabase(email, syncedTeam) {
     try {
         await fetch('/api/save-user-data', {
@@ -108,42 +86,6 @@ async function saveSyncedTeamToSupabase(email, syncedTeam) {
     } catch (error) {
         console.error('Error saving synced team to Supabase:', error);
     }
-}
-
-function addToWatchlist(managerId, managerName) {
-    if (!appState.watchlist.find(m => m.id == managerId)) {
-        appState.watchlist.push({ id: managerId, name: managerName });
-        localStorage.setItem('fpl_watchlist', JSON.stringify(appState.watchlist));
-        
-        // Sync to Supabase if user is logged in
-        if (currentUser && currentUser.email) {
-            saveWatchlistToSupabase(currentUser.email, appState.watchlist);
-        }
-        
-        alert(`${managerName} added to Watch List!`);
-        renderWatchlist();
-    }
-}
-
-function renderWatchlist() {
-    const container = document.getElementById('watchlist-container');
-    if (!container) return;
-    
-    container.innerHTML = appState.watchlist.length === 0 
-        ? '<p>No rivals added yet.</p>'
-        : appState.watchlist.map(m => `<div>${m.name} <button onclick="removeRival(${m.id})">Remove</button></div>`).join('');
-}
-
-function removeRival(managerId) {
-    appState.watchlist = appState.watchlist.filter(m => m.id !== managerId);
-    localStorage.setItem('fpl_watchlist', JSON.stringify(appState.watchlist));
-    
-    // Sync to Supabase if user is logged in
-    if (currentUser && currentUser.email) {
-        saveWatchlistToSupabase(currentUser.email, appState.watchlist);
-    }
-    
-    renderWatchlist();
 }
 
 // ── Data Fetching (Bridge to your API) ──────────────────────
@@ -163,7 +105,7 @@ async function fetchSpyData(leagueId) {
                     <tr>
                         <td>${m.player_name}</td>
                         <td>${m.total} pts</td>
-                        <td><button onclick="addToWatchlist(${m.entry}, '${m.player_name}')">Spy</button></td>
+                        <td></td>
                     </tr>
                 `).join('')}
             </table>
@@ -355,9 +297,6 @@ function setupModalInterface() {
                     const accountNavItem = document.getElementById('account-nav-item');
                     if (accountNavItem) accountNavItem.classList.remove('account-hidden');
                     if (authModal) authModal.classList.add('modal-hidden');
-
-                    // Load user's watchlist and sync data from Supabase
-                    await loadUserDataFromSupabase(currentUser.email);
 
                     // If user is premium and came from a premium page click, go to that page
                     if (currentUser && currentUser.isPremium === true) {
