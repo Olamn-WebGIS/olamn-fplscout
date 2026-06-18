@@ -10,12 +10,15 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="{{BLOG_URL}}" />
   <meta property="og:image" content="{{BLOG_IMAGE}}" />
+  <meta property="article:published_time" content="{{BLOG_PUBLISHED_AT}}" />
   <meta property="og:site_name" content="FPL Scout" />
+  <meta name="robots" content="index, follow" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="{{BLOG_TITLE}}" />
   <meta name="twitter:description" content="{{BLOG_DESCRIPTION}}" />
   <meta name="twitter:image" content="{{BLOG_IMAGE}}" />
   <link rel="canonical" href="{{BLOG_CANONICAL}}" />
+  <script type="application/ld+json">{{BLOG_JSONLD}}</script>
   <link rel="stylesheet" href="/style.css" />
   <style>
     .blog-page { max-width: 980px; margin: 0 auto; padding: 2rem 1rem; }
@@ -34,8 +37,8 @@
 </head>
 <body>
   <div class="blog-page">
-    <div id="blog-list-container"></div>
-    <div id="blog-post-container" style="display:none"></div>
+    <div id="blog-list-container">{{BLOG_LIST_CONTENT}}</div>
+    <div id="blog-post-container" style="display:none">{{BLOG_STATIC_CONTENT}}</div>
   </div>
 
   <div id="subscribe-modal" class="subscribe-modal">

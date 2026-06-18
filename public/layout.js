@@ -48,6 +48,7 @@
             <h4>Quick Links</h4>
             <ul>
               <li><a href="/">Home</a></li>
+              <li><a href="/blog">Blog</a></li>
               <li><a href="/recommendations" class="spy-lock">Recommendations</a></li>
               <li><a href="/spy" class="spy-lock">League Spy</a></li>
             </ul>

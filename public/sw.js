@@ -4,7 +4,6 @@ const URLS_TO_CACHE = [
   '/index.html',
   '/recommendations',
   '/spy',
-  '/blog',
   '/admin',
   '/style.css',
   '/utils.js',
@@ -58,8 +57,8 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Only cache successful responses
-        if (!response || response.status !== 200) {
+        // Avoid caching dynamic blog page HTML for route freshness
+        if (!response || response.status !== 200 || event.request.url.includes('/blog')) {
           return response;
         }
 

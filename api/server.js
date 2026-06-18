@@ -103,7 +103,11 @@ function renderBlogPage(res, metadata) {
     .replace(/{{BLOG_DESCRIPTION}}/g, metadata.description)
     .replace(/{{BLOG_URL}}/g, metadata.url)
     .replace(/{{BLOG_IMAGE}}/g, metadata.image || `${BASE_URL}/images/blog-share.png`)
-    .replace(/{{BLOG_CANONICAL}}/g, metadata.url);
+    .replace(/{{BLOG_CANONICAL}}/g, metadata.url)
+    .replace(/{{BLOG_PUBLISHED_AT}}/g, metadata.publishedAt || '')
+    .replace(/{{BLOG_JSONLD}}/g, metadata.jsonld || '')
+    .replace(/{{BLOG_LIST_CONTENT}}/g, metadata.listContent || '')
+    .replace(/{{BLOG_STATIC_CONTENT}}/g, metadata.staticContent || '');
   res.send(html);
 }
 
@@ -486,20 +490,64 @@ app.get('/api/analyze-transfers/:id/:gw', async (req, res) => {
 app.get('/api/health', (req, res) => res.json({ status: 'ok', ts: Date.now() }));
 
 // ── Static pages for client-side routing ─────────────────────────
-app.get('/blog', (req, res) => {
-  renderBlogPage(res, {
-    title: 'FPL Scout Blog | Fantasy Premier League Insights',
-    description: 'Read the latest Fantasy Premier League analysis, transfer advice, and gameweek strategy from FPL Scout.',
-    url: `${BASE_URL}/blog`,
-    image: `${BASE_URL}/images/blog-share.png`
-  });
+app.get(['/blog', '/blog/'], async (req, res) => {
+  try {
+    const { data: posts, error } = await supabase
+      .from('posts')
+      .select('title, summary, slug, author, published_at, likes')
+      .order('published_at', { ascending: false });
+
+    if (error) throw error;
+
+    const listHtml = posts && posts.length ? `
+      <h1>Latest FPL Scout Articles</h1>
+      ${posts.map(post => `
+        <article class="blog-list-item">
+          <h2><a href="/blog/${post.slug}">${post.title}</a></h2>
+          <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span><span>${post.likes || 0} likes</span></div>
+          <p>${post.summary}</p>
+          <div class="blog-actions">
+            <a href="/blog/${post.slug}" class="btn-share">Read full article</a>
+            <button class="btn-share" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">Share</button>
+          </div>
+        </article>
+      `).join('')}
+    ` : `
+      <h1>Latest FPL Scout Articles</h1>
+      <p>Coming soon — check back later for FPL analysis, transfer advice, and matchweek predictions.</p>
+    `;
+
+    renderBlogPage(res, {
+      title: 'FPL Scout Blog | Fantasy Premier League Insights',
+      description: 'Read the latest Fantasy Premier League analysis, transfer advice, and gameweek strategy from FPL Scout.',
+      url: `${BASE_URL}/blog`,
+      image: `${BASE_URL}/images/blog-share.png`,
+      jsonld: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Blog',
+        'url': `${BASE_URL}/blog`,
+        'name': 'FPL Scout Blog',
+        'description': 'Fantasy Premier League analysis, transfer advice, and premium strategy for FPL managers.',
+        'publisher': {
+          '@type': 'Organization',
+          'name': 'FPL Scout',
+          'url': BASE_URL
+        }
+      }),
+      listContent: listHtml,
+      staticContent: ''
+    });
+  } catch (err) {
+    console.error('Blog list render error:', err);
+    res.status(500).send('Unable to render blog page.');
+  }
 });
 
-app.get('/blog/:slug', async (req, res) => {
+app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
   try {
     const { data: post, error } = await supabase
       .from('posts')
-      .select('title, summary, slug')
+      .select('title, summary, slug, author, published_at, content')
       .eq('slug', req.params.slug)
       .single();
 
@@ -507,11 +555,45 @@ app.get('/blog/:slug', async (req, res) => {
       return res.status(404).send('Blog post not found.');
     }
 
+    const staticContent = `
+      <div class="blog-post" id="blog-article">
+        <h1>${post.title}</h1>
+        <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span></div>
+        <p style="font-size:1rem;color:#555;">${post.summary}</p>
+        <div>${post.content.replace(/\n/g, '<br>')}</div>
+        <div class="blog-actions">
+          <button class="btn-share" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">Share this article</button>
+          <button class="btn-share btn-like" onclick="likePost('${post.slug}')">Like (${post.likes || 0})</button>
+        </div>
+      </div>
+      <div id="giscus-container"></div>
+    `;
+
     renderBlogPage(res, {
       title: `${post.title} | FPL Scout Blog`,
       description: post.summary,
-      url: `${BASE_URL}/blog/${post.slug}#blog-article`,
-      image: `${BASE_URL}/images/blog-share.png`
+      url: `${BASE_URL}/blog/${post.slug}`,
+      image: `${BASE_URL}/images/blog-share.png`,
+      publishedAt: post.published_at ? new Date(post.published_at).toISOString() : '',
+      jsonld: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        'url': `${BASE_URL}/blog/${post.slug}`,
+        'headline': post.title,
+        'description': post.summary,
+        'author': {
+          '@type': 'Person',
+          'name': post.author || 'FPL Scout'
+        },
+        'publisher': {
+          '@type': 'Organization',
+          'name': 'FPL Scout',
+          'url': BASE_URL
+        },
+        'datePublished': post.published_at ? new Date(post.published_at).toISOString() : undefined
+      }),
+      listContent: '',
+      staticContent
     });
   } catch (err) {
     console.error('Blog page render error:', err);
@@ -1300,8 +1382,6 @@ app.get('/api/exchange-rates', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Currency lookup failure' });
     }
 });
-
-const crypto = require('crypto'); // Built-in Node.js module, no install needed
 
 // 🚀 SECURED PAYSTACK BACKGROUND WEBHOOK RECEIVER
 app.post('/api/paystack-webhook', async (req, res) => {

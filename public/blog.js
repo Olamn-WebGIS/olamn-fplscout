@@ -148,11 +148,20 @@ window.sharePost = sharePost;
   setupSubscribeModal();
   try {
     if (isPostPage) {
-      const post = await fetchPost(slug);
-      renderPost(post);
+      if (postContainer.innerHTML.trim()) {
+        postContainer.style.display = 'block';
+        blogContainer.style.display = 'none';
+        renderGiscus(slug);
+        setTimeout(() => subscribeModal.classList.add('active'), 15000);
+      } else {
+        const post = await fetchPost(slug);
+        renderPost(post);
+      }
     } else {
-      const posts = await fetchPosts();
-      renderList(posts);
+      if (!blogContainer.innerHTML.trim()) {
+        const posts = await fetchPosts();
+        renderList(posts);
+      }
     }
   } catch (error) {
     console.error(error);
