@@ -49,19 +49,36 @@ function renderPost(post) {
   postContainer.style.display = 'block';
   blogContainer.style.display = 'none';
   postContainer.innerHTML = `
-    <div class="blog-post">
+    <div class="blog-post" id="blog-article">
       <h1>${post.title}</h1>
       <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span></div>
       <p style="font-size:1rem;color:#555;">${post.summary}</p>
       <div>${post.content.replace(/\n/g, '<br>')}</div>
       <div class="blog-actions">
         <button class="btn-share" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">Share this article</button>
+        <button class="btn-share btn-like" onclick="likePost('${post.slug}')">Like (${post.likes || 0})</button>
       </div>
     </div>
     <div id="giscus-container"></div>
   `;
   renderGiscus(post.slug);
   setTimeout(() => subscribeModal.classList.add('active'), 15000);
+}
+
+async function likePost(slug) {
+  try {
+    const res = await fetch(`/api/posts/${slug}/like`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (data.success) {
+      const likeButton = document.querySelector('.blog-actions button.btn-like');
+      if (likeButton) likeButton.textContent = `Like (${data.likes})`;
+    }
+  } catch (error) {
+    console.error('Unable to like post.', error);
+  }
 }
 
 function setupSubscribeModal() {
@@ -96,25 +113,33 @@ function sharePost(title, summary, href) {
   }
 }
 
-function renderGiscus(slug) {
+async function renderGiscus(slug) {
   const container = document.getElementById('giscus-container');
   if (!container) return;
   container.innerHTML = '';
-  const script = document.createElement('script');
-  script.src = 'https://giscus.app/client.js';
-  script.async = true;
-  script.setAttribute('data-repo', 'YOUR_GITHUB_USER/YOUR_REPO');
-  script.setAttribute('data-repo-id', 'YOUR_REPO_ID');
-  script.setAttribute('data-category', 'Blog Comments');
-  script.setAttribute('data-category-id', 'YOUR_CATEGORY_ID');
-  script.setAttribute('data-mapping', 'pathname');
-  script.setAttribute('data-reactions-enabled', '1');
-  script.setAttribute('data-emit-metadata', '0');
-  script.setAttribute('data-input-position', 'bottom');
-  script.setAttribute('data-theme', 'light');
-  script.setAttribute('data-lang', 'en');
-  script.crossOrigin = 'anonymous';
-  container.appendChild(script);
+
+  try {
+    const res = await fetch('/api/giscus-config');
+    const config = res.ok ? await res.json() : null;
+    const script = document.createElement('script');
+    script.src = 'https://giscus.app/client.js';
+    script.async = true;
+    script.setAttribute('data-repo', config?.repo || 'YOUR_GITHUB_USER/YOUR_REPO');
+    if (config?.repoId) script.setAttribute('data-repo-id', config.repoId);
+    script.setAttribute('data-category', config?.category || 'Blog Comments');
+    if (config?.categoryId) script.setAttribute('data-category-id', config.categoryId);
+    script.setAttribute('data-mapping', config?.mapping || 'pathname');
+    script.setAttribute('data-reactions-enabled', config?.reactionsEnabled || '1');
+    script.setAttribute('data-emit-metadata', config?.emitMetadata || '0');
+    script.setAttribute('data-input-position', config?.inputPosition || 'bottom');
+    script.setAttribute('data-theme', config?.theme || 'light');
+    script.setAttribute('data-lang', config?.lang || 'en');
+    script.crossOrigin = 'anonymous';
+    container.appendChild(script);
+  } catch (error) {
+    console.error('Giscus load failed:', error);
+    container.innerHTML = '<p>Comments are unavailable right now.</p>';
+  }
 }
 
 window.sharePost = sharePost;

@@ -534,6 +534,5 @@ function closeIosBanner() {
     // Lock preference so it stays hidden forever on this device tab session
     localStorage.setItem('fpl_ios_banner_dismissed', 'true');
 }
-
 // Wire the check directly into your existing DOMContentLoaded listener loop
 document.addEventListener('DOMContentLoaded', checkIosInstallationPrompt);

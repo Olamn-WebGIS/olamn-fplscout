@@ -5,6 +5,8 @@ const cors = require('cors');
 const compression = require('compression');
 const helmet = require('helmet');
 const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config(); // Load environment variables
@@ -13,8 +15,12 @@ const app = express();
 const cache = new NodeCache({ stdTTL: 120 }); // 2-min default cache
 
 const FPL_BASE = 'https://fantasy.premierleague.com/api';
+const BASE_URL = process.env.BASE_URL || 'https://fplscout.name.ng';
+const ADMIN_SECRET = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS;
 
 // ── Supabase Initialization ────────────────────────────────
+// Use service role key only on the server and enable RLS for real security.
+// Create a row-level security policy in Supabase so only authenticated admin inserts are allowed.
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY
@@ -59,6 +65,47 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(process.cwd(), 'public')));
+
+function parseCookies(req) {
+  const cookies = {};
+  const header = req.headers.cookie;
+  if (!header) return cookies;
+  header.split(';').forEach((pair) => {
+    const [key, value] = pair.split('=');
+    if (!key) return;
+    cookies[key.trim()] = decodeURIComponent((value || '').trim());
+  });
+  return cookies;
+}
+
+function createAdminSessionToken() {
+  if (!ADMIN_SECRET) return null;
+  return crypto.createHmac('sha256', ADMIN_SECRET).update('admin_session').digest('hex');
+}
+
+function requireAdminSession(req, res, next) {
+  const authHeader = req.headers.authorization;
+  const tokenFromHeader = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  const tokenFromCookie = parseCookies(req).admin_session;
+  const token = tokenFromHeader || tokenFromCookie;
+  const expected = createAdminSessionToken();
+
+  if (!ADMIN_SECRET || !token || token !== expected) {
+    return res.status(401).json({ success: false, message: 'Unauthorized. Admin session is required.' });
+  }
+  next();
+}
+
+function renderBlogPage(res, metadata) {
+  const template = fs.readFileSync(path.join(__dirname, '..', 'public', 'blog.html'), 'utf8');
+  const html = template
+    .replace(/{{BLOG_TITLE}}/g, metadata.title)
+    .replace(/{{BLOG_DESCRIPTION}}/g, metadata.description)
+    .replace(/{{BLOG_URL}}/g, metadata.url)
+    .replace(/{{BLOG_IMAGE}}/g, metadata.image || `${BASE_URL}/images/blog-share.png`)
+    .replace(/{{BLOG_CANONICAL}}/g, metadata.url);
+  res.send(html);
+}
 
 // 1. Configure your Zoho SMTP Email Transporter
 const transporter = nodemailer.createTransport({
@@ -440,11 +487,38 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', ts: Date.now() }))
 
 // ── Static pages for client-side routing ─────────────────────────
 app.get('/blog', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'blog.html'));
+  renderBlogPage(res, {
+    title: 'FPL Scout Blog | Fantasy Premier League Insights',
+    description: 'Read the latest Fantasy Premier League analysis, transfer advice, and gameweek strategy from FPL Scout.',
+    url: `${BASE_URL}/blog`,
+    image: `${BASE_URL}/images/blog-share.png`
+  });
 });
-app.get('/blog/:slug', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'blog.html'));
+
+app.get('/blog/:slug', async (req, res) => {
+  try {
+    const { data: post, error } = await supabase
+      .from('posts')
+      .select('title, summary, slug')
+      .eq('slug', req.params.slug)
+      .single();
+
+    if (error || !post) {
+      return res.status(404).send('Blog post not found.');
+    }
+
+    renderBlogPage(res, {
+      title: `${post.title} | FPL Scout Blog`,
+      description: post.summary,
+      url: `${BASE_URL}/blog/${post.slug}#blog-article`,
+      image: `${BASE_URL}/images/blog-share.png`
+    });
+  } catch (err) {
+    console.error('Blog page render error:', err);
+    res.status(500).send('Unable to render blog page.');
+  }
 });
+
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
 });
@@ -454,7 +528,7 @@ app.get('/api/posts', async (req, res) => {
   try {
     const { data: posts, error } = await supabase
       .from('posts')
-      .select('id, title, slug, summary, author, published_at')
+      .select('id, title, slug, summary, author, published_at, likes')
       .order('published_at', { ascending: false });
 
     if (error) throw error;
@@ -469,7 +543,7 @@ app.get('/api/posts/:slug', async (req, res) => {
   try {
     const { data: post, error } = await supabase
       .from('posts')
-      .select('id, title, slug, summary, content, author, published_at')
+      .select('id, title, slug, summary, content, author, published_at, likes')
       .eq('slug', req.params.slug)
       .single();
 
@@ -504,12 +578,12 @@ app.post('/api/subscribe-newsletter', async (req, res) => {
   }
 });
 
-app.post('/api/admin/posts', async (req, res) => {
+app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
   try {
     const { title, slug, summary, content, adminPassword } = req.body;
     const secret = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS;
 
-    if (!adminPassword || adminPassword !== secret) {
+    if (adminPassword && adminPassword !== secret) {
       return res.status(401).json({ success: false, message: 'Invalid admin password.' });
     }
 
@@ -549,7 +623,7 @@ app.post('/api/admin/posts', async (req, res) => {
           <p>A new article is live:</p>
           <h2>${title}</h2>
           <p>${summary}</p>
-          <p><a href="https://fplscout.name.ng/blog/${slug}">Read it now on FPL Scout</a></p>
+          <p><a href="${BASE_URL}/blog/${slug}#blog-article">Read the full article</a></p>
           <p>Thanks,<br/>FPL Scout Team</p>`
       };
 
@@ -567,6 +641,72 @@ app.post('/api/admin/posts', async (req, res) => {
     console.error('Admin publish error:', err);
     return res.status(500).json({ success: false, message: 'Could not publish the post.' });
   }
+});
+
+app.post('/api/posts/:slug/like', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    if (!slug) return res.status(400).json({ success: false, message: 'Slug is required.' });
+
+    const { data: post, error: postError } = await supabase
+      .from('posts')
+      .select('id, likes')
+      .eq('slug', slug)
+      .single();
+
+    if (postError || !post) {
+      return res.status(404).json({ success: false, message: 'Post not found.' });
+    }
+
+    const { data: updated, error: updateError } = await supabase
+      .from('posts')
+      .update({ likes: (post.likes || 0) + 1 })
+      .eq('id', post.id)
+      .select('likes')
+      .single();
+
+    if (updateError) {
+      console.error('Like update error:', updateError);
+      return res.status(500).json({ success: false, message: 'Unable to record like.' });
+    }
+
+    return res.json({ success: true, likes: updated.likes });
+  } catch (err) {
+    console.error('Like endpoint error:', err);
+    return res.status(500).json({ success: false, message: 'Unable to record like.' });
+  }
+});
+
+app.post('/api/admin/login', (req, res) => {
+  const { adminPassword } = req.body;
+  if (!adminPassword || adminPassword !== ADMIN_SECRET) {
+    return res.status(401).json({ success: false, message: 'Invalid admin password.' });
+  }
+
+  const token = createAdminSessionToken();
+  res.cookie('admin_session', token, {
+    httpOnly: true,
+    sameSite: 'strict',
+    secure: req.secure || process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000,
+  });
+
+  return res.json({ success: true, message: 'Admin login successful.' });
+});
+
+app.get('/api/giscus-config', (req, res) => {
+  return res.json({
+    repo: process.env.GISCUS_REPO || 'YOUR_GITHUB_USER/YOUR_REPO',
+    repoId: process.env.GISCUS_REPO_ID || '',
+    category: process.env.GISCUS_CATEGORY || 'Blog Comments',
+    categoryId: process.env.GISCUS_CATEGORY_ID || '',
+    mapping: process.env.GISCUS_MAPPING || 'pathname',
+    theme: process.env.GISCUS_THEME || 'light',
+    inputPosition: process.env.GISCUS_INPUT_POSITION || 'bottom',
+    reactionsEnabled: '1',
+    emitMetadata: '0',
+    lang: process.env.GISCUS_LANG || 'en'
+  });
 });
 
 // ── Page routes ──────────────────────────────────────────────
@@ -588,17 +728,6 @@ app.get('/refund-policy', (req, res) => {
 
 app.get('/account', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'account.html'));
-});
-
-// 1. Configure your Zoho SMTP Email Transporter
-const transporter = nodemailer.createTransport({
-  host: 'smtp.zoho.com',
-  port: 465,
-  secure: true, 
-  auth: {
-    user: process.env.ZOHO_EMAIL,
-    pass: process.env.ZOHO_PASSWORD
-  }
 });
 
 // Temporary memory to hold OTPs used for email change verification
