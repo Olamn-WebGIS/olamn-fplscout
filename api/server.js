@@ -697,12 +697,20 @@ app.post('/api/subscribe-newsletter', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Valid email is required.' });
     }
 
-    const { error } = await supabase
+    const dbClient = supabaseAdmin || supabase;
+    const { error } = await dbClient
       .from('newsletter_subscribers')
       .upsert({ email: email.toLowerCase(), is_subscribed: true })
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Newsletter subscribe error:', error);
+      const fallbackMessage = !supabaseAdmin
+        ? 'Could not subscribe due to Supabase row-level security. Configure SUPABASE_SERVICE_ROLE_KEY or adjust newsletter policies.'
+        : 'Could not subscribe at this time.';
+      return res.status(500).json({ success: false, message: fallbackMessage });
+    }
+
     return res.json({ success: true, message: 'You are subscribed to the newsletter.' });
   } catch (err) {
     console.error('Newsletter subscribe error:', err);
