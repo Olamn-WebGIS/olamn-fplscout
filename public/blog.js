@@ -59,9 +59,9 @@ function renderPost(post) {
         <button class="btn-share btn-like" onclick="likePost('${post.slug}')">Like (${post.likes || 0})</button>
       </div>
     </div>
-    <div id="giscus-container"></div>
+    <div id="comments-container"></div>
   `;
-  renderGiscus(post.slug);
+  renderComments(post.slug);
   setTimeout(() => subscribeModal.classList.add('active'), 15000);
 }
 
@@ -113,33 +113,98 @@ function sharePost(title, summary, href) {
   }
 }
 
-async function renderGiscus(slug) {
-  const container = document.getElementById('giscus-container');
+async function renderComments(slug) {
+  const container = document.getElementById('comments-container');
   if (!container) return;
-  container.innerHTML = '';
 
-  try {
-    const res = await fetch('/api/giscus-config');
-    const config = res.ok ? await res.json() : null;
-    const script = document.createElement('script');
-    script.src = 'https://giscus.app/client.js';
-    script.async = true;
-    script.setAttribute('data-repo', config?.repo || 'YOUR_GITHUB_USER/YOUR_REPO');
-    if (config?.repoId) script.setAttribute('data-repo-id', config.repoId);
-    script.setAttribute('data-category', config?.category || 'Blog Comments');
-    if (config?.categoryId) script.setAttribute('data-category-id', config.categoryId);
-    script.setAttribute('data-mapping', config?.mapping || 'pathname');
-    script.setAttribute('data-reactions-enabled', config?.reactionsEnabled || '1');
-    script.setAttribute('data-emit-metadata', config?.emitMetadata || '0');
-    script.setAttribute('data-input-position', config?.inputPosition || 'bottom');
-    script.setAttribute('data-theme', config?.theme || 'light');
-    script.setAttribute('data-lang', config?.lang || 'en');
-    script.crossOrigin = 'anonymous';
-    container.appendChild(script);
-  } catch (error) {
-    console.error('Giscus load failed:', error);
-    container.innerHTML = '<p>Comments are unavailable right now.</p>';
+  container.innerHTML = `
+    <div class="comments-section">
+      <h2>Comments</h2>
+      <form id="comment-form" class="comment-form">
+        <div class="comment-field">
+          <label for="comment-author">Author</label>
+          <input id="comment-author" type="text" placeholder="Your name" required />
+        </div>
+        <div class="comment-field">
+          <label for="comment-content">Content</label>
+          <textarea id="comment-content" rows="4" placeholder="Write your comment..." required></textarea>
+        </div>
+        <button type="submit" class="btn-share">Post Comment</button>
+      </form>
+      <div id="comment-list" class="comment-list"></div>
+    </div>
+  `;
+
+  const commentForm = document.getElementById('comment-form');
+  const commentList = document.getElementById('comment-list');
+
+  async function loadComments() {
+    commentList.innerHTML = '<p>Loading comments...</p>';
+    try {
+      const res = await fetch(`/api/comments/${encodeURIComponent(slug)}`);
+      if (!res.ok) throw new Error('Unable to load comments');
+      const comments = await res.json();
+      if (!Array.isArray(comments) || comments.length === 0) {
+        commentList.innerHTML = '<p>No comments yet. Be the first to share your thoughts.</p>';
+        return;
+      }
+
+      commentList.innerHTML = comments.map(comment => `
+        <article class="comment-card">
+          <div class="comment-card-header">
+            <strong>${escapeHtml(comment.author_name)}</strong>
+            <span>${new Date(comment.created_at).toLocaleString()}</span>
+          </div>
+          <p>${escapeHtml(comment.content)}</p>
+        </article>
+      `).join('');
+    } catch (error) {
+      console.error('Comments load failed:', error);
+      commentList.innerHTML = '<p>Unable to load comments right now.</p>';
+    }
   }
+
+  async function submitComment(event) {
+    event.preventDefault();
+    const authorInput = document.getElementById('comment-author');
+    const contentInput = document.getElementById('comment-content');
+    const authorName = authorInput.value.trim();
+    const content = contentInput.value.trim();
+
+    if (!authorName || !content) return;
+
+    try {
+      const response = await fetch(`/api/comments/${encodeURIComponent(slug)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ author_name: authorName, content })
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Comment submission failed');
+      }
+
+      authorInput.value = '';
+      contentInput.value = '';
+      await loadComments();
+    } catch (error) {
+      console.error('Comment submit error:', error);
+      alert('Unable to submit comment right now. Please try again later.');
+    }
+  }
+
+  commentForm.addEventListener('submit', submitComment);
+  await loadComments();
+}
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 window.sharePost = sharePost;
@@ -151,7 +216,7 @@ window.sharePost = sharePost;
       if (postContainer.innerHTML.trim()) {
         postContainer.style.display = 'block';
         blogContainer.style.display = 'none';
-        renderGiscus(slug);
+        renderComments(slug);
         setTimeout(() => subscribeModal.classList.add('active'), 15000);
       } else {
         const post = await fetchPost(slug);

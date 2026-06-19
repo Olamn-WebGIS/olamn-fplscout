@@ -645,6 +645,50 @@ app.get('/api/posts/:slug', async (req, res) => {
   }
 });
 
+app.get('/api/comments/:slug', async (req, res) => {
+  try {
+    const postSlug = req.params.slug;
+    const { data: comments, error } = await supabase
+      .from('comments')
+      .select('id, post_slug, author_name, content, created_at')
+      .eq('post_slug', postSlug)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return res.json(comments || []);
+  } catch (err) {
+    console.error('Fetch comments error:', err);
+    return res.status(500).json({ success: false, message: 'Unable to load comments.' });
+  }
+});
+
+app.post('/api/comments/:slug', async (req, res) => {
+  try {
+    const postSlug = req.params.slug;
+    const { author_name, content } = req.body;
+
+    if (!author_name || !content) {
+      return res.status(400).json({ success: false, message: 'Author and comment content are required.' });
+    }
+
+    const { data: newComment, error } = await supabase
+      .from('comments')
+      .insert([{ post_slug: postSlug, author_name, content }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Create comment error:', error);
+      return res.status(500).json({ success: false, message: 'Could not save the comment.' });
+    }
+
+    return res.json({ success: true, comment: newComment });
+  } catch (err) {
+    console.error('Create comment error:', err);
+    return res.status(500).json({ success: false, message: 'Could not save the comment.' });
+  }
+});
+
 app.post('/api/subscribe-newsletter', async (req, res) => {
   try {
     const { email } = req.body;
