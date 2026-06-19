@@ -208,12 +208,38 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const data = await response.json();
+    const newsletterStatus = document.getElementById('newsletter-status');
+    newsletterStatus.textContent = '';
+
     if (data.success) {
-      showStatus(postStatus, editingPostId ? 'Post updated successfully.' : 'Post published successfully.', true);
+      let statusMessage = editingPostId ? 'Post updated successfully.' : 'Post published successfully.';
+      let newsletterMessage = '';
+      let newsletterSuccess = true;
+
+      if (data.newsletter) {
+        if (data.newsletter.errors && data.newsletter.errors.length) {
+          newsletterMessage = `Newsletter send failed for ${data.newsletter.errors.length} batch(es).`;
+          newsletterSuccess = false;
+        } else if (data.newsletter.subscribers > 0 && data.newsletter.sent) {
+          newsletterMessage = `Newsletter sent to ${data.newsletter.subscribers} subscriber(s).`;
+        } else if (data.newsletter.subscribers > 0 && !data.newsletter.sent) {
+          newsletterMessage = 'Newsletter was not sent.';
+          newsletterSuccess = false;
+        }
+      }
+
+      showStatus(postStatus, statusMessage, true);
+      if (newsletterMessage) {
+        showStatus(newsletterStatus, newsletterMessage, newsletterSuccess);
+      }
       resetEditorState();
       await loadAdminPosts();
     } else {
-      showStatus(postStatus, data.message || 'Publishing failed.', false);
+      let errorMessage = data.message || 'Publishing failed.';
+      if (data.newsletter && data.newsletter.errors && data.newsletter.errors.length) {
+        errorMessage += ` Newsletter send failed: ${data.newsletter.errors.join('; ')}`;
+      }
+      showStatus(postStatus, errorMessage, false);
     }
   });
 });

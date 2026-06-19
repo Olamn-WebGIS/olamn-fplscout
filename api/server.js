@@ -824,7 +824,8 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
       return res.status(500).json({ success: false, message: fallbackMessage });
     }
 
-    const { data: subscribers, error: subError } = await supabase
+    const dbClient = supabaseAdmin || supabase;
+    const { data: subscribers, error: subError } = await dbClient
       .from('newsletter_subscribers')
       .select('email')
       .eq('is_subscribed', true)
@@ -835,34 +836,64 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
     }
 
     const emails = (subscribers || []).map((row) => row.email).filter(Boolean);
-    if (emails.length) {
-      const message = {
-        from: `"FPL Scout Newsletter" <${ZOHO_NEWSLETTER_EMAIL}>`,
-        to: ZOHO_NEWSLETTER_EMAIL,
-        bcc: emails.join(','),
-        subject: `New FPL Scout post: ${title}`,
-        html: `<p>Hello FPL Scout manager,</p>
+    const newsletterFrom = ZOHO_NEWSLETTER_PASSWORD ? ZOHO_NEWSLETTER_EMAIL : ZOHO_OTP_EMAIL;
+    let newsletterSent = false;
+    let newsletterErrors = [];
+
+    if (!newsletterFrom) {
+      console.error('Newsletter sender is not configured. Set ZOHO_NEWSLETTER_EMAIL or ZOHO_OTP_EMAIL.');
+    }
+
+    if (emails.length && newsletterFrom) {
+      const messageHtml = `<p>Hello FPL Scout manager,</p>
           <p>A new article is live:</p>
           <h2>${title}</h2>
           <p>${summary}</p>
           <p><a href="${BASE_URL}/blog/${slug}#blog-article">Read the full article</a></p>
-          <p>Thanks,<br/>FPL Scout Newsletter</p>`
-      };
+          <p>Thanks,<br/>FPL Scout Newsletter</p>`;
 
-      newsletterTransporter.sendMail(message, (err, info) => {
-        if (err) {
+      const batchSize = 80;
+      for (let i = 0; i < emails.length; i += batchSize) {
+        const batch = emails.slice(i, i + batchSize);
+        const message = {
+          from: `"FPL Scout Newsletter" <${newsletterFrom}>`,
+          to: newsletterFrom,
+          bcc: batch,
+          subject: `New FPL Scout post: ${title}`,
+          html: messageHtml
+        };
+
+        try {
+          const info = await newsletterTransporter.sendMail(message);
+          newsletterSent = true;
+          console.log(`Newsletter sent to ${batch.length} subscribers:`, info.messageId || info.response);
+        } catch (err) {
+          newsletterErrors.push(err.message || String(err));
           console.error('Newsletter email error:', err);
-        } else {
-          console.log('Newsletter sent to subscribers:', info.response);
         }
-      });
+      }
     }
 
     if (!emails.length) {
       console.log('No newsletter subscribers found. Skipping sendMail.');
     }
 
-    return res.json({ success: true, message: 'Blog post published.', post: insertedPost });
+    const responsePayload = {
+      success: true,
+      message: 'Blog post published.',
+      post: insertedPost,
+      newsletter: {
+        subscribers: emails.length,
+        sent: newsletterSent,
+        errors: newsletterErrors
+      }
+    };
+
+    if (newsletterErrors.length) {
+      responsePayload.message = 'Blog post published, but some newsletter sends failed.';
+    }
+
+    return res.json(responsePayload);
   } catch (err) {
     console.error('Admin publish error:', err);
     return res.status(500).json({ success: false, message: 'Could not publish the post.' });
