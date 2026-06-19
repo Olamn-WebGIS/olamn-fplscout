@@ -19,12 +19,17 @@ const BASE_URL = process.env.BASE_URL || 'https://fplscout.name.ng';
 const ADMIN_SECRET = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS;
 
 // ── Supabase Initialization ────────────────────────────────
-// Use service role key only on the server and enable RLS for real security.
-// Create a row-level security policy in Supabase so only authenticated admin inserts are allowed.
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY
-);
+// Use a public key for read-only API access and a service role key for server-side admin writes.
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseAdmin = SUPABASE_SERVICE_ROLE_KEY ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) : null;
+
+if (!SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn('Warning: SUPABASE_SERVICE_ROLE_KEY is not configured. Admin write operations will fail if row-level security is enabled.');
+}
 // 🔒 PREMIUM SECURITY CHECK MIDDLEWARE
 // It looks up the requesting user's true profile status in Supabase before unblocking private paths
 async function requirePremiumUser(req, res, next) {
@@ -673,7 +678,12 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
       return res.status(400).json({ success: false, message: 'All fields are required.' });
     }
 
-    const { data: insertedPost, error: insertError } = await supabase
+    const dbClient = supabaseAdmin || supabase;
+    if (!supabaseAdmin) {
+      console.warn('Admin publish warning: SUPABASE_SERVICE_ROLE_KEY is missing. Falling back to public key insert. This may fail if row-level security is enabled.');
+    }
+
+    const { data: insertedPost, error: insertError } = await dbClient
       .from('posts')
       .insert([{ title, slug, summary, content, author: 'FPL Scout' }])
       .select()
@@ -681,7 +691,10 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
 
     if (insertError) {
       console.error('Create post error:', insertError);
-      return res.status(500).json({ success: false, message: 'Could not create the blog post.' });
+      const fallbackMessage = !supabaseAdmin
+        ? 'Could not create the blog post. Configure SUPABASE_SERVICE_ROLE_KEY for admin publishing or adjust Supabase row-level security policies.'
+        : 'Could not create the blog post.';
+      return res.status(500).json({ success: false, message: fallbackMessage });
     }
 
     const { data: subscribers, error: subError } = await supabase
