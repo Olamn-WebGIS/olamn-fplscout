@@ -15,6 +15,7 @@ let adminAuthenticated = false;
 let quill;
 let editingPostId = null;
 let editingPostSlug = null;
+let existingSlugs = new Set();
 
 function showStatus(element, message, success = true) {
   element.textContent = message;
@@ -39,6 +40,7 @@ async function loadAdminPosts() {
     const res = await fetch('/api/posts');
     if (!res.ok) throw new Error('Unable to load posts');
     const posts = await res.json();
+    existingSlugs = new Set(posts.map(post => post.slug));
     adminPostList.innerHTML = posts.map(post => `
       <div class="admin-post-item">
         <h3>${post.title}</h3>
@@ -181,6 +183,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (!title || !slug || !summary || !content) {
       showStatus(postStatus, 'All fields are required.', false);
+      return;
+    }
+
+    if (!editingPostId && existingSlugs.has(slug)) {
+      showStatus(postStatus, 'Slug already exists. Please choose a unique slug.', false);
+      return;
+    }
+
+    if (editingPostId && slug !== editingPostSlug && existingSlugs.has(slug)) {
+      showStatus(postStatus, 'Slug already exists. Please choose a unique slug.', false);
       return;
     }
 

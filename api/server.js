@@ -781,6 +781,21 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
       console.warn('Admin publish warning: SUPABASE_SERVICE_ROLE_KEY is missing. Falling back to public key insert. This may fail if row-level security is enabled.');
     }
 
+    const { data: existingSlug, error: slugError } = await dbClient
+      .from('posts')
+      .select('id')
+      .eq('slug', slug)
+      .single();
+
+    if (slugError && slugError.code !== 'PGRST116') {
+      console.error('Slug lookup error:', slugError);
+      return res.status(500).json({ success: false, message: 'Could not validate post slug.' });
+    }
+
+    if (existingSlug) {
+      return res.status(409).json({ success: false, message: 'Slug already exists. Please choose a unique slug.' });
+    }
+
     const { data: insertedPost, error: insertError } = await dbClient
       .from('posts')
       .insert([{ title, slug, summary, content: sanitizedContent, author: 'FPL Scout' }])
