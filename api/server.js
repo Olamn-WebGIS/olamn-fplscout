@@ -824,7 +824,6 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
       return res.status(500).json({ success: false, message: fallbackMessage });
     }
 
-    const dbClient = supabaseAdmin || supabase;
     const { data: subscribers, error: subError } = await dbClient
       .from('newsletter_subscribers')
       .select('email')
