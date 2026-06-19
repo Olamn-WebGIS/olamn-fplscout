@@ -117,16 +117,33 @@ function renderBlogPage(res, metadata) {
   res.send(html);
 }
 
-// 1. Configure your Zoho SMTP Email Transporter
+// 1. Configure your Zoho SMTP Email Transporters
+const ZOHO_OTP_EMAIL = process.env.ZOHO_OTP_EMAIL || process.env.ZOHO_EMAIL || 'info@fplscout.name.ng';
+const ZOHO_OTP_PASSWORD = process.env.ZOHO_OTP_PASSWORD || process.env.ZOHO_PASSWORD;
+const ZOHO_NEWSLETTER_EMAIL = process.env.ZOHO_NEWSLETTER_EMAIL || 'olamn@fplscout.name.ng';
+const ZOHO_NEWSLETTER_PASSWORD = process.env.ZOHO_NEWSLETTER_PASSWORD || process.env.ZOHO_PASSWORD;
+
 const transporter = nodemailer.createTransport({
   host: 'smtp.zoho.com',
   port: 465,
-  secure: true, 
+  secure: true,
   auth: {
-    user: process.env.ZOHO_EMAIL,
-    pass: process.env.ZOHO_PASSWORD
+    user: ZOHO_OTP_EMAIL,
+    pass: ZOHO_OTP_PASSWORD
   }
 });
+
+const newsletterTransporter = ZOHO_NEWSLETTER_PASSWORD
+  ? nodemailer.createTransport({
+      host: 'smtp.zoho.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: ZOHO_NEWSLETTER_EMAIL,
+        pass: ZOHO_NEWSLETTER_PASSWORD
+      }
+    })
+  : transporter;
 
 // ── Helpers ───────────────────────────────────────────────────
 async function fplFetch(endpoint, ttl = 120) {
@@ -553,7 +570,7 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
   try {
     const { data: post, error } = await supabase
       .from('posts')
-      .select('title, summary, slug, author, published_at, content')
+      .select('title, summary, slug, author, published_at, content, likes')
       .eq('slug', req.params.slug)
       .single();
 
@@ -569,7 +586,7 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
         <div>${post.content.replace(/\n/g, '<br>')}</div>
         <div class="blog-actions blog-actions-minimal">
           <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">🔗<span>Share</span></button>
-          <button class="btn-icon" id="like-button" onclick="toggleLike('${post.slug}')">❤️<span id="like-count">${post.likes || 0}</span></button>
+          <button class="btn-icon" id="like-button" onclick="toggleLike('${post.slug}')">❤️<span id="like-count">${typeof post.likes === 'number' ? post.likes : 0}</span></button>
         </div>
         <div class="blog-article-footer">Favour Olamilekan Adeoye, Founder of FPL Scout</div>
       </div>
@@ -789,8 +806,8 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
     const emails = (subscribers || []).map((row) => row.email).filter(Boolean);
     if (emails.length) {
       const message = {
-        from: process.env.ZOHO_EMAIL,
-        to: process.env.ZOHO_EMAIL,
+        from: `"FPL Scout Newsletter" <${ZOHO_NEWSLETTER_EMAIL}>`,
+        to: ZOHO_NEWSLETTER_EMAIL,
         bcc: emails.join(','),
         subject: `New FPL Scout post: ${title}`,
         html: `<p>Hello FPL Scout manager,</p>
@@ -798,10 +815,10 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
           <h2>${title}</h2>
           <p>${summary}</p>
           <p><a href="${BASE_URL}/blog/${slug}#blog-article">Read the full article</a></p>
-          <p>Thanks,<br/>FPL Scout Team</p>`
+          <p>Thanks,<br/>FPL Scout Newsletter</p>`
       };
 
-      transporter.sendMail(message, (err, info) => {
+      newsletterTransporter.sendMail(message, (err, info) => {
         if (err) {
           console.error('Newsletter email error:', err);
         } else {
@@ -1139,7 +1156,7 @@ app.post('/api/forgot-password', async (req, res) => {
 
         // Send email
         const mailOptions = {
-            from: `"League Spy Team" <${process.env.ZOHO_EMAIL || 'info@fplscout.name.ng'}>`,
+            from: `"League Spy Team" <${ZOHO_OTP_EMAIL}>`,
             to: email,
             subject: 'Reset Your League Spy Password',
             html: `
@@ -1302,7 +1319,7 @@ app.post('/api/send-email-change-otp', async (req, res) => {
 
         // Send OTP to new email
         const mailOptions = {
-            from: process.env.ZOHO_EMAIL || 'info@fplscout.name.ng',
+            from: `"League Spy Team" <${ZOHO_OTP_EMAIL}>`,
             to: newEmail,
             subject: 'Verify Your New Email - FPL Scout',
             html: `
