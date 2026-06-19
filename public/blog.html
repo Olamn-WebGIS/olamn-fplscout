@@ -30,11 +30,15 @@
     .blog-meta { display: flex; flex-wrap: wrap; gap: 1rem; color: #777; margin: 1rem 0; }
     .blog-actions { margin-top: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
     .btn-share, .btn-subscribe { cursor: pointer; padding: 0.85rem 1.35rem; border-radius: 999px; border: none; background: #0070f3; color: #fff; font-weight: 600; }
-    .btn-ghost { background: transparent; border: 1px solid #dce4f2; color: #0f172a; padding: 0.75rem 1rem; border-radius: 999px; font-weight: 600; }
-    .btn-ghost:hover { background: #f8fbff; }
+    .btn-icon { display: inline-flex; align-items: center; justify-content: center; min-width: 46px; height: 42px; padding: 0 0.8rem; border-radius: 999px; border: 1px solid #dce4f2; background: #fff; color: #0f172a; font-weight: 700; font-size: 1rem; transition: background 0.2s ease, border-color 0.2s ease; }
+    .btn-icon:hover { background: #f8fbff; border-color: #cbd5e1; }
+    .btn-icon span { margin-left: 0.35rem; font-weight: 600; }
     .blog-actions-minimal { gap: 0.5rem; }
-    .blog-actions-minimal button { min-width: auto; padding: 0.75rem 1rem; }
+    .blog-actions-minimal button { min-width: auto; padding: 0.75rem 0.95rem; }
     .blog-actions-minimal #like-button { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .btn-icon { display: inline-flex; align-items: center; justify-content: center; min-width: 46px; height: 42px; padding: 0 0.85rem; border-radius: 999px; border: 1px solid #dce4f2; background: #fff; color: #0f172a; font-weight: 700; font-size: 0.95rem; transition: background 0.2s ease, border-color 0.2s ease; }
+    .btn-icon:hover { background: #f8fbff; border-color: #cbd5e1; }
+    .btn-icon span { margin-left: 0.35rem; font-weight: 700; }
     .comments-section { margin-top: 2rem; background: #fff; border-radius: 18px; box-shadow: 0 14px 40px rgba(0,0,0,0.08); padding: 1.75rem; }
     .comments-section h2 { margin-bottom: 1rem; }
     .comment-form { display: grid; gap: 1rem; margin-bottom: 1.5rem; }
@@ -56,6 +60,7 @@
   <div class="blog-page">
     <div id="blog-list-container">{{BLOG_LIST_CONTENT}}</div>
     <div id="blog-post-container" style="display:none">{{BLOG_STATIC_CONTENT}}</div>
+    <div id="comments-container"></div>
   </div>
 
   <div id="subscribe-modal" class="subscribe-modal">
