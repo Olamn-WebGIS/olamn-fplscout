@@ -640,57 +640,83 @@ async function sendEmailChangeOTP() {
     }
 
     try {
-        // (Your existing functional Supabase code logic goes here)
-        
-        // 1. Reveal the OTP inputs and text label
+        const response = await fetch('/api/send-email-change-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentUser.email, newEmail })
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+            alert(data.message || 'Failed to send OTP.');
+            return;
+        }
+
         const otpLabel = document.getElementById('otp-label');
         const otpInput = document.getElementById('email-otp');
         const verifyBtn = document.getElementById('verify-email-otp-btn');
         const sendOtpBtn = document.getElementById('send-email-otp-btn');
 
         otpLabel.style.display = 'block';
-        otpLabel.textContent = "Please fill in your OTP code *"; 
-        otpLabel.style.color = ""; 
-        
-        otpInput.style.display = 'block';
-        otpInput.required = true; 
-        
-        // 2. Swap the action buttons
-        if (verifyBtn) verifyBtn.style.display = 'inline-flex';
-        if (sendOtpBtn) sendOtpBtn.style.display = 'none'; 
+        otpLabel.textContent = "Please enter the OTP sent to your new email address.";
+        otpLabel.style.color = "";
 
+        otpInput.style.display = 'block';
+        otpInput.required = true;
+        otpInput.focus();
+
+        if (verifyBtn) verifyBtn.style.display = 'inline-flex';
+        if (sendOtpBtn) sendOtpBtn.style.display = 'none';
+
+        alert('OTP sent to your new email. Please enter it below.');
     } catch (error) {
         console.error("Failed to route email change transmission request:", error);
+        alert('Failed to send OTP. Please try again.');
     }
 }
 
 // 3. NEW ADDITION: Intercept click before form triggers a browser exit reset
 document.getElementById('change-email-form').addEventListener('submit', async (e) => {
-    // Stop the modal from closing or reloading instantly
-    e.preventDefault(); 
+    e.preventDefault();
 
+    const newEmail = document.getElementById('new-email').value.trim();
     const otpInput = document.getElementById('email-otp');
     const otpValue = otpInput.value.trim();
     const otpLabel = document.getElementById('otp-label');
 
-    // CHECK: Is the field visible but completely empty?
     if (!otpValue) {
         if (otpLabel) {
             otpLabel.textContent = "⚠️ Fill in your OTP code to proceed!";
-            otpLabel.style.color = "#ef4444"; // Changes label text to error red
+            otpLabel.style.color = "#ef4444";
         }
-        return; // Stops execution right here so the modal stays wide open!
+        return;
     }
 
-    // PROCEED: If the code is filled, continue with your backend verify script
     try {
-        // Example backend call:
-        // const { error } = await supabase.auth.verifyOtp({ email: newEmail, token: otpValue, type: 'email_change' });
-        
-        alert("Email changed successfully!");
-        closeChangeEmailModal(); // Only close now on actual success
+        const response = await fetch('/api/verify-email-change-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentUser.email, newEmail, otp: otpValue })
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+            if (otpLabel) {
+                otpLabel.textContent = data.message || 'Invalid OTP. Please try again.';
+                otpLabel.style.color = '#ef4444';
+            }
+            return;
+        }
+
+        currentUser.email = newEmail;
+        localStorage.setItem('fpl_user_session', JSON.stringify(currentUser));
+        document.getElementById('current-email').textContent = currentUser.email;
+
+        alert('Email changed successfully!');
+        closeChangeEmailModal();
     } catch (err) {
         console.error("Verification sequence failed:", err);
+        alert('Failed to verify OTP. Please try again.');
     }
 });
         // Change password

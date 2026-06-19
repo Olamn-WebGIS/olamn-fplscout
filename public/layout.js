@@ -180,6 +180,26 @@
             </div>
             <button type="submit" class="auth-btn">Verify Code</button>
         </form>
+
+        <!-- 6. NEW PASSWORD FORM -->
+        <form id="new-password-form" class="auth-form form-hidden">
+            <h2>Create New Password</h2>
+            <div class="form-group">
+                <label>New Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="new-password-input" required placeholder="Enter new password">
+                    <span class="password-toggle-btn" onclick="togglePasswordVisibility('new-password-input', this)">👁️</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Confirm Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="confirm-password-input" required placeholder="Confirm new password">
+                    <span class="password-toggle-btn" onclick="togglePasswordVisibility('confirm-password-input', this)">👁️</span>
+                </div>
+            </div>
+            <button type="submit" class="auth-btn">Update Password</button>
+        </form>
     </div>
 </div>
 `;

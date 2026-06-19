@@ -790,8 +790,8 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
     if (insertError) {
       console.error('Create post error:', insertError);
       const fallbackMessage = !supabaseAdmin
-        ? 'Could not create the blog post. Configure SUPABASE_SERVICE_ROLE_KEY for admin publishing or adjust Supabase row-level security policies.'
-        : 'Could not create the blog post.';
+        ? `Could not create the blog post. Configure SUPABASE_SERVICE_ROLE_KEY for admin publishing or adjust Supabase row-level security policies. Database error: ${insertError.message}`
+        : `Could not create the blog post. Database error: ${insertError.message}`;
       return res.status(500).json({ success: false, message: fallbackMessage });
     }
 
