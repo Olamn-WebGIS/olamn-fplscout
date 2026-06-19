@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const sanitizeHtml = require('sanitize-html');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config(); // Load environment variables
 
@@ -722,6 +723,11 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
       return res.status(400).json({ success: false, message: 'All fields are required.' });
     }
 
+    const sanitizedContent = sanitizeHtml(content, {
+      allowedTags: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote'],
+      allowedAttributes: {}
+    });
+
     const dbClient = supabaseAdmin || supabase;
     if (!supabaseAdmin) {
       console.warn('Admin publish warning: SUPABASE_SERVICE_ROLE_KEY is missing. Falling back to public key insert. This may fail if row-level security is enabled.');
@@ -729,7 +735,7 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
 
     const { data: insertedPost, error: insertError } = await dbClient
       .from('posts')
-      .insert([{ title, slug, summary, content, author: 'FPL Scout' }])
+      .insert([{ title, slug, summary, content: sanitizedContent, author: 'FPL Scout' }])
       .select()
       .single();
 
@@ -779,6 +785,61 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
   } catch (err) {
     console.error('Admin publish error:', err);
     return res.status(500).json({ success: false, message: 'Could not publish the post.' });
+  }
+});
+
+app.put('/api/admin/posts/:id', requireAdminSession, async (req, res) => {
+  try {
+    const { title, slug, summary, content } = req.body;
+    const postId = req.params.id;
+
+    if (!title || !slug || !summary || !content) {
+      return res.status(400).json({ success: false, message: 'All fields are required.' });
+    }
+
+    const sanitizedContent = sanitizeHtml(content, {
+      allowedTags: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote'],
+      allowedAttributes: {}
+    });
+
+    const dbClient = supabaseAdmin || supabase;
+    const { data: updatedPost, error } = await dbClient
+      .from('posts')
+      .update({ title, slug, summary, content: sanitizedContent })
+      .eq('id', postId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Update post error:', error);
+      return res.status(500).json({ success: false, message: 'Could not update the blog post.' });
+    }
+
+    return res.json({ success: true, post: updatedPost });
+  } catch (err) {
+    console.error('Update post crash:', err);
+    return res.status(500).json({ success: false, message: 'Could not update the post.' });
+  }
+});
+
+app.delete('/api/admin/posts/:id', requireAdminSession, async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const dbClient = supabaseAdmin || supabase;
+    const { error } = await dbClient
+      .from('posts')
+      .delete()
+      .eq('id', postId);
+
+    if (error) {
+      console.error('Delete post error:', error);
+      return res.status(500).json({ success: false, message: 'Could not delete the post.' });
+    }
+
+    return res.json({ success: true, message: 'Post deleted successfully.' });
+  } catch (err) {
+    console.error('Delete post crash:', err);
+    return res.status(500).json({ success: false, message: 'Could not delete the post.' });
   }
 });
 

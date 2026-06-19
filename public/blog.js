@@ -53,10 +53,10 @@ function renderPost(post) {
       <h1>${post.title}</h1>
       <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span></div>
       <p style="font-size:1rem;color:#555;">${post.summary}</p>
-      <div>${post.content.replace(/\n/g, '<br>')}</div>
-      <div class="blog-actions">
-        <button class="btn-share" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">Share this article</button>
-        <button class="btn-share btn-like" onclick="likePost('${post.slug}')">Like (${post.likes || 0})</button>
+      <div>${post.content}</div>
+      <div class="blog-actions blog-actions-minimal">
+        <button class="btn-ghost" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">Share</button>
+        <button class="btn-ghost" id="like-button" onclick="toggleLike('${post.slug}')">👍 <span id="like-count">${post.likes || 0}</span></button>
       </div>
     </div>
     <div id="comments-container"></div>
@@ -73,12 +73,16 @@ async function likePost(slug) {
     });
     const data = await res.json();
     if (data.success) {
-      const likeButton = document.querySelector('.blog-actions button.btn-like');
-      if (likeButton) likeButton.textContent = `Like (${data.likes})`;
+      const likeCount = document.getElementById('like-count');
+      if (likeCount) likeCount.textContent = data.likes;
     }
   } catch (error) {
     console.error('Unable to like post.', error);
   }
+}
+
+function toggleLike(slug) {
+  likePost(slug);
 }
 
 function setupSubscribeModal() {

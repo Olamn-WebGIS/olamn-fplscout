@@ -28,8 +28,23 @@
     .blog-list-item h2, .blog-post h1 { margin: 0 0 1rem; font-size: clamp(1.5rem, 2.4vw, 2.1rem); }
     .blog-list-item p, .blog-post p { line-height: 1.75; color: #444; }
     .blog-meta { display: flex; flex-wrap: wrap; gap: 1rem; color: #777; margin: 1rem 0; }
-    .blog-actions { margin-top: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+    .blog-actions { margin-top: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
     .btn-share, .btn-subscribe { cursor: pointer; padding: 0.85rem 1.35rem; border-radius: 999px; border: none; background: #0070f3; color: #fff; font-weight: 600; }
+    .btn-ghost { background: transparent; border: 1px solid #dce4f2; color: #0f172a; padding: 0.75rem 1rem; border-radius: 999px; font-weight: 600; }
+    .btn-ghost:hover { background: #f8fbff; }
+    .blog-actions-minimal { gap: 0.5rem; }
+    .blog-actions-minimal button { min-width: auto; padding: 0.75rem 1rem; }
+    .blog-actions-minimal #like-button { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .comments-section { margin-top: 2rem; background: #fff; border-radius: 18px; box-shadow: 0 14px 40px rgba(0,0,0,0.08); padding: 1.75rem; }
+    .comments-section h2 { margin-bottom: 1rem; }
+    .comment-form { display: grid; gap: 1rem; margin-bottom: 1.5rem; }
+    .comment-field label { display: block; margin-bottom: 0.5rem; font-weight: 700; color: #1e293b; }
+    .comment-field input, .comment-field textarea { width: 100%; padding: 0.95rem 1rem; border: 1px solid #e2e8f0; border-radius: 14px; font-size: 0.95rem; }
+    .comment-list { display: grid; gap: 1rem; }
+    .comment-card { background: #f8fbff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1rem 1.1rem; }
+    .comment-card-header { display: flex; justify-content: space-between; gap: 1rem; align-items: center; margin-bottom: 0.7rem; color: #334155; }
+    .comment-card-header strong { font-weight: 700; }
+    .comment-card p { color: #334155; line-height: 1.7; margin: 0; }
     #subscribe-modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.55); z-index: 9999; opacity: 0; pointer-events: none; transition: opacity .25s ease; }
     #subscribe-modal.active { opacity: 1; pointer-events: all; }
     #subscribe-modal .modal-card { background: white; border-radius: 20px; padding: 2rem; max-width: 420px; width: 100%; text-align: center; }
