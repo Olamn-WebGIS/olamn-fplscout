@@ -778,9 +778,15 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
     }
 
     const sanitizedContent = sanitizeHtml(content, {
-      allowedTags: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote', 'a'],
+      allowedTags: ['p', 'br', 'strong', 'em', 'u', 'span', 'ul', 'ol', 'li', 'blockquote', 'a'],
       allowedAttributes: {
-        a: ['href', 'target', 'rel']
+        a: ['href', 'target', 'rel'],
+        span: ['style']
+      },
+      allowedStyles: {
+        span: {
+          color: [/^#([0-9a-fA-F]{3}){1,2}$/, /^rgb\(/, /^rgba\(/]
+        }
       }
     });
 
@@ -873,9 +879,15 @@ app.put('/api/admin/posts/:id', requireAdminSession, async (req, res) => {
     }
 
     const sanitizedContent = sanitizeHtml(content, {
-      allowedTags: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote', 'a'],
+      allowedTags: ['p', 'br', 'strong', 'em', 'u', 'span', 'ul', 'ol', 'li', 'blockquote', 'a'],
       allowedAttributes: {
-        a: ['href', 'target', 'rel']
+        a: ['href', 'target', 'rel'],
+        span: ['style']
+      },
+      allowedStyles: {
+        span: {
+          color: [/^#([0-9a-fA-F]{3}){1,2}$/, /^rgb\(/, /^rgba\(/]
+        }
       }
     });
 
