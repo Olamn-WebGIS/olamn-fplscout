@@ -770,8 +770,10 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
     }
 
     const sanitizedContent = sanitizeHtml(content, {
-      allowedTags: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote'],
-      allowedAttributes: {}
+      allowedTags: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote', 'a'],
+      allowedAttributes: {
+        a: ['href', 'target', 'rel']
+      }
     });
 
     const dbClient = supabaseAdmin || supabase;
@@ -844,8 +846,10 @@ app.put('/api/admin/posts/:id', requireAdminSession, async (req, res) => {
     }
 
     const sanitizedContent = sanitizeHtml(content, {
-      allowedTags: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote'],
-      allowedAttributes: {}
+      allowedTags: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote', 'a'],
+      allowedAttributes: {
+        a: ['href', 'target', 'rel']
+      }
     });
 
     const dbClient = supabaseAdmin || supabase;

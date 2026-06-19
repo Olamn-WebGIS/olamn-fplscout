@@ -119,6 +119,9 @@
                 </div>
             </div>
             <button type="submit" class="auth-btn">Log In</button>
+            <p style="text-align: center; margin-top: 1rem; font-size: 0.85rem;">
+                <a href="#" id="forgot-password-link" style="color: #0070f3; cursor: pointer; text-decoration: none;">Forgot Password?</a>
+            </p>
         </form>
 
         <!-- 2. SIGN UP FORM -->
