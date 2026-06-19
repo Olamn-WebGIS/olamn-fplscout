@@ -19,6 +19,15 @@ const FPL_BASE = 'https://fantasy.premierleague.com/api';
 const BASE_URL = process.env.BASE_URL || 'https://fplscout.name.ng';
 const ADMIN_SECRET = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS;
 
+function emailFirstName(email) {
+  if (!email || typeof email !== 'string') return '';
+  const localPart = email.split('@')[0] || '';
+  const rawName = localPart.split(/[.+_-]/)[0] || localPart;
+  const clean = rawName.replace(/[^a-zA-Z]/g, '').trim();
+  if (!clean) return '';
+  return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+}
+
 // ── Supabase Initialization ────────────────────────────────
 // Use a public key for read-only API access and a service role key for server-side admin writes.
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -844,20 +853,18 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
     }
 
     if (emails.length && newsletterFrom) {
-      const messageHtml = `<p>Hello FPL Scout manager,</p>
+      for (const recipientEmail of emails) {
+        const greetingName = emailFirstName(recipientEmail) || 'FAM';
+        const messageHtml = `<p>Hello ${greetingName},</p>
           <p>A new article is live:</p>
           <h2>${title}</h2>
           <p>${summary}</p>
           <p><a href="${BASE_URL}/blog/${slug}#blog-article">Read the full article</a></p>
-          <p>Thanks,<br/>FPL Scout Newsletter</p>`;
+          <p>Thanks,<br/>OLAMN FROM FPL Scout</p>`;
 
-      const batchSize = 80;
-      for (let i = 0; i < emails.length; i += batchSize) {
-        const batch = emails.slice(i, i + batchSize);
         const message = {
-          from: `"FPL Scout Newsletter" <${newsletterFrom}>`,
-          to: newsletterFrom,
-          bcc: batch,
+          from: `"OLAMN from FPL Scout" <${newsletterFrom}>`,
+          to: recipientEmail,
           subject: `New FPL Scout post: ${title}`,
           html: messageHtml
         };
@@ -865,10 +872,10 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
         try {
           const info = await newsletterTransporter.sendMail(message);
           newsletterSent = true;
-          console.log(`Newsletter sent to ${batch.length} subscribers:`, info.messageId || info.response);
+          console.log(`Newsletter sent to ${recipientEmail}:`, info.messageId || info.response);
         } catch (err) {
-          newsletterErrors.push(err.message || String(err));
-          console.error('Newsletter email error:', err);
+          newsletterErrors.push(`${recipientEmail}: ${err.message || String(err)}`);
+          console.error('Newsletter email error for', recipientEmail, err);
         }
       }
     }
