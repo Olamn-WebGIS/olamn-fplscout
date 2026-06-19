@@ -370,10 +370,11 @@ function setupModalInterface() {
             submitBtn.disabled = true;
 
             try {
-                const response = await fetch('/api/forgot-password', {
+                const normalizedEmail = email.trim().toLowerCase();
+            const response = await fetch('/api/forgot-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
+                    body: JSON.stringify({ email: normalizedEmail })
                 });
 
                 const data = await response.json();
@@ -419,7 +420,8 @@ function setupModalInterface() {
                     if (resetOtpForm) resetOtpForm.classList.add('form-hidden');
                     if (newPasswordForm) newPasswordForm.classList.remove('form-hidden');
                 } else {
-                    alert("Invalid code. Please try again.");
+                    alert(data.message || "Invalid code. Please try again.");
+                    console.warn('Reset OTP failure:', data);
                 }
             } catch (error) {
                 console.error("Verification Error:", error);

@@ -145,6 +145,14 @@ const newsletterTransporter = ZOHO_NEWSLETTER_PASSWORD
     })
   : transporter;
 
+newsletterTransporter.verify((error, success) => {
+  if (error) {
+    console.error('Newsletter transporter verification failed:', error);
+  } else {
+    console.log('Newsletter transporter is ready to send messages.');
+  }
+});
+
 // ── Helpers ───────────────────────────────────────────────────
 async function fplFetch(endpoint, ttl = 120) {
   const key = endpoint;
@@ -844,6 +852,10 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
       });
     }
 
+    if (!emails.length) {
+      console.log('No newsletter subscribers found. Skipping sendMail.');
+    }
+
     return res.json({ success: true, message: 'Blog post published.', post: insertedPost });
   } catch (err) {
     console.error('Admin publish error:', err);
@@ -1143,17 +1155,17 @@ let passwordResetOtpStore = {}; // Store for password reset OTPs (separate from 
 // Forgot Password - Send OTP
 app.post('/api/forgot-password', async (req, res) => {
     try {
-        const { email } = req.body;
+        const email = (req.body.email || '').trim().toLowerCase();
 
         if (!email) {
             return res.status(400).json({ success: false, message: 'Email is required' });
         }
 
-        // Check if user exists in Supabase
+        // Check if user exists in Supabase (case-insensitive email match)
         const { data: user, error: userError } = await supabase
             .from('users')
             .select('*')
-            .eq('email', email)
+            .ilike('email', email)
             .single();
 
         if (userError || !user) {
@@ -1202,7 +1214,8 @@ app.post('/api/forgot-password', async (req, res) => {
 // Verify Password Reset OTP
 app.post('/api/verify-reset-otp', async (req, res) => {
     try {
-        const { email, otp } = req.body;
+        const email = (req.body.email || '').trim().toLowerCase();
+        const otp = String(req.body.otp || '');
         const correctOtp = passwordResetOtpStore[email];
         const cleanOtp = otp.replace(/\s+/g, '').trim();
 
