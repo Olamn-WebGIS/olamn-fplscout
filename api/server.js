@@ -513,8 +513,8 @@ app.get(['/blog', '/blog/'], async (req, res) => {
           <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span><span>${post.likes || 0} likes</span></div>
           <p>${post.summary}</p>
           <div class="blog-actions">
-            <a href="/blog/${post.slug}" class="btn-share">Read full article</a>
-            <button class="btn-share" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">Share</button>
+            <a href="/blog/${post.slug}" class="blog-read-link">Read full article</a>
+            <button class="btn-icon btn-share-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">🔗</button>
           </div>
         </article>
       `).join('')}
