@@ -26,7 +26,7 @@ function initializeQuill() {
     theme: 'snow',
     modules: {
       toolbar: [
-        ['bold', 'italic'],
+        ['bold', 'italic', 'link'],
         [{ list: 'bullet' }],
         ['clean']
       ]
