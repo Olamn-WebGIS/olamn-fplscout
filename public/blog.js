@@ -24,15 +24,38 @@ async function fetchPost(slug) {
 function createPostCard(post) {
   const card = document.createElement('div');
   card.className = 'blog-list-item';
-  card.innerHTML = `
-    <h2>${post.title}</h2>
-    <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span></div>
-    <p>${post.summary}</p>
-    <div class="blog-actions">
-      <a href="/blog/${post.slug}" class="blog-read-link">Read full article</a>
-      <button type="button" class="btn-icon btn-share-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">Share 🔗</button>
-    </div>
-  `;
+
+  const title = document.createElement('h2');
+  title.textContent = post.title;
+
+  const meta = document.createElement('div');
+  meta.className = 'blog-meta';
+  meta.innerHTML = `<span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span>`;
+
+  const summary = document.createElement('p');
+  summary.textContent = post.summary;
+
+  const actions = document.createElement('div');
+  actions.className = 'blog-actions';
+
+  const readLink = document.createElement('a');
+  readLink.href = `/blog/${post.slug}`;
+  readLink.className = 'blog-read-link';
+  readLink.textContent = 'Read full article';
+
+  const shareButton = document.createElement('button');
+  shareButton.type = 'button';
+  shareButton.className = 'btn-icon btn-share-icon';
+  shareButton.textContent = 'Share 🔗';
+  shareButton.addEventListener('click', () => sharePost(post.title, post.summary, `/blog/${post.slug}`));
+
+  actions.appendChild(readLink);
+  actions.appendChild(shareButton);
+  card.appendChild(title);
+  card.appendChild(meta);
+  card.appendChild(summary);
+  card.appendChild(actions);
+
   return card;
 }
 
@@ -125,10 +148,18 @@ function setupSubscribeModal() {
   });
 }
 
+function safeDecode(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch (error) {
+    return value;
+  }
+}
+
 function sharePost(title, summary, href) {
   const shareData = {
-    title: decodeURIComponent(title),
-    text: decodeURIComponent(summary),
+    title: safeDecode(title),
+    text: safeDecode(summary),
     url: `${window.location.origin}${href}`
   };
 
