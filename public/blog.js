@@ -30,7 +30,7 @@ function createPostCard(post) {
     <p>${post.summary}</p>
     <div class="blog-actions">
       <a href="/blog/${post.slug}" class="blog-read-link">Read full article</a>
-      <button type="button" class="btn-icon btn-share-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">🔗</button>
+      <button type="button" class="btn-icon btn-share-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">Share 🔗</button>
     </div>
   `;
   return card;
