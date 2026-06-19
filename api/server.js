@@ -698,21 +698,41 @@ app.post('/api/subscribe-newsletter', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Valid email is required.' });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
     const dbClient = supabaseAdmin || supabase;
-    const { error } = await dbClient
-      .from('newsletter_subscribers')
-      .upsert({ email: email.toLowerCase(), is_subscribed: true })
-      .select();
 
-    if (error) {
-      console.error('Newsletter subscribe error:', error);
+    const { data: existingSubscriber, error: fetchError } = await dbClient
+      .from('newsletter_subscribers')
+      .select('id, is_subscribed')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('Newsletter subscribe lookup error:', fetchError);
       const fallbackMessage = !supabaseAdmin
         ? 'Could not subscribe due to Supabase row-level security. Configure SUPABASE_SERVICE_ROLE_KEY or adjust newsletter policies.'
         : 'Could not subscribe at this time.';
       return res.status(500).json({ success: false, message: fallbackMessage });
     }
 
-    return res.json({ success: true, message: 'You are subscribed to the newsletter.' });
+    if (existingSubscriber && existingSubscriber.is_subscribed) {
+      return res.json({ success: true, message: 'This email is already subscribed.' });
+    }
+
+    const { error: upsertError } = await dbClient
+      .from('newsletter_subscribers')
+      .upsert({ email: normalizedEmail, is_subscribed: true }, { onConflict: 'email' })
+      .select();
+
+    if (upsertError) {
+      console.error('Newsletter subscribe error:', upsertError);
+      const fallbackMessage = !supabaseAdmin
+        ? 'Could not subscribe due to Supabase row-level security. Configure SUPABASE_SERVICE_ROLE_KEY or adjust newsletter policies.'
+        : 'Could not subscribe at this time.';
+      return res.status(500).json({ success: false, message: fallbackMessage });
+    }
+
+    return res.json({ success: true, message: existingSubscriber ? 'Subscription restored successfully.' : 'You are subscribed to the newsletter.' });
   } catch (err) {
     console.error('Newsletter subscribe error:', err);
     return res.status(500).json({ success: false, message: 'Could not subscribe at this time.' });
@@ -867,7 +887,8 @@ app.post('/api/posts/:slug/like', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Post not found.' });
     }
 
-    const { data: updated, error: updateError } = await supabase
+    const dbClient = supabaseAdmin || supabase;
+    const { data: updated, error: updateError } = await dbClient
       .from('posts')
       .update({ likes: (post.likes || 0) + 1 })
       .eq('id', post.id)

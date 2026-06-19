@@ -86,16 +86,38 @@ function toggleLike(slug) {
   likePost(slug);
 }
 
+window.toggleLike = toggleLike;
+
+function hasSubscribedNewsletter() {
+  return localStorage.getItem('fpl_blog_newsletter_subscribed') === 'true';
+}
+
+function markNewsletterSubscribed() {
+  localStorage.setItem('fpl_blog_newsletter_subscribed', 'true');
+}
+
 function setupSubscribeModal() {
   newsletterSubmit.addEventListener('click', async () => {
     if (!newsletterEmail.value) return;
-    const response = await fetch('/api/subscribe-newsletter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: newsletterEmail.value })
-    });
-    const data = await response.json();
-    newsletterSubmit.textContent = data.success ? 'Subscribed' : 'Try Again';
+    try {
+      const response = await fetch('/api/subscribe-newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newsletterEmail.value })
+      });
+      const data = await response.json();
+      if (data.success) {
+        newsletterSubmit.textContent = data.message === 'This email is already subscribed.' ? 'Already Subscribed' : 'Subscribed';
+        markNewsletterSubscribed();
+        subscribeModal.classList.remove('active');
+        return;
+      }
+
+      newsletterSubmit.textContent = data.message || 'Try Again';
+    } catch (error) {
+      console.error('Newsletter subscribe error:', error);
+      newsletterSubmit.textContent = 'Try Again';
+    }
   });
 
   newsletterClose.addEventListener('click', () => {
@@ -222,10 +244,13 @@ window.sharePost = sharePost;
         postContainer.style.display = 'block';
         blogContainer.style.display = 'none';
         renderComments(slug);
-        setTimeout(() => subscribeModal.classList.add('active'), 15000);
       } else {
         const post = await fetchPost(slug);
         renderPost(post);
+      }
+
+      if (!hasSubscribedNewsletter()) {
+        setTimeout(() => subscribeModal.classList.add('active'), 15000);
       }
     } else {
       if (!blogContainer.innerHTML.trim()) {
