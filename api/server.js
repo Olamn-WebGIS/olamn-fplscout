@@ -571,6 +571,7 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
           <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">🔗<span>Share</span></button>
           <button class="btn-icon" id="like-button" onclick="toggleLike('${post.slug}')">❤️<span id="like-count">${post.likes || 0}</span></button>
         </div>
+        <div class="blog-article-footer">Favour Olamilekan Adeoye, Founder of FPL Scout</div>
       </div>
       <div id="comments-container"></div>
     `;

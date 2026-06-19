@@ -58,6 +58,7 @@ function renderPost(post) {
         <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">🔗<span>Share</span></button>
         <button class="btn-icon" id="like-button" onclick="toggleLike('${post.slug}')">❤️<span id="like-count">${post.likes || 0}</span></button>
       </div>
+      <div class="blog-article-footer">Favour Olamilekan Adeoye, Founder of FPL Scout</div>
     </div>
     <div id="comments-container"></div>
   `;
@@ -133,7 +134,7 @@ async function renderComments(slug) {
           <label for="comment-content">Content</label>
           <textarea id="comment-content" rows="4" placeholder="Write your comment..." required></textarea>
         </div>
-        <button type="submit" class="btn-share">Post Comment</button>
+        <button type="submit" class="btn-icon">💬<span>Comment</span></button>
       </form>
       <div id="comment-list" class="comment-list"></div>
     </div>
