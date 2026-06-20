@@ -1006,13 +1006,46 @@ document.getElementById('change-email-form').addEventListener('submit', async (e
             setTimeout(() => alertDiv.classList.remove('show'), 5000);
         }
 
-        // Initialize page
-        try {
-            loadProfileInfo();
-            loadSubscriptionInfo();
-        } catch (e) {
-            console.error('Error initializing page:', e);
+        async function handlePaystackReturn() {
+            const params = new URLSearchParams(window.location.search);
+            const reference = params.get('reference');
+            const email = params.get('email') || (currentUser && currentUser.email);
+
+            if (!reference || !email) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/verify-payment?reference=${encodeURIComponent(reference)}&email=${encodeURIComponent(email)}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    currentUser = currentUser || {};
+                    currentUser.isPremium = true;
+                    currentUser.subscription_status = 'Premium Member';
+                    currentUser.premium_expiry = data.user.premium_expiry;
+                    localStorage.setItem('fpl_user_session', JSON.stringify(currentUser));
+                    showAlert('success', 'Payment verified. Your account is now upgraded to Premium.');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } else {
+                    showAlert('error', data.message || 'Payment verification failed.');
+                }
+            } catch (error) {
+                console.error('Payment verification error:', error);
+                showAlert('error', 'Could not verify payment. Please refresh your account page.');
+            }
         }
+
+        // Initialize page after DOM is ready
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await handlePaystackReturn();
+                loadProfileInfo();
+                loadSubscriptionInfo();
+            } catch (e) {
+                console.error('Error initializing page:', e);
+            }
+        });
 
         // Tab switching - attach listeners directly using event delegation
         try {

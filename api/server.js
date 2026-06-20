@@ -1827,7 +1827,8 @@ app.post('/api/initialize-payment', async (req, res) => {
             body: JSON.stringify({
                 email: email,
                 amount: amountInKobo,
-                callback_url: 'http://localhost:3000/account.html' 
+                callback_url: `${BASE_URL}/account.html?email=${encodeURIComponent(email)}`,
+                metadata: { email }
             })
         });
 
@@ -1844,6 +1845,66 @@ app.post('/api/initialize-payment', async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 });
+
+app.get('/api/verify-payment', async (req, res) => {
+    try {
+        const reference = req.query.reference;
+        const email = req.query.email;
+
+        if (!reference || !email) {
+            return res.status(400).json({ success: false, message: 'Missing payment reference or email.' });
+        }
+
+        const response = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+            method: 'GET',
+            headers: {
+                Authorization: 'Bearer ' + process.env.PAYSTACK_SECRET_KEY,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        if (!data.status) {
+            return res.status(400).json({ success: false, message: data.message || 'Payment verification failed.' });
+        }
+
+        if (data.data.status !== 'success') {
+            return res.status(400).json({ success: false, message: 'Payment was not successful.' });
+        }
+
+        const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        const updatePayload = {
+            is_premium: true,
+            subscription_status: 'Premium Member',
+            premium_expiry: expiryDate
+        };
+
+        const [{ error: usersError }, { error: profilesError }] = await Promise.all([
+            supabase.from('users').update(updatePayload).eq('email', email),
+            supabase.from('profiles').update(updatePayload).eq('email', email)
+        ]);
+
+        if (usersError || profilesError) {
+            console.error('Paystack verify update failure:', usersError || profilesError);
+            return res.status(500).json({ success: false, message: 'Failed to update subscription to premium.' });
+        }
+
+        return res.json({
+            success: true,
+            message: 'Payment verified and subscription upgraded.',
+            user: {
+                email,
+                isPremium: true,
+                subscription_status: 'Premium Member',
+                premium_expiry: expiryDate
+            }
+        });
+    } catch (err) {
+        console.error('Payment verification route error:', err);
+        return res.status(500).json({ success: false, message: 'Internal server error verifying payment.' });
+    }
+});
+
 async function payWithPaystack() {
     if (!currentUser || !currentUser.email) return alert('Please log in first.');
     try {
