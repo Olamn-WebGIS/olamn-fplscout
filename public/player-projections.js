@@ -15,6 +15,14 @@ let players = [];
 let teams = [];
 let selectedPlayers = new Set();
 
+function getCurrentUser() {
+  try {
+    return JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
+  } catch {
+    return null;
+  }
+}
+
 function colorClass(value) {
   if (value >= 8) return 'proj-high';
   if (value >= 5) return 'proj-mid';
@@ -175,9 +183,23 @@ function showError(message) {
 }
 
 async function loadData() {
+  const currentUser = getCurrentUser();
+  if (!currentUser || !currentUser.id) {
+    showError('Please sign in to access premium projections.');
+    if (liveNotice) liveNotice.textContent = 'Live data unavailable';
+    if (gwNote) gwNote.textContent = 'GW —';
+    return;
+  }
+
+  const userIdParam = encodeURIComponent(currentUser.id);
+
   try {
-    const res = await fetch('/api/player-projections?live=1');
-    if (!res.ok) throw new Error('Unable to load projections.');
+    const res = await fetch(`/api/player-projections?live=1&userId=${userIdParam}`);
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      const errorMessage = body?.message || 'Unable to load projections.';
+      throw new Error(errorMessage);
+    }
     const json = await res.json();
 
     players = json.players || [];
@@ -194,7 +216,7 @@ async function loadData() {
     renderTable();
   } catch (err) {
     console.error(err);
-    showError('Failed to load player projections. Please refresh the page or try again later.');
+    showError(err.message || 'Failed to load player projections. Please refresh the page or try again later.');
     if (liveNotice) liveNotice.textContent = 'Live data not available';
     if (gwNote) gwNote.textContent = 'GW —';
   }
