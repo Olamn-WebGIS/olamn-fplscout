@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+     <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-CC276SDKEW"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Player Projections — FPL Scout</title>
+  <meta name="description" content="Premium player projections for Fantasy Premier League managers. Compare players, view upcoming fixture difficulty, and see projected points for 1, 5, and 10 GWs." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
+  <style>
+    :root {
+      --card-bg: #051023;
+      --card-border: rgba(255,255,255,0.08);
+      --muted: #9bb3d8;
+      --success: #19c37d;
+      --warn: #fbbf24;
+      --danger: #ef4444;
+      --panel: #0d1832;
+    }
+    body { background:#070f1f; color:#f8fbff; }
+    .page-wrap { max-width:1200px; margin:0 auto; padding:1.5rem; }
+    .section-eyebrow { color:#00d17d; text-transform:uppercase; letter-spacing:.2em; font-size:.8rem; margin-bottom:.75rem; }
+    .display { font-family:'Barlow Condensed',sans-serif; font-size:clamp(2rem,4vw,3.2rem); margin:0 0 0.75rem; line-height:1.05; }
+    .lead-copy { color:#b8c7e0; max-width:760px; line-height:1.8; }
+    .beta-badge { display:inline-flex; align-items:center; gap:.4rem; background:rgba(153,27,27,.12); color:#fef2f2; border:1px solid rgba(248,113,113,.25); border-radius:999px; padding:.35rem .85rem; font-size:.9rem; font-weight:700; }
+    .top-bar { display:flex; flex-wrap:wrap; gap:1rem; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+    .card { background:var(--card-bg); border:1px solid var(--card-border); border-radius:24px; padding:1.5rem; box-shadow:0 20px 70px rgba(0,0,0,.25); }
+    .filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+    .filters label { display:flex; flex-direction:column; gap:.45rem; font-size:.95rem; color:#cbd5e1; }
+    .filters select, .filters input { background:#08142d; border:1px solid rgba(255,255,255,.08); color:#f8fbff; border-radius:14px; padding:.95rem 1rem; width:100%; }
+    .table-wrapper { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; min-width:780px; }
+    th, td { padding:.95rem 1rem; text-align:left; border-bottom:1px solid rgba(255,255,255,.08); }
+    th { color:#92a4c6; font-size:.9rem; text-transform:uppercase; letter-spacing:.06em; font-weight:700; }
+    tbody tr:hover { background:rgba(255,255,255,.04); }
+    td span.star { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:999px; background:rgba(0,255,158,.12); color:#00ff8c; font-size:.8rem; }
+    .projection-cell { font-weight:700; }
+    .proj-high { color:#6ee7b7; }
+    .proj-mid { color:#facc15; }
+    .proj-low { color:#f87171; }
+    .compare-pill { display:inline-flex; align-items:center; gap:.4rem; flex-wrap:wrap; padding:.75rem 1rem; background:#06122a; border:1px solid rgba(255,255,255,.08); border-radius:999px; margin-bottom:1rem; }
+    .compare-pill button { background:transparent; border:none; color:#f8fbff; cursor:pointer; font-size:.9rem; }
+    .compare-button { margin-top:1rem; display:inline-flex; align-items:center; gap:.6rem; border:none; border-radius:18px; background:#0f172a; color:#fff; padding:.9rem 1.2rem; cursor:pointer; transition:.2s ease; }
+    .compare-button:disabled { opacity:.5; cursor:not-allowed; }
+    .modal-shadow { position:fixed; inset:0; background:rgba(1,12,33,.86); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; padding:1rem; z-index:50; }
+    .modal-shadow.active { display:flex; }
+    .modal-card { background:#091830; border:1px solid rgba(255,255,255,.08); border-radius:28px; max-width:960px; width:100%; padding:1.5rem; }
+    .modal-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem; }
+    .modal-head h2 { margin:0; font-size:1.35rem; }
+    .modal-body { display:grid; gap:1.25rem; }
+    .comparison-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:1rem; }
+    .comparison-card { background:#071122; border:1px solid rgba(255,255,255,.08); border-radius:20px; padding:1rem; }
+    .comparison-card h3 { margin:0 0 .75rem; font-size:1rem; }
+    .comparison-card dl { display:grid; gap:.6rem; }
+    .comparison-card dt { color:#8ca5d8; font-size:.85rem; }
+    .comparison-card dd { margin:0; font-size:1rem; font-weight:700; }
+    .status-pill { display:inline-flex; align-items:center; justify-content:center; padding:.35rem .7rem; border-radius:999px; font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; font-weight:700; }
+    .status-beta { background:rgba(255,190,0,.12); color:#fbbf24; }
+    .loading-block { min-height:240px; display:flex; align-items:center; justify-content:center; }
+    .spinner { width:42px; height:42px; border:4px solid rgba(255,255,255,.12); border-top-color:#00d17d; border-radius:50%; animation:spin 1s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .error-box { background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.28); color:#fee2e2; padding:1rem 1.25rem; border-radius:18px; }
+    @media (max-width: 860px) {
+      .top-bar { flex-direction:column; align-items:flex-start; }
+      th, td { padding:.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main class="page-wrap">
+    <section class="top-bar">
+      <div>
+        <div class="section-eyebrow">Premium Tool</div>
+        <h1 class="display">Player Projections <span class="beta-badge">Beta</span></h1>
+        <p class="lead-copy">See projected FPL points based on recent form and upcoming fixture difficulty. Premium managers can search, filter, compare, and find edge-building targets.</p>
+      </div>
+      <div style="text-align:right;"> 
+        <span class="status-pill status-beta">Coming Soon</span>
+      </div>
+    </section>
+
+    <div class="card">
+      <div class="filters">
+        <label>Search players
+          <input id="search-input" type="search" placeholder="Search by name, team, or position" autocomplete="off" />
+        </label>
+        <label>Position
+          <select id="position-filter">
+            <option value="">All positions</option>
+            <option value="GK">Goalkeeper</option>
+            <option value="DEF">Defender</option>
+            <option value="MID">Midfielder</option>
+            <option value="FWD">Forward</option>
+          </select>
+        </label>
+        <label>Team
+          <select id="team-filter"><option value="">All teams</option></select>
+        </label>
+      </div>
+
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="compare-pill" id="compare-pills"></div>
+        <button id="compare-open" class="compare-button" disabled>Compare selected players</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table aria-label="Player projections table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Player</th>
+              <th>Position</th>
+              <th>Price</th>
+              <th>1GW</th>
+              <th>5GW</th>
+              <th>10GW</th>
+            </tr>
+          </thead>
+          <tbody id="player-table-body">
+            <tr><td colspan="7" class="loading-block"><div class="spinner"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="error-message" class="error-box" style="display:none;"></div>
+  </main>
+
+  <div class="modal-shadow" id="compare-modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="compare-title">
+      <div class="modal-head">
+        <h2 id="compare-title">Player comparison</h2>
+        <button id="compare-close" aria-label="Close comparison" style="background:none;border:none;color:#fff;font-size:1rem;cursor:pointer;">✕</button>
+      </div>
+      <div class="modal-body" id="compare-body"></div>
+    </div>
+  </div>
+
+  <script src="/utils.js"></script>
+  <script src="/layout.js"></script>
+  <script>
+    (function checkPremiumAccess() {
+      const currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
+      if (!currentUser) {
+        window.location.href = '/';
+        return;
+      }
+      if (currentUser.isPremium !== true) {
+        window.location.href = '/subscribe.html';
+      }
+    })();
+  </script>
+  <script src="/player-projections.js"></script>
+</body>
+</html>

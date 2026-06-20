@@ -281,6 +281,58 @@ app.get('/api/fixtures', async (req, res) => {
   } catch (e) { apiError(res, e); }
 });
 
+app.get('/api/player-projections', requirePremiumUser, async (req, res) => {
+  try {
+    const bootstrap = await fplFetch('/bootstrap-static/', 300);
+    const fixtures = await fplFetch('/fixtures/', 600);
+
+    const playerFixtures = {};
+    fixtures.forEach(f => {
+      [f.team_h, f.team_a].forEach(teamId => {
+        if (!playerFixtures[teamId]) playerFixtures[teamId] = [];
+        playerFixtures[teamId].push(f);
+      });
+    });
+
+    const players = bootstrap.elements.map(player => {
+      const fixtureSet = playerFixtures[player.team] || [];
+      const difficulty1 = getFixtureDifficulty(player.team, fixtureSet, 1);
+      const difficulty5 = getFixtureDifficulty(player.team, fixtureSet, 5);
+      const difficulty10 = getFixtureDifficulty(player.team, fixtureSet, 10);
+      const form = parseFloat(player.form || '0') || 0;
+
+      return {
+        id: player.id,
+        web_name: player.web_name,
+        type_name: { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' }[player.element_type] || 'UNK',
+        team_name: bootstrap.teams.find(team => team.id === player.team)?.name || 'Unknown',
+        now_cost: player.now_cost,
+        form: form.toFixed(1),
+        fixture_difficulty: difficulty1.toFixed(1),
+        projection_1gw: projectPoints(form, difficulty1, 1),
+        projection_5gw: projectPoints(form, difficulty5, 5),
+        projection_10gw: projectPoints(form, difficulty10, 10)
+      };
+    });
+
+    res.json({ players });
+  } catch (e) { apiError(res, e); }
+});
+
+function getFixtureDifficulty(teamId, fixtures, count) {
+  if (!fixtures.length) return 2;
+  const relevant = fixtures.slice(0, count);
+  if (!relevant.length) return 2;
+  const values = relevant.map(f => (f.team_h === teamId ? f.team_a_difficulty : f.team_h_difficulty));
+  return values.reduce((sum, x) => sum + x, 0) / values.length;
+}
+
+function projectPoints(form, difficulty, gwCount) {
+  const normalizedForm = Math.min(Math.max(form, 0), 10);
+  const fixtureFactor = Math.max(0.8, 3.5 - difficulty * 0.3);
+  return Number((normalizedForm * fixtureFactor * Math.sqrt(gwCount)).toFixed(1));
+}
+
 // ── Batch: league spy (standings + all picks + all transfers) ──
 app.get('/api/spy/:leagueId', async (req, res) => {
   try {
