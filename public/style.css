@@ -2549,9 +2549,15 @@ main { max-width: 100%; overflow-x: hidden; }
     margin-bottom: 0.75rem !important;
   }
 
-  /* Hide player pictures completely to match your reference layout photo */
+  /* Allow squad modal avatars to display and show full head detail */
   #modal-team-content img {
-    display: none !important;
+    display: block !important;
+    width: 42px !important;
+    height: 42px !important;
+    object-fit: cover !important;
+    object-position: top center !important;
+    border-radius: 12px !important;
+    background: #f1f8ff !important;
   }
 
   /* 4. THE POSITION BADGE (GKP, DEF, MID, FWD) */
