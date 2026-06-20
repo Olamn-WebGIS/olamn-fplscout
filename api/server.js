@@ -206,17 +206,6 @@ app.get('/api/bootstrap', async (req, res) => {
   } catch (e) { apiError(res, e); }
 });
 
-// FPL data proxy for player projections
-app.get('/api/fpl-data', async (req, res) => {
-  try {
-    const [bootstrap, fixtures] = await Promise.all([
-      fplFetch('/bootstrap-static/', 3600),
-      fplFetch('/fixtures/', 600)
-    ]);
-    res.json({ bootstrap, fixtures });
-  } catch (e) { apiError(res, e); }
-});
-
 // Single manager entry
 app.get('/api/manager/:id', async (req, res) => {
   try {
@@ -289,55 +278,6 @@ app.get('/api/fixtures', async (req, res) => {
     const endpoint = gw ? `/fixtures/?event=${gw}` : '/fixtures/';
     const data = await fplFetch(endpoint, 600);
     res.json(data);
-  } catch (e) { apiError(res, e); }
-});
-
-app.get('/api/player-projections', requirePremiumUser, async (req, res) => {
-  try {
-    const bootstrap = await fplFetch('/bootstrap-static/', 300);
-    const fixtures = await fplFetch('/fixtures/', 600);
-    const currentGW = bootstrap.events.find(e => e.is_current)?.id || bootstrap.events.find(e => e.is_next)?.id - 1 || 38;
-
-    let liveDataLoaded = false;
-    if (req.query.live) {
-      try {
-        await fplFetch(`/event/${currentGW}/live/`, 60);
-        liveDataLoaded = true;
-      } catch (liveError) {
-        console.error('Live projections fetch failed:', liveError.message);
-      }
-    }
-
-    const playerFixtures = {};
-    fixtures.forEach(f => {
-      [f.team_h, f.team_a].forEach(teamId => {
-        if (!playerFixtures[teamId]) playerFixtures[teamId] = [];
-        playerFixtures[teamId].push(f);
-      });
-    });
-
-    const players = bootstrap.elements.map(player => {
-      const fixtureSet = playerFixtures[player.team] || [];
-      const difficulty1 = getFixtureDifficulty(player.team, fixtureSet, 1);
-      const difficulty5 = getFixtureDifficulty(player.team, fixtureSet, 5);
-      const difficulty10 = getFixtureDifficulty(player.team, fixtureSet, 10);
-      const form = parseFloat(player.form || '0') || 0;
-
-      return {
-        id: player.id,
-        web_name: player.web_name,
-        type_name: { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' }[player.element_type] || 'UNK',
-        team_name: bootstrap.teams.find(team => team.id === player.team)?.name || 'Unknown',
-        now_cost: player.now_cost,
-        form: form.toFixed(1),
-        fixture_difficulty: difficulty1.toFixed(1),
-        projection_1gw: projectPoints(form, difficulty1, 1),
-        projection_5gw: projectPoints(form, difficulty5, 5),
-        projection_10gw: projectPoints(form, difficulty10, 10)
-      };
-    });
-
-    res.json({ players, currentGW, live: liveDataLoaded });
   } catch (e) { apiError(res, e); }
 });
 

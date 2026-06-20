@@ -13,7 +13,6 @@
     <ul class="nav-links" role="list">
       <li><a href="/">Home</a></li>
       <li><a href="/blog">Blog</a></li>
-      <li><a href="/player-projections.html" class="spy-lock">Player Projections</a></li>
       <li><a href="/recommendations" class="spy-lock">Recommendations</a></li>
       <li><a href="/spy" class="spy-lock">League Spy</a></li>
       <li id="account-nav-item" class="account-hidden"><a href="/account"> Account</a></li>
@@ -50,7 +49,6 @@
             <ul>
               <li><a href="/">Home</a></li>
               <li><a href="/blog">Blog</a></li>
-              <li><a href="/player-projections.html" class="spy-lock">Player Projections</a></li>
               <li><a href="/recommendations" class="spy-lock">Recommendations</a></li>
               <li><a href="/spy" class="spy-lock">League Spy</a></li>
             </ul>
