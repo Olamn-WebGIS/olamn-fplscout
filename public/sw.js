@@ -91,3 +91,30 @@ self.addEventListener('sync', event => {
     );
   }
 });
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = event.notification.data && event.notification.data.url ? event.notification.data.url : '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      for (const client of windowClients) {
+        if (client.url === targetUrl || client.url === new URL(targetUrl, self.location.origin).href) {
+          return client.focus();
+        }
+      }
+      return clients.openWindow(targetUrl);
+    })
+  );
+});
+
+self.addEventListener('push', event => {
+  const payload = event.data ? event.data.json() : {};
+  const title = payload.title || 'FPL Scout Reminder';
+  const options = {
+    body: payload.body || 'Check your account for the latest subscription update.',
+    icon: '/images/favicon.svg',
+    badge: '/images/favicon.svg',
+    data: payload.data || { url: '/' }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});

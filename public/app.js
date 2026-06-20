@@ -4,7 +4,29 @@ const appState = {};
 // Tracking active user session memory across browser page reloads
 let currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
 let intendedPremiumPage = null; // Track which premium page user is trying to access
+function reconcileLocalSubscriptionExpiry() {
+    if (!currentUser || !currentUser.premium_expiry) return;
+    const expiryDate = new Date(currentUser.premium_expiry);
+    if (expiryDate <= new Date()) {
+        currentUser.isPremium = false;
+        currentUser.subscription_status = 'Free Member';
+        currentUser.premium_expiry = null;
+        localStorage.setItem('fpl_user_session', JSON.stringify(currentUser));
+        console.log('Local user subscription expired and downgraded');
+    }
+}
 
+function registerServiceWorkerForNotifications() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => {
+                console.log('Service Worker registered in app.js:', reg);
+            })
+            .catch(err => {
+                console.warn('Service Worker registration failed in app.js:', err);
+            });
+    }
+}
 // ── Currency Exchange & Pricing ──────────────────────────────
 const PREMIUM_PRICE_NGN = 3000; // NGN price
 
@@ -118,6 +140,8 @@ async function fetchSpyData(leagueId) {
 
 // ── Initialization Hook ──
 document.addEventListener('DOMContentLoaded', () => {
+    reconcileLocalSubscriptionExpiry();
+    registerServiceWorkerForNotifications();
     setupPremiumLocks();       
     setupModalInterface();    
     setupAccountNav();     

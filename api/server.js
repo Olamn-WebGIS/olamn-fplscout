@@ -196,6 +196,44 @@ function apiError(res, err) {
   res.status(502).json({ error: err.message });
 }
 
+async function reconcileUserSubscriptionExpiry(userProfile) {
+  if (!userProfile || !userProfile.premium_expiry || !userProfile.is_premium) {
+    return userProfile;
+  }
+
+  const expiryDate = new Date(userProfile.premium_expiry);
+  if (expiryDate <= new Date()) {
+    try {
+      const updatePayload = {
+        is_premium: false,
+        subscription_status: 'Free Member',
+        premium_expiry: null
+      };
+
+      const [{ error: usersError }, { error: profilesError }] = await Promise.all([
+        supabase.from('users').update(updatePayload).eq('email', userProfile.email),
+        supabase.from('profiles').update(updatePayload).eq('email', userProfile.email)
+      ]);
+
+      if (usersError) {
+        console.warn('Could not auto-downgrade expired users row:', usersError.message || usersError);
+      }
+      if (profilesError) {
+        console.warn('Could not auto-downgrade expired profiles row:', profilesError.message || profilesError);
+      }
+
+      console.log(`Auto-downgraded expired premium user: ${userProfile.email}`);
+      userProfile.is_premium = false;
+      userProfile.subscription_status = 'Free Member';
+      userProfile.premium_expiry = null;
+    } catch (err) {
+      console.warn('Expiry reconciliation failed:', err);
+    }
+  }
+
+  return userProfile;
+}
+
 // ── Routes ────────────────────────────────────────────────────
 
 // Bootstrap: players, teams, events
@@ -1119,7 +1157,16 @@ app.post('/api/signup', async (req, res) => {
     return res.json({
       success: true,
       message: 'Account created successfully!',
-      user: { id: newUser.id, fullName, email, country, isPremium: false, isAdmin: false }
+      user: {
+        id: newUser.id,
+        fullName,
+        email,
+        country,
+        isPremium: false,
+        isAdmin: false,
+        subscription_status: 'Free Member',
+        premium_expiry: null
+      }
     });
   } catch (error) {
     console.error('Signup error:', error);
@@ -1150,6 +1197,7 @@ app.post('/api/signin', async (req, res) => {
         // Verify the password matches
         if (userProfile.password === password) {
             console.log(`User logged in successfully: ${email}`);
+            await reconcileUserSubscriptionExpiry(userProfile);
 
             return res.json({
                 success: true,
@@ -1160,7 +1208,9 @@ app.post('/api/signin', async (req, res) => {
                     email: userProfile.email,
                     country: userProfile.country,
                     isPremium: userProfile.is_premium,
-                    isAdmin: userProfile.is_admin
+                    isAdmin: userProfile.is_admin,
+                    subscription_status: userProfile.subscription_status || (userProfile.is_premium ? 'Premium Member' : 'Free Member'),
+                    premium_expiry: userProfile.premium_expiry || null
                 }
             });
         } else {
@@ -1510,16 +1560,22 @@ app.post('/api/cancel-subscription', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Email is required.' });
         }
 
-        const { data, error } = await supabase
-            .from('users')
-            .update({ is_premium: false })
-            .eq('email', email)
-            .select()
-            .single();
+        const updatePayload = {
+            is_premium: false,
+            subscription_status: 'Free Member',
+            premium_expiry: null
+        };
 
-        if (error) throw error;
+        const [usersResult, profilesResult] = await Promise.all([
+            supabase.from('users').update(updatePayload).eq('email', email).select().single(),
+            supabase.from('profiles').update(updatePayload).eq('email', email).select().single()
+        ]);
 
-        // Send cancellation confirmation email
+        if (usersResult.error) throw usersResult.error;
+        if (profilesResult.error) {
+            console.warn('Could not update profile cancel state:', profilesResult.error.message || profilesResult.error);
+        }
+
         const mailOptions = {
             from: process.env.ZOHO_EMAIL || 'info@fplscout.name.ng',
             to: email,
@@ -1551,16 +1607,23 @@ app.post('/api/renew-subscription', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Email is required.' });
         }
 
-        const { data, error } = await supabase
-            .from('users')
-            .update({ is_premium: true })
-            .eq('email', email)
-            .select()
-            .single();
+        const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        const updatePayload = {
+            is_premium: true,
+            subscription_status: 'Premium Member',
+            premium_expiry: expiryDate
+        };
 
-        if (error) throw error;
+        const [usersResult, profilesResult] = await Promise.all([
+            supabase.from('users').update(updatePayload).eq('email', email).select().single(),
+            supabase.from('profiles').update(updatePayload).eq('email', email).select().single()
+        ]);
 
-        // Send renewal confirmation email
+        if (usersResult.error) throw usersResult.error;
+        if (profilesResult.error) {
+            console.warn('Could not update profile cancel state:', profilesResult.error.message || profilesResult.error);
+        }
+
         const mailOptions = {
             from: process.env.ZOHO_EMAIL || 'info@fplscout.name.ng',
             to: email,
@@ -1582,10 +1645,49 @@ app.post('/api/renew-subscription', async (req, res) => {
 
         await transporter.sendMail(mailOptions);
         console.log(`Subscription renewed for ${email}`);
-        return res.json({ success: true, message: 'Subscription renewed successfully!' });
+        return res.json({ success: true, message: 'Subscription renewed successfully!', user: data });
     } catch (error) {
         console.error('Error renewing subscription:', error);
         return res.status(500).json({ success: false, message: 'Failed to renew subscription.' });
+    }
+});
+
+app.get('/api/user-profile', async (req, res) => {
+    try {
+        const email = req.query.email;
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Email is required.' });
+        }
+
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+        if (error || !user) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        await reconcileUserSubscriptionExpiry(user);
+
+        return res.json({
+            success: true,
+            user: {
+                id: user.id,
+                fullName: user.full_name,
+                email: user.email,
+                country: user.country,
+                isPremium: user.is_premium,
+                isAdmin: user.is_admin,
+                subscription_status: user.subscription_status || (user.is_premium ? 'Premium Member' : 'Free Member'),
+                premium_expiry: user.premium_expiry || null,
+                createdAt: user.created_at || user.createdAt || null
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching user profile:', error);
+        return res.status(500).json({ success: false, message: 'Failed to fetch profile.' });
     }
 });
 
@@ -1679,6 +1781,16 @@ app.post('/api/paystack-webhook', async (req, res) => {
             if (error) {
                 console.error("Database update failed inside secure webhook loop:", error);
                 return res.status(500).json({ received: false });
+            }
+
+            const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+            const { error: userUpdateError } = await supabase
+                .from('users')
+                .update({ is_premium: true, subscription_status: 'Premium Member', premium_expiry: expiryDate })
+                .eq('email', customerEmail);
+
+            if (userUpdateError) {
+                console.warn('Could not update users table for webhook user:', userUpdateError.message || userUpdateError);
             }
 
             console.log(`Account permissions unblocked for user: ${customerEmail}`);

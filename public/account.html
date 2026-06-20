@@ -751,30 +751,122 @@ document.getElementById('change-email-form').addEventListener('submit', async (e
         });
 
                 // Load subscription info
-        function loadSubscriptionInfo() {
+        async function refreshCurrentUserProfile() {
+            if (!currentUser || !currentUser.email) return;
+            try {
+                const response = await fetch(`/api/user-profile?email=${encodeURIComponent(currentUser.email)}`);
+                const data = await response.json();
+                if (data.success && data.user) {
+                    currentUser = data.user;
+                    localStorage.setItem('fpl_user_session', JSON.stringify(currentUser));
+                }
+            } catch (e) {
+                console.warn('Could not refresh subscription profile:', e);
+            }
+        }
+
+        function getPremiumState(user) {
+            if (!user) return { active: false, daysLeft: null, expiryDate: null };
+            const expiryDate = user.premium_expiry ? new Date(user.premium_expiry) : null;
+            const now = new Date();
+            const active = expiryDate ? expiryDate > now : user.isPremium === true;
+            const daysLeft = expiryDate ? Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24)) : null;
+            return { active, daysLeft, expiryDate };
+        }
+
+        function showSubscriptionReminderNotification(daysLeft, expiryDate) {
+            const title = daysLeft <= 0
+                ? 'Your subscription expires today'
+                : `Premium expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`;
+            const body = daysLeft <= 0
+                ? `Your premium plan ends today. Renew now to keep access to League Spy and premium tools.`
+                : `Your premium subscription will expire on ${expiryDate.toLocaleDateString()}. Renew now to stay premium.`;
+
+            if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification(title, {
+                        body,
+                        icon: '/images/favicon.svg',
+                        badge: '/images/favicon.svg',
+                        data: { url: '/account.html' }
+                    }).catch(err => console.warn('Notification show failed:', err));
+                });
+            }
+        }
+
+        function showExpiryWarning(daysLeft, expiryDate) {
+            if (daysLeft === null || daysLeft > 5) return;
+            const message = daysLeft <= 0
+                ? `Your premium subscription expires today (${expiryDate.toLocaleDateString()}). Renew now to avoid losing premium access.`
+                : `Your premium subscription expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'} on ${expiryDate.toLocaleDateString()}. Renew now to stay premium.`;
+
+            showAlert('warning', message);
+            if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+                if (Notification.permission === 'default') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            showSubscriptionReminderNotification(daysLeft, expiryDate);
+                        }
+                    }).catch(() => {});
+                } else if (Notification.permission === 'granted') {
+                    showSubscriptionReminderNotification(daysLeft, expiryDate);
+                }
+            }
+        }
+
+        async function loadSubscriptionInfo() {
             const content = document.getElementById('subscription-content');
-            if (!content) return; // Prevent DOM script errors
-            
-            // 🚀 FIXED: Checks your exact database column values instead of old placeholders
-            const isUserPremium = currentUser && (currentUser.subscription_status === 'Premium Member' || currentUser.isPremium === true);
-            
-            if (isUserPremium) {
+            if (!content) return;
+            await refreshCurrentUserProfile();
+
+            const user = currentUser || {};
+            const { active, daysLeft, expiryDate } = getPremiumState(user);
+            const statusText = user.subscription_status || (active ? 'Premium Member' : 'Free Member');
+            const joinedDate = new Date(user.createdAt || Date.now()).toLocaleDateString();
+
+            if (active) {
+                const expiryHtml = expiryDate ? `<p><strong>Expires:</strong> ${expiryDate.toLocaleDateString()} (${daysLeft} day${daysLeft === 1 ? '' : 's'} left)</p>` : '';
+                const cancelNote = user.subscription_status === 'Cancelled'
+                    ? `<p style="color: #ffd700;"><strong>Note:</strong> You have canceled your subscription. You will keep premium access until the expiry date above.</p>`
+                    : '';
+
                 content.innerHTML = `
                     <div class="subscription-card">
                         <h3>Premium Subscription Active ✓</h3>
-                        <div class="subscription-status">Premium Member</div>
+                        <div class="subscription-status">${statusText}</div>
                         <div class="subscription-details">
                             <p><strong>Status:</strong> Active</p>
                             <p><strong>Plan:</strong> ₦3,000/month (~$3 USD)</p>
-                            <p><strong>Joined:</strong> ${new Date(currentUser.createdAt || Date.now()).toLocaleDateString()}</p>
+                            <p><strong>Joined:</strong> ${joinedDate}</p>
+                            ${expiryHtml}
                         </div>
                         <div class="info-box">
                             You have full access to all premium features including League Spy, Advanced Recommendations, Real-time Alerts, and Priority Support.
+                            ${cancelNote}
                         </div>
                         <div class="btn-group">
-                            <!-- 🚀 FIXED: Cleaned up the leaked code and closed the tag properly -->
                             <button class="btn btn-primary" onclick="showRenewSubscriptionModal()">Renew Subscription</button>
                             <button class="btn btn-danger" onclick="showCancelSubscriptionModal()">Cancel Subscription</button>
+                        </div>
+                    </div>
+                `;
+
+                showExpiryWarning(daysLeft, expiryDate);
+            } else if (user.premium_expiry) {
+                content.innerHTML = `
+                    <div class="subscription-card" style="background: linear-gradient(135deg, #444 0%, #222 100%);">
+                        <h3>Premium Access Ended</h3>
+                        <div class="subscription-status">Expired</div>
+                        <div class="subscription-details">
+                            <p><strong>Status:</strong> Free account</p>
+                            <p>Your premium subscription expired on ${expiryDate.toLocaleDateString()}.</p>
+                            <p><strong>Plan:</strong> ₦3,000/month (~$3 USD)</p>
+                        </div>
+                        <div class="info-box">
+                            Renew now to restore premium access and keep using the League Spy tools.
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="showRenewSubscriptionModal()">Renew Subscription</button>
                         </div>
                     </div>
                 `;
