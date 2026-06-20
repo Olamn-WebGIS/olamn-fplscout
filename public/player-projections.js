@@ -183,33 +183,52 @@ function showError(message) {
 }
 
 async function loadData() {
-  const currentUser = getCurrentUser();
-  if (!currentUser || !currentUser.id) {
-    showError('Please sign in to access premium projections.');
-    if (liveNotice) liveNotice.textContent = 'Live data unavailable';
-    if (gwNote) gwNote.textContent = 'GW —';
-    return;
-  }
-
-  const userIdParam = encodeURIComponent(currentUser.id);
-
   try {
-    const res = await fetch(`/api/player-projections?live=1&userId=${userIdParam}`);
+    const res = await fetch('/api/fpl-data');
     if (!res.ok) {
       const body = await res.json().catch(() => null);
       const errorMessage = body?.message || 'Unable to load projections.';
       throw new Error(errorMessage);
     }
-    const json = await res.json();
 
-    players = json.players || [];
+    const json = await res.json();
+    const bootstrap = json.bootstrap;
+    const fixtures = json.fixtures || [];
+    const currentGW = bootstrap?.events?.find(e => e.is_current)?.id || bootstrap?.events?.find(e => e.is_next)?.id - 1 || '—';
+
+    if (!bootstrap || !bootstrap.elements) {
+      throw new Error('Invalid FPL response from server.');
+    }
+
+    players = bootstrap.elements.map(player => {
+      const teamName = bootstrap.teams.find(team => team.id === player.team)?.name || 'Unknown';
+      const fixtureSet = fixtures.filter(f => f.team_h === player.team || f.team_a === player.team);
+      const difficulty1 = getUpcomingDifficulty(fixtures, player.team, 1);
+      const difficulty5 = getUpcomingDifficulty(fixtures, player.team, 5);
+      const difficulty10 = getUpcomingDifficulty(fixtures, player.team, 10);
+      const form = parseFloat(player.form || '0') || 0;
+
+      return {
+        id: player.id,
+        web_name: player.web_name,
+        type_name: { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' }[player.element_type] || 'UNK',
+        team_name: teamName,
+        now_cost: player.now_cost,
+        form: form.toFixed(1),
+        fixture_difficulty: difficulty1.toFixed(1),
+        projection_1gw: projectPoints(form, difficulty1, 1),
+        projection_5gw: projectPoints(form, difficulty5, 5),
+        projection_10gw: projectPoints(form, difficulty10, 10)
+      };
+    });
+
     teams = Array.from(new Set(players.map(p => p.team_name))).sort();
 
     if (liveNotice) {
-      liveNotice.textContent = json.live ? `Live data loaded — GW ${json.currentGW || '—'}` : 'Live data unavailable';
+      liveNotice.textContent = `Live data loaded — GW ${currentGW}`;
     }
     if (gwNote) {
-      gwNote.textContent = `GW ${json.currentGW || '—'}`;
+      gwNote.textContent = `GW ${currentGW}`;
     }
 
     teamFilter.innerHTML = `<option value="">All teams</option>${teams.map(t => `<option value="${t}">${t}</option>`).join('')}`;

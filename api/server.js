@@ -206,6 +206,17 @@ app.get('/api/bootstrap', async (req, res) => {
   } catch (e) { apiError(res, e); }
 });
 
+// FPL data proxy for player projections
+app.get('/api/fpl-data', async (req, res) => {
+  try {
+    const [bootstrap, fixtures] = await Promise.all([
+      fplFetch('/bootstrap-static/', 3600),
+      fplFetch('/fixtures/', 600)
+    ]);
+    res.json({ bootstrap, fixtures });
+  } catch (e) { apiError(res, e); }
+});
+
 // Single manager entry
 app.get('/api/manager/:id', async (req, res) => {
   try {
