@@ -10,10 +10,16 @@ const compareClose = document.getElementById('compare-close');
 const errorMessage = document.getElementById('error-message');
 const liveNotice = document.getElementById('live-notice');
 const gwNote = document.getElementById('gw-note');
+const pagePrev = document.getElementById('page-prev');
+const pageNext = document.getElementById('page-next');
+const pageInfo = document.getElementById('page-info');
 
 let players = [];
 let teams = [];
 let selectedPlayers = new Set();
+let currentPage = 1;
+const ITEMS_PER_PAGE = 15;
+let totalPages = 1;
 
 function getCurrentUser() {
   try {
@@ -47,9 +53,52 @@ function getUpcomingDifficulty(fixtures, playerId, gwCount = 5) {
   return values.reduce((sum, x) => sum + x, 0) / values.length || 0;
 }
 
-function projectPoints(form, difficulty, gwCount) {
-  const normalized = Math.min(Math.max(form || 0, 0), 10);
-  return Number((normalized * (6 - difficulty / 2) * Math.sqrt(gwCount)).toFixed(1));
+function normalizeNews(news) {
+  return (news || '').toLowerCase();
+}
+
+function hasBadNews(news) {
+  const normalized = normalizeNews(news);
+  return [
+    'injur',
+    'loan',
+    'expected back',
+    'returning',
+    'surgery',
+    'hamstring',
+    'dead leg',
+    'calf',
+    'groin',
+    'knock'
+  ].some(term => normalized.includes(term));
+}
+
+function expectedMinutes(player) {
+  const chance = Number(player.chance_of_playing_this_round || player.chance_of_playing_next_round || 100);
+  const base = Math.max(0, Math.min(100, chance)) / 100;
+  return Math.round(base * 90);
+}
+
+function projectPoints(form, difficulty, gwCount, player) {
+  if (!player || player.status !== 'a') return 0;
+  if (hasBadNews(player.news)) return 0;
+
+  const minutesPlayed = Number(player.minutes || 0);
+  const recentForm = Number(player.form || 0);
+  const pointsPerGame = Number(player.points_per_game || 0);
+
+  if (minutesPlayed < 180 && recentForm < 1.2) {
+    return 0;
+  }
+
+  const expectedMn = expectedMinutes(player) * gwCount;
+  if (!expectedMn || pointsPerGame <= 0) return 0;
+
+  const ppm = pointsPerGame / 90;
+  const difficultyFactor = Math.max(0.7, 3.5 - difficulty * 0.3);
+  const raw = ppm * expectedMn * difficultyFactor;
+
+  return Number(Math.max(0, raw).toFixed(1));
 }
 
 function renderComparePills() {
@@ -73,6 +122,15 @@ function renderComparePills() {
   });
 }
 
+function updatePagination(filteredLength) {
+  totalPages = Math.max(1, Math.ceil(filteredLength / ITEMS_PER_PAGE));
+  currentPage = Math.min(currentPage, totalPages);
+
+  if (pageInfo) pageInfo.textContent = `Page ${currentPage} / ${totalPages}`;
+  if (pagePrev) pagePrev.disabled = currentPage <= 1;
+  if (pageNext) pageNext.disabled = currentPage >= totalPages;
+}
+
 function renderTable() {
   const query = searchInput.value.trim().toLowerCase();
   const position = positionFilter.value;
@@ -86,12 +144,17 @@ function renderTable() {
     return teamMatch && posMatch && searchMatch;
   });
 
-  if (!filtered.length) {
+  updatePagination(filtered.length);
+
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const pageItems = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  if (!pageItems.length) {
     tableBody.innerHTML = `<tr><td colspan="7" style="padding:2rem; text-align:center; color:#a5b4fc;">No players match your search or filters.</td></tr>`;
     return;
   }
 
-  tableBody.innerHTML = filtered.map(player => {
+  tableBody.innerHTML = pageItems.map(player => {
     const isSelected = selectedPlayers.has(String(player.id));
     const rowClass = isSelected ? 'selected-row' : '';
     return `
@@ -202,7 +265,6 @@ async function loadData() {
 
     players = bootstrap.elements.map(player => {
       const teamName = bootstrap.teams.find(team => team.id === player.team)?.name || 'Unknown';
-      const fixtureSet = fixtures.filter(f => f.team_h === player.team || f.team_a === player.team);
       const difficulty1 = getUpcomingDifficulty(fixtures, player.team, 1);
       const difficulty5 = getUpcomingDifficulty(fixtures, player.team, 5);
       const difficulty10 = getUpcomingDifficulty(fixtures, player.team, 10);
@@ -216,9 +278,15 @@ async function loadData() {
         now_cost: player.now_cost,
         form: form.toFixed(1),
         fixture_difficulty: difficulty1.toFixed(1),
-        projection_1gw: projectPoints(form, difficulty1, 1),
-        projection_5gw: projectPoints(form, difficulty5, 5),
-        projection_10gw: projectPoints(form, difficulty10, 10)
+        status: player.status,
+        news: player.news,
+        minutes: player.minutes,
+        points_per_game: player.points_per_game,
+        chance_of_playing_this_round: player.chance_of_playing_this_round,
+        chance_of_playing_next_round: player.chance_of_playing_next_round,
+        projection_1gw: projectPoints(form, difficulty1, 1, player),
+        projection_5gw: projectPoints(form, difficulty5, 5, player),
+        projection_10gw: projectPoints(form, difficulty10, 10, player)
       };
     });
 
@@ -241,9 +309,30 @@ async function loadData() {
   }
 }
 
-searchInput.addEventListener('input', renderTable);
-positionFilter.addEventListener('change', renderTable);
-teamFilter.addEventListener('change', renderTable);
+searchInput.addEventListener('input', () => {
+  currentPage = 1;
+  renderTable();
+});
+positionFilter.addEventListener('change', () => {
+  currentPage = 1;
+  renderTable();
+});
+teamFilter.addEventListener('change', () => {
+  currentPage = 1;
+  renderTable();
+});
+if (pagePrev) pagePrev.addEventListener('click', () => {
+  if (currentPage > 1) {
+    currentPage -= 1;
+    renderTable();
+  }
+});
+if (pageNext) pageNext.addEventListener('click', () => {
+  if (currentPage < totalPages) {
+    currentPage += 1;
+    renderTable();
+  }
+});
 compareOpen.addEventListener('click', () => {
   compareBody.innerHTML = buildComparisonContent();
   compareModal.classList.add('active');

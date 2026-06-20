@@ -78,6 +78,10 @@
     .status-live { background:rgba(0,200,83,.12); color:var(--green); }
     .loading-block { min-height:240px; display:flex; align-items:center; justify-content:center; }
     .spinner { width:42px; height:42px; border:4px solid rgba(255,255,255,.12); border-top-color:#00d17d; border-radius:50%; animation:spin 1s linear infinite; }
+    .pagination-row { display:flex; justify-content:flex-end; align-items:center; gap:0.75rem; margin-top:1rem; }
+    .pagination-button { background:var(--blue-light); color:#fff; border:none; border-radius:999px; padding:.75rem 1rem; font-weight:700; cursor:pointer; transition:.2s ease; }
+    .pagination-button:disabled { opacity:.45; cursor:not-allowed; }
+    .pagination-info { color:var(--text-secondary); font-size:0.95rem; font-weight:600; }
     @keyframes spin { to { transform:rotate(360deg); } }
     .error-box { background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.28); color:#fee2e2; padding:1rem 1.25rem; border-radius:18px; }
     @media (max-width: 860px) {
@@ -142,6 +146,11 @@
             <tr><td colspan="7" class="loading-block"><div class="spinner"></div></td></tr>
           </tbody>
         </table>
+      </div>
+      <div class="pagination-row">
+        <button id="page-prev" class="pagination-button" disabled>Previous</button>
+        <span id="page-info" class="pagination-info">Page 1 / 1</span>
+        <button id="page-next" class="pagination-button" disabled>Next</button>
       </div>
     </div>
 
