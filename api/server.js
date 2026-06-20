@@ -285,6 +285,17 @@ app.get('/api/player-projections', requirePremiumUser, async (req, res) => {
   try {
     const bootstrap = await fplFetch('/bootstrap-static/', 300);
     const fixtures = await fplFetch('/fixtures/', 600);
+    const currentGW = bootstrap.events.find(e => e.is_current)?.id || bootstrap.events.find(e => e.is_next)?.id - 1 || 38;
+
+    let liveDataLoaded = false;
+    if (req.query.live) {
+      try {
+        await fplFetch(`/event/${currentGW}/live/`, 60);
+        liveDataLoaded = true;
+      } catch (liveError) {
+        console.error('Live projections fetch failed:', liveError.message);
+      }
+    }
 
     const playerFixtures = {};
     fixtures.forEach(f => {
@@ -315,7 +326,7 @@ app.get('/api/player-projections', requirePremiumUser, async (req, res) => {
       };
     });
 
-    res.json({ players });
+    res.json({ players, currentGW, live: liveDataLoaded });
   } catch (e) { apiError(res, e); }
 });
 

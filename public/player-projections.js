@@ -8,6 +8,8 @@ const compareModal = document.getElementById('compare-modal');
 const compareBody = document.getElementById('compare-body');
 const compareClose = document.getElementById('compare-close');
 const errorMessage = document.getElementById('error-message');
+const liveNotice = document.getElementById('live-notice');
+const gwNote = document.getElementById('gw-note');
 
 let players = [];
 let teams = [];
@@ -174,17 +176,27 @@ function showError(message) {
 
 async function loadData() {
   try {
-    const res = await fetch('/api/player-projections');
+    const res = await fetch('/api/player-projections?live=1');
     if (!res.ok) throw new Error('Unable to load projections.');
     const json = await res.json();
+
     players = json.players || [];
     teams = Array.from(new Set(players.map(p => p.team_name))).sort();
+
+    if (liveNotice) {
+      liveNotice.textContent = json.live ? `Live data loaded — GW ${json.currentGW || '—'}` : 'Live data unavailable';
+    }
+    if (gwNote) {
+      gwNote.textContent = `GW ${json.currentGW || '—'}`;
+    }
 
     teamFilter.innerHTML = `<option value="">All teams</option>${teams.map(t => `<option value="${t}">${t}</option>`).join('')}`;
     renderTable();
   } catch (err) {
     console.error(err);
     showError('Failed to load player projections. Please refresh the page or try again later.');
+    if (liveNotice) liveNotice.textContent = 'Live data not available';
+    if (gwNote) gwNote.textContent = 'GW —';
   }
 }
 
