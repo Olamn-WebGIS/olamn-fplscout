@@ -770,6 +770,29 @@ footer ul li a:hover { opacity: 1; }
   transition: color 0.15s;
 }
 .footer-socials a:hover { color: var(--yellow); }
+.footer-socials a.social-btn {
+  width: 2.4rem;
+  height: 2.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #fff;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: Arial, sans-serif;
+  background: #999;
+}
+.footer-socials a.social-btn:hover {
+  opacity: 0.95;
+}
+.footer-socials a.social-btn-twitter {
+  background: #000;
+}
+.footer-socials a.social-btn-facebook {
+  background: #1877f2;
+}
 
 /* ── Sync sidebar box ───────────────────────────────────────── */
 .sync-box { margin-bottom: 1.25rem; }

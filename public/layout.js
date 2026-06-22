@@ -26,6 +26,8 @@
 
 <span class="live-indicator header-live-badge" id="live-badge" title="Server Status: Online"></span>`;
 
+  const FONT_AWESOME_LINK = `<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />`;
+
   // 2. Complete Visual Footer Layout (Maintained Styles & Targets)
   const FOOTER_HTML = `
   <footer>
@@ -37,10 +39,17 @@
             <span style="color:#ffd600;">Sc⚽ut</span>
           </span>
         </div>
-        <p style="font-size:0.875rem;max-width:260px;line-height:1.6;">Advanced data analytics for Fantasy Premier League managers.</p>
-        <div class="footer-socials" style="margin-top:1rem;">
-          <a href="https://x.com/OlamnFPL_scout" target="_blank" rel="noopener" aria-label="X (Twitter)">𝕏</a>
-        </div>
+        <div class="footer-socials" style="margin-top:1rem; display:flex; gap:1rem; align-items:center; font-size: 1.25rem;">
+  <!-- X (Twitter) Link -->
+  <a href="https://x.com/OlamnFPL_scout" target="_blank" rel="noopener" aria-label="X (Twitter)" class="social-btn social-btn-twitter" style="color: currentColor; text-decoration: none;">
+    <i class="fa-brands fa-x-twitter"></i>
+  </a>
+  
+  <!-- Facebook Link -->
+  <a href="https://www.facebook.com/share/14fgQGCqgKv/?mibextid=wwXIfr" target="_blank" rel="noopener" aria-label="Facebook" class="social-btn social-btn-facebook" style="color: currentColor; text-decoration: none;">
+    <i class="fa-brands fa-facebook"></i>
+  </a>
+</div>
       </div>
       <div class="footer-columns">
         <div class="footer-col">
@@ -231,6 +240,11 @@
 
     // Authentication Popup Component Injection Execution
     document.body.insertAdjacentHTML('beforeend', MODAL_HTML);
+
+    // Load Font Awesome if not already loaded
+    if (!document.querySelector('link[href*="font-awesome"][rel="stylesheet"]') && !document.querySelector('link[href*="fontawesome"][rel="stylesheet"]')) {
+      document.head.insertAdjacentHTML('beforeend', FONT_AWESOME_LINK);
+    }
 
     // Active Tab Navigation Link Highlighting Style Engine
     const path = location.pathname.replace(/\/$/, '') || '/';
