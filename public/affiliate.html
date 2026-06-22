@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4450814131044639"
+     crossorigin="anonymous"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-CC276SDKEW"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-CC276SDKEW');
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Affiliate Dashboard | FPL Scout</title>
+  <meta name="description" content="Affiliate Dashboard for FPL Scout. Earn commissions by referring friends to premium membership and track referral earnings." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://fplscout.name.ng/affiliate.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Affiliate Dashboard — FPL Scout" />
+  <meta property="og:description" content="Affiliate Dashboard for FPL Scout. Earn commissions by referring friends to premium membership and track referral earnings." />
+  <meta property="og:url" content="https://fplscout.name.ng/affiliate.html" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Affiliate Dashboard — FPL Scout" />
+  <meta name="twitter:description" content="Affiliate Dashboard for FPL Scout. Earn commissions by referring friends to premium membership and track referral earnings." />
+  <meta name="twitter:image" content="/images/logo.png" />
+  <link rel="stylesheet" href="/style.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Affiliate Dashboard — FPL Scout",
+    "url": "https://fplscout.name.ng/affiliate.html",
+    "description": "Affiliate Dashboard for FPL Scout. Earn commissions by referring friends to premium membership and track referral earnings.",
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://fplscout.name.ng/"},
+        {"@type": "ListItem", "position": 2, "name": "Affiliate Dashboard", "item": "https://fplscout.name.ng/affiliate.html"}
+      ]
+    },
+    "potentialAction": {
+      "@type": "ViewAction",
+      "target": "https://fplscout.name.ng/affiliate.html",
+      "name": "View Affiliate Dashboard"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main class="page-wrap">
+    <section class="affiliate-page-header">
+      <h1>Affiliate Dashboard</h1>
+      <p>Track your referrals, commissions, and withdrawal requests in one place.</p>
+    </section>
+
+    <section class="affiliate-tabs">
+      <div class="tab-bar" role="tablist">
+        <button class="tab-btn active" data-tab="tab-overview" type="button">Overview</button>
+        <button class="tab-btn" data-tab="tab-referrals" type="button">Referrals</button>
+        <button class="tab-btn" data-tab="tab-withdraw" type="button">Withdraw</button>
+        <button class="tab-btn" data-tab="tab-leaderboard" type="button">Leaderboard</button>
+        <button class="tab-btn" data-tab="tab-terms" type="button">Terms</button>
+        <button class="tab-btn" data-tab="tab-faq" type="button">FAQ</button>
+      </div>
+
+      <div id="tab-overview" class="tab-panel active">
+        <section class="affiliate-summary grid-2">
+          <div class="card affiliate-card">
+            <h2>Current Balance</h2>
+            <div id="affiliate-balance" class="affiliate-balance">Loading...</div>
+            <p class="affiliate-note">Funds become available after successful premium signups.</p>
+          </div>
+          <div class="card affiliate-card">
+            <h2>Your Referral Link</h2>
+            <div class="affiliate-link-box">
+              <input type="text" id="affiliate-link" readonly />
+              <button id="copy-referral-link" class="btn btn-primary">Copy Referral Link</button>
+            </div>
+            <div class="affiliate-share">
+              <button id="share-referral-link" class="btn btn-outline">Share Link</button>
+              <button id="share-twitter" class="btn btn-outline">Share on Twitter</button>
+              <button id="share-whatsapp" class="btn btn-outline">Share on WhatsApp</button>
+            </div>
+            <p class="affiliate-note">Share instantly or copy your link to earn ₦2,000 for each premium signup.</p>
+            <p class="affiliate-note"><strong><span id="affiliate-referral-count">0</span> referrals</strong> tracked so far.</p>
+          </div>
+        </section>
+      </div>
+
+      <div id="tab-referrals" class="tab-panel">
+        <section class="affiliate-section card">
+          <h2>Recent Referral History</h2>
+          <div id="referral-history" class="affiliate-history">Loading referrals...</div>
+        </section>
+      </div>
+
+      <div id="tab-withdraw" class="tab-panel">
+        <section class="affiliate-section card">
+          <h2>Withdraw Funds</h2>
+          <form id="withdrawal-form" class="affiliate-form">
+            <div class="form-row">
+              <label for="withdrawal-amount">Amount (₦)</label>
+              <input type="number" id="withdrawal-amount" min="10000" placeholder="10000" />
+            </div>
+            <div class="form-row">
+              <label for="bank-name">Bank Name</label>
+              <input type="text" id="bank-name" placeholder="Access Bank" required />
+            </div>
+            <div class="form-row">
+              <label for="account-name">Account Name</label>
+              <input type="text" id="account-name" placeholder="John Doe" required />
+            </div>
+            <div class="form-row">
+              <label for="account-number">Account Number</label>
+              <input type="text" id="account-number" placeholder="0123456789" required />
+            </div>
+            <div class="form-row">
+              <button type="submit" class="btn btn-primary" id="withdrawal-submit">Request Withdrawal</button>
+            </div>
+            <p class="affiliate-note" id="withdrawal-status"></p>
+          </form>
+        </section>
+      </div>
+
+      <div id="tab-leaderboard" class="tab-panel">
+        <section class="affiliate-section card">
+          <h2>Top Referrer Leaderboard</h2>
+          <div id="affiliate-leaderboard" class="affiliate-leaderboard">Loading leaderboard...</div>
+        </section>
+      </div>
+
+      <div id="tab-terms" class="tab-panel">
+        <section id="terms" class="affiliate-section card">
+          <h2>Affiliate Terms & Conditions</h2>
+          <div class="affiliate-terms">
+            <p>By participating in the FPL Scout Affiliate Program, you agree to the following terms:</p>
+            <ul>
+              <li>Affiliate commissions are only earned when a referred user completes a valid premium subscription purchase.</li>
+              <li>Commissions are not payable for self-referrals, duplicate accounts, fake signups, fraud, or any manipulative behavior.</li>
+              <li>FPL Scout team members, employees, contractors, and partners are not permitted to participate in the affiliate program. If they do participate, all earned affiliate commissions will be forfeited.</li>
+              <li>Any attempt to create multiple accounts for yourself or to deceive the referral system will result in forfeiture of commission and immediate disqualification from the affiliate program.</li>
+              <li>FPL Scout reserves the right to withhold payment if any legal, fraudulent, or abusive activity is detected.</li>
+              <li>Affiliate payments are subject to verification and may be delayed while we validate the referred account.</li>
+              <li>These terms are governed by applicable laws and may be updated at any time with notice.</li>
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      <div id="tab-faq" class="tab-panel">
+        <section class="affiliate-section card">
+          <h2>Affiliate FAQ</h2>
+          <div class="affiliate-faq">
+            <dl>
+              <dt>How does affiliate commission work?</dt>
+              <dd>You earn ₦2,000 when a referred friend signs up and completes a valid premium subscription purchase.</dd>
+              <dt>How do I share my referral link?</dt>
+              <dd>Use the copy button or share buttons on this page to share your unique referral link with friends.</dd>
+              <dt>When can I withdraw earnings?</dt>
+              <dd>Earnings are available after the referral has completed a verified premium subscription. Withdrawals are submitted through the dashboard.</dd>
+              <dt>What is not allowed?</dt>
+              <dd>Self-referrals, duplicate accounts, fake signups, or any abusive behavior will result in forfeiture of commission and disqualification from the program.</dd>
+              <dt>Where can I view my referral activity?</dt>
+              <dd>The “Recent Referral History” section shows the latest referrals, status, and payout progress.</dd>
+            </dl>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div id="footer-placeholder"></div>
+  <script src="/layout.js"></script>
+  <script src="/affiliate.js"></script>
+</body>
+</html>

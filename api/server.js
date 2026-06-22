@@ -17,7 +17,6 @@ const cache = new NodeCache({ stdTTL: 120 }); // 2-min default cache
 
 const FPL_BASE = 'https://fantasy.premierleague.com/api';
 const BASE_URL = process.env.BASE_URL || 'https://fplscout.name.ng';
-const ADMIN_SECRET = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS;
 
 function emailFirstName(email) {
   if (!email || typeof email !== 'string') return '';
@@ -39,6 +38,12 @@ const supabaseAdmin = SUPABASE_SERVICE_ROLE_KEY ? createClient(SUPABASE_URL, SUP
 
 if (!SUPABASE_SERVICE_ROLE_KEY) {
   console.warn('Warning: SUPABASE_SERVICE_ROLE_KEY is not configured. Admin write operations will fail if row-level security is enabled.');
+}
+
+const ADMIN_SECRET = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS || (process.env.NODE_ENV !== 'production' ? 'admin123' : null);
+const ADMIN_SECRET_FALLBACK = !process.env.ADMIN_PASSWORD && !process.env.ADMIN_PASS && process.env.NODE_ENV !== 'production';
+if (ADMIN_SECRET_FALLBACK) {
+  console.warn('Warning: ADMIN_PASSWORD / ADMIN_PASS is not set. Default admin password is "admin123" for development only.');
 }
 // 🔒 PREMIUM SECURITY CHECK MIDDLEWARE
 // It looks up the requesting user's true profile status in Supabase before unblocking private paths
@@ -91,6 +96,31 @@ function parseCookies(req) {
     cookies[key.trim()] = decodeURIComponent((value || '').trim());
   });
   return cookies;
+}
+
+async function generateReferralCode(email) {
+  const base = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase().slice(0, 8) || 'ref';
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const candidate = `${base}-${crypto.randomBytes(3).toString('hex')}`;
+    const { data, error } = await supabase
+      .from('users')
+      .select('id')
+      .eq('ref_code', candidate)
+      .single();
+    if (error || !data) return candidate;
+  }
+  return `${base}-${crypto.randomBytes(4).toString('hex')}`;
+}
+
+async function recordAffiliateEarning({ affiliateId, referredUserId, referralId, amountNgN = 2000, description = 'Premium subscription reward' }) {
+  const dbClient = supabaseAdmin || supabase;
+  return dbClient.from('affiliate_earnings').insert([{
+    affiliate_id: affiliateId,
+    referred_user_id: referredUserId,
+    referral_id: referralId,
+    amount_ngn: amountNgN,
+    description
+  }]).single();
 }
 
 function createAdminSessionToken() {
@@ -1114,7 +1144,7 @@ let tempOtpStore = {};
 
 // 2. Create the API Route to handle Sign-Up without requiring email verification
 app.post('/api/signup', async (req, res) => {
-  const { fullName, email, country, password } = req.body;
+  const { fullName, email, country, password, ref } = req.body;
 
   if (!fullName || !email || !country || !password) {
     return res.status(400).json({ success: false, message: 'All fields are required.' });
@@ -1131,25 +1161,50 @@ app.post('/api/signup', async (req, res) => {
       return res.status(400).json({ success: false, message: 'User with this email already exists.' });
     }
 
+    const generatedRefCode = await generateReferralCode(email);
+    const insertPayload = {
+      full_name: fullName,
+      email,
+      country,
+      password,
+      is_premium: false,
+      is_admin: false,
+      created_at: new Date(),
+      ref_code: generatedRefCode
+    };
+
+    if (ref) {
+      const { data: referrer, error: refError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('ref_code', ref)
+        .single();
+
+      if (!refError && referrer) {
+        insertPayload.referred_by = referrer.id;
+      }
+    }
+
     const { data: newUser, error: insertError } = await supabase
       .from('users')
-      .insert([
-        {
-          full_name: fullName,
-          email,
-          country,
-          password,
-          is_premium: false,
-          is_admin: false,
-          created_at: new Date()
-        }
-      ])
+      .insert([insertPayload])
       .select()
       .single();
 
     if (insertError) {
       console.error('Supabase insert error:', insertError);
       return res.status(500).json({ success: false, message: 'Failed to create user account.' });
+    }
+
+    if (insertPayload.referred_by) {
+      const referralResult = await supabase.from('referrals').insert([{
+        affiliate_id: insertPayload.referred_by,
+        referred_user_id: newUser.id
+      }]);
+
+      if (referralResult.error) {
+        console.warn('Could not record referral:', referralResult.error.message || referralResult.error);
+      }
     }
 
     console.log(`User registered successfully: ${email}`);
@@ -1165,7 +1220,8 @@ app.post('/api/signup', async (req, res) => {
         isPremium: false,
         isAdmin: false,
         subscription_status: 'Free Member',
-        premium_expiry: null
+        premium_expiry: null,
+        refCode: generatedRefCode
       }
     });
   } catch (error) {
@@ -1207,6 +1263,7 @@ app.post('/api/signin', async (req, res) => {
                     fullName: userProfile.full_name,
                     email: userProfile.email,
                     country: userProfile.country,
+                    refCode: userProfile.ref_code || null,
                     isPremium: userProfile.is_premium,
                     isAdmin: userProfile.is_admin,
                     subscription_status: userProfile.subscription_status || (userProfile.is_premium ? 'Premium Member' : 'Free Member'),
@@ -1678,6 +1735,7 @@ app.get('/api/user-profile', async (req, res) => {
                 fullName: user.full_name,
                 email: user.email,
                 country: user.country,
+                refCode: user.ref_code || null,
                 isPremium: user.is_premium,
                 isAdmin: user.is_admin,
                 subscription_status: user.subscription_status || (user.is_premium ? 'Premium Member' : 'Free Member'),
@@ -1688,6 +1746,176 @@ app.get('/api/user-profile', async (req, res) => {
     } catch (error) {
         console.error('Error fetching user profile:', error);
         return res.status(500).json({ success: false, message: 'Failed to fetch profile.' });
+    }
+});
+
+app.get('/api/affiliate/dashboard', async (req, res) => {
+    try {
+        const dbClient = supabaseAdmin || supabase;
+        const email = req.query.email;
+        if (!email) return res.status(400).json({ success: false, message: 'Email is required.' });
+
+        const { data: user, error: userError } = await dbClient
+            .from('users')
+            .select('id, email, full_name, ref_code')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        const [referralsResult, earningsResult, withdrawalsResult, leaderboardResult] = await Promise.all([
+            dbClient.from('referrals')
+                .select('*, referred_user:users(id, full_name, email)')
+                .eq('affiliate_id', user.id)
+                .order('created_at', { ascending: false }),
+            dbClient.from('affiliate_earnings')
+                .select('amount_ngn')
+                .eq('affiliate_id', user.id),
+            dbClient.from('withdrawal_requests')
+                .select('amount_ngn, status')
+                .eq('affiliate_id', user.id),
+            dbClient.from('affiliate_leaderboard')
+                .select('affiliate_id, full_name, email, referral_count')
+                .order('referral_count', { ascending: false })
+                .limit(3)
+        ]);
+
+        if (referralsResult.error || earningsResult.error || withdrawalsResult.error || leaderboardResult.error) {
+            console.error('Affiliate dashboard query error:', referralsResult.error || earningsResult.error || withdrawalsResult.error || leaderboardResult.error);
+            return res.status(500).json({ success: false, message: 'Failed to load affiliate dashboard.' });
+        }
+
+        const totalEarned = (earningsResult.data || []).reduce((sum, row) => sum + (row.amount_ngn || 0), 0);
+        const totalWithdrawn = (withdrawalsResult.data || []).reduce((sum, row) => sum + (row.amount_ngn || 0), 0);
+        const availableBalance = totalEarned - totalWithdrawn;
+
+        return res.json({
+            success: true,
+            referralLink: `${BASE_URL}/?ref=${user.ref_code}`,
+            availableBalance,
+            referrals: (referralsResult.data || []).map(ref => ({
+                referredName: ref.referred_user?.full_name || null,
+                referredEmail: ref.referred_user?.email || null,
+                joinedAt: ref.created_at,
+                commissionPaid: ref.commission_paid
+            })),
+            leaderboard: leaderboardResult.data || []
+        });
+    } catch (error) {
+        console.error('Affiliate dashboard error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to load affiliate dashboard.' });
+    }
+});
+
+app.post('/api/affiliate/withdrawal-request', async (req, res) => {
+    try {
+        const dbClient = supabaseAdmin || supabase;
+        const { email, amount, bank_name, account_name, account_number } = req.body;
+        if (!email || !amount || !bank_name || !account_name || !account_number) {
+            return res.status(400).json({ success: false, message: 'All fields are required.' });
+        }
+
+        const { data: user, error: userError } = await dbClient
+            .from('users')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        const [earningsResult, withdrawalsResult] = await Promise.all([
+            dbClient.from('affiliate_earnings').select('amount_ngn').eq('affiliate_id', user.id),
+            dbClient.from('withdrawal_requests').select('amount_ngn').eq('affiliate_id', user.id)
+        ]);
+
+        if (earningsResult.error || withdrawalsResult.error) {
+            console.error('Affiliate balance query failed:', earningsResult.error || withdrawalsResult.error);
+            return res.status(500).json({ success: false, message: 'Failed to verify affiliate balance.' });
+        }
+
+        const totalEarned = (earningsResult.data || []).reduce((sum, row) => sum + (row.amount_ngn || 0), 0);
+        const totalRequested = (withdrawalsResult.data || []).reduce((sum, row) => sum + (row.amount_ngn || 0), 0);
+        const availableBalance = totalEarned - totalRequested;
+
+        if (amount > availableBalance) {
+            return res.status(400).json({ success: false, message: 'Withdrawal amount exceeds available balance.' });
+        }
+
+        if (availableBalance < 10000) {
+            return res.status(400).json({ success: false, message: 'Balance must be at least ₦10,000 before requesting withdrawal.' });
+        }
+
+        const insertResult = await supabase.from('withdrawal_requests').insert([{
+            affiliate_id: user.id,
+            amount_ngn: amount,
+            bank_name,
+            account_name,
+            account_number,
+            status: 'pending',
+            requested_at: new Date()
+        }]).single();
+
+        if (insertResult.error) {
+            console.error('Withdrawal insert failed:', insertResult.error);
+            return res.status(500).json({ success: false, message: 'Failed to create withdrawal request.' });
+        }
+
+        return res.json({ success: true, message: 'Withdrawal request submitted successfully.' });
+    } catch (error) {
+        console.error('Withdrawal request error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to process withdrawal request.' });
+    }
+});
+
+app.get('/api/admin/withdrawal-requests', requireAdminSession, async (req, res) => {
+    try {
+        const dbClient = supabaseAdmin || supabase;
+        const { data, error } = await dbClient
+            .from('withdrawal_requests')
+            .select('id, affiliate_id, amount_ngn, status, bank_name, account_name, account_number, requested_at, completed_at, notes, affiliate:users(full_name, email)')
+            .order('requested_at', { ascending: false });
+
+        if (error) {
+            console.error('Admin withdrawal fetch failed:', error);
+            return res.status(500).json({
+                success: false,
+                message: error.message ? `Could not load withdrawal requests: ${error.message}` : 'Could not load withdrawal requests.'
+            });
+        }
+
+        return res.json({ success: true, requests: data });
+    } catch (error) {
+        console.error('Admin withdrawal fetch error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to load withdrawal requests.' });
+    }
+});
+
+app.post('/api/admin/withdrawal-requests/:id/pay', requireAdminSession, async (req, res) => {
+    try {
+        const id = req.params.id;
+        if (!id) return res.status(400).json({ success: false, message: 'Request id is required.' });
+
+        const dbClient = supabaseAdmin || supabase;
+        const { data, error } = await dbClient
+            .from('withdrawal_requests')
+            .update({ status: 'completed', completed_at: new Date() })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Mark paid failed:', error);
+            return res.status(500).json({ success: false, message: 'Could not mark withdrawal as paid.' });
+        }
+
+        return res.json({ success: true, request: data });
+    } catch (error) {
+        console.error('Mark paid error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to mark withdrawal request as paid.' });
     }
 });
 
@@ -1879,14 +2107,40 @@ app.get('/api/verify-payment', async (req, res) => {
             premium_expiry: expiryDate
         };
 
-        const [{ error: usersError }, { error: profilesError }] = await Promise.all([
-            supabase.from('users').update(updatePayload).eq('email', email),
+        const [{ error: usersError, data: updatedUser }, { error: profilesError }] = await Promise.all([
+            supabase.from('users').update(updatePayload).eq('email', email).select().single(),
             supabase.from('profiles').update(updatePayload).eq('email', email)
         ]);
 
         if (usersError || profilesError) {
             console.error('Paystack verify update failure:', usersError || profilesError);
             return res.status(500).json({ success: false, message: 'Failed to update subscription to premium.' });
+        }
+
+        // Trigger affiliate commission for the referring affiliate if this is the first premium upgrade
+        if (updatedUser) {
+            const referralQuery = await supabase
+                .from('referrals')
+                .select('*')
+                .eq('referred_user_id', updatedUser.id)
+                .single();
+
+            if (!referralQuery.error && referralQuery.data && !referralQuery.data.commission_paid) {
+                const earningResult = await recordAffiliateEarning({
+                    affiliateId: referralQuery.data.affiliate_id,
+                    referredUserId: updatedUser.id,
+                    referralId: referralQuery.data.id
+                });
+
+                if (earningResult.error) {
+                    console.error('Could not record affiliate earning:', earningResult.error);
+                } else {
+                    await supabase
+                        .from('referrals')
+                        .update({ commission_paid: true, commission_paid_at: new Date() })
+                        .eq('id', referralQuery.data.id);
+                }
+            }
         }
 
         return res.json({

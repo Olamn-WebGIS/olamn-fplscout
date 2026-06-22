@@ -4,6 +4,30 @@ const appState = {};
 // Tracking active user session memory across browser page reloads
 let currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
 let intendedPremiumPage = null; // Track which premium page user is trying to access
+
+function getReferralCookie() {
+  const cookiePairs = document.cookie.split(';').map(c => c.trim());
+  for (const pair of cookiePairs) {
+    const [name, value] = pair.split('=');
+    if (name === 'affiliate_ref') return decodeURIComponent(value || '');
+  }
+  return null;
+}
+
+function setReferralCookie(refCode) {
+  if (!refCode) return;
+  const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+  document.cookie = `affiliate_ref=${encodeURIComponent(refCode)}; expires=${expires}; path=/; SameSite=Lax`;
+}
+
+function captureReferralFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get('ref');
+  if (ref) {
+    setReferralCookie(ref);
+  }
+}
+
 function reconcileLocalSubscriptionExpiry() {
     if (!currentUser || !currentUser.premium_expiry) return;
     const expiryDate = new Date(currentUser.premium_expiry);
@@ -142,6 +166,7 @@ async function fetchSpyData(leagueId) {
 document.addEventListener('DOMContentLoaded', () => {
     reconcileLocalSubscriptionExpiry();
     registerServiceWorkerForNotifications();
+    captureReferralFromUrl();
     setupPremiumLocks();       
     setupModalInterface();    
     setupAccountNav();     
@@ -260,10 +285,14 @@ function setupModalInterface() {
             submitBtn.disabled = true;
 
             try {
+                const refCode = getReferralCookie();
+                const bodyPayload = { fullName, email, country, password };
+                if (refCode) bodyPayload.ref = refCode;
+
                 const response = await fetch('/api/signup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fullName, email, country, password })
+                    body: JSON.stringify(bodyPayload)
                 });
 
                 const data = await response.json();

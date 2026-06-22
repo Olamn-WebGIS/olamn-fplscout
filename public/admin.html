@@ -19,7 +19,8 @@
     .admin-field input, .admin-field textarea { width:100%; padding:0.95rem 1rem; border:1px solid #ddd; border-radius:12px; font-size:1rem; }
     .admin-actions { display:flex; gap:1rem; flex-wrap:wrap; }
     .btn-primary { background:#0070f3; color:#fff; border:none; padding:0.95rem 1.4rem; border-radius:999px; cursor:pointer; font-weight:700; }
-    .btn-secondary { background:#f3f4f6; color:#111; border:1px solid #d1d5db; }
+    .btn-secondary { background:#f3f4f6; color:#111; border:1px solid #d1d5db; padding:0.75rem 1rem; border-radius:999px; cursor:pointer; }
+    .btn-secondary.active { background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
     .hidden { display:none; }
     .status { margin-top:1rem; color:#0070f3; }
     .admin-post-list { display:grid; gap:1rem; }
@@ -29,6 +30,26 @@
     .admin-post-actions { display:flex; gap:0.75rem; flex-wrap:wrap; }
     .admin-post-actions button { min-width: 92px; }
     #post-content-editor { min-height: 260px; background: #fff; border: 1px solid #d1d5db; border-radius: 12px; }
+    .tabs { display:flex; gap:0.75rem; margin-bottom:1rem; flex-wrap:nowrap; overflow-x:auto; padding-bottom:0.25rem; }
+    .tabs::-webkit-scrollbar { height: 6px; }
+    .tabs::-webkit-scrollbar-thumb { background: rgba(34, 60, 80, 0.2); border-radius: 999px; }
+    .tab-btn { white-space: nowrap; flex: 0 0 auto; }
+    .table-responsive { overflow-x:auto; }
+    .withdrawal-table { width:100%; border-collapse: collapse; min-width: 650px; }
+    .withdrawal-table th, .withdrawal-table td { padding: 0.75rem 0.85rem; border-bottom: 1px solid #e5e7eb; text-align: left; }
+    .withdrawal-table th { background:#f8fafc; color:#1f2937; font-weight:700; }
+    .admin-card { width:100%; }
+    @media (max-width: 760px) {
+      .admin-page { padding: 1rem; }
+      .admin-card { padding: 1rem; }
+      .admin-field input, .admin-field textarea { font-size: 0.95rem; }
+      .admin-actions { flex-direction: column; align-items: stretch; }
+      .btn-primary, .btn-secondary { width: 100%; }
+      .admin-post-item { padding: 1rem; }
+      .admin-post-actions { justify-content: flex-start; }
+      .tabs { gap:0.5rem; }
+      .withdrawal-table th, .withdrawal-table td { padding: 0.65rem 0.7rem; }
+    }
   </style>
 </head>
 <body>
@@ -44,7 +65,15 @@
       <p class="status" id="admin-login-status"></p>
     </div>
 
-    <div class="admin-card hidden" id="post-card">
+    <div class="admin-card hidden" id="admin-tabs-card">
+      <div class="tabs">
+        <button class="btn-secondary tab-btn active" data-tab="blog-tab">Blog</button>
+        <button class="btn-secondary tab-btn" data-tab="withdrawal-tab">Withdrawal Requests</button>
+      </div>
+    </div>
+
+    <div id="blog-tab" class="tab-panel hidden active">
+      <div class="admin-card hidden" id="post-card">
       <h2>Publish New Blog Post</h2>
       <div class="admin-field">
         <label for="post-title">Title</label>
@@ -75,6 +104,29 @@
   <div class="admin-card hidden" id="posts-list-card">
     <h2>Existing Posts</h2>
     <div id="admin-post-list" class="admin-post-list"></div>
+  </div>
+  </div>
+
+  <div id="withdrawal-tab" class="tab-panel hidden">
+    <div class="admin-card hidden" id="withdrawal-requests-card">
+      <h2>Affiliate Withdrawal Requests</h2>
+      <p class="status" id="withdrawal-requests-note">Unlock the dashboard and open this tab to load withdrawal requests.</p>
+      <div id="withdrawal-requests-container">
+        <table id="withdrawal-requests-table" class="withdrawal-table">
+          <thead>
+            <tr>
+              <th>Affiliate</th>
+              <th>Amount (₦)</th>
+              <th>Bank Details</th>
+              <th>Status</th>
+              <th>Requested</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>

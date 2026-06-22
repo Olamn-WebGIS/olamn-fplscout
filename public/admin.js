@@ -9,6 +9,11 @@ const loginButton = document.getElementById('admin-login');
 const logoutButton = document.getElementById('logout-admin');
 const publishButton = document.getElementById('publish-post');
 const cancelEditButton = document.getElementById('cancel-edit');
+const withdrawalRequestsNote = document.getElementById('withdrawal-requests-note');
+const adminTabsCard = document.getElementById('admin-tabs-card');
+const withdrawalTabPanel = document.getElementById('withdrawal-tab');
+const blogTabPanel = document.getElementById('blog-tab');
+const tabButtons = document.querySelectorAll('.tab-btn');
 
 let adminPassword = null;
 let adminAuthenticated = false;
@@ -23,17 +28,92 @@ function showStatus(element, message, success = true) {
 }
 
 function initializeQuill() {
-  quill = new Quill('#post-content-editor', {
-    theme: 'snow',
-    modules: {
-      toolbar: [
-        ['bold', 'italic', 'underline', 'link'],
-        [{ color: [] }],
-        [{ list: 'bullet' }],
-        ['clean']
-      ]
+  try {
+    quill = new Quill('#post-content-editor', {
+      theme: 'snow',
+      modules: {
+        toolbar: [
+          ['bold', 'italic', 'underline', 'link'],
+          [{ color: [] }],
+          [{ list: 'bullet' }],
+          ['clean']
+        ]
+      }
+    });
+  } catch (error) {
+    console.warn('Quill editor failed to initialize:', error);
+    quill = null;
+  }
+}
+
+async function loadWithdrawalRequests() {
+  const container = document.getElementById('withdrawal-requests-card');
+  const tableBody = document.querySelector('#withdrawal-requests-table tbody');
+
+  if (!container || !tableBody) return;
+
+  try {
+    const res = await fetch('/api/admin/withdrawal-requests', {
+      credentials: 'same-origin'
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      withdrawalRequestsNote.textContent = res.status === 401 || res.status === 403
+        ? 'Unlock the dashboard to view withdrawal requests.'
+        : (data && data.message) ? `Unable to load withdrawal requests: ${data.message}` : 'Unable to load withdrawal requests.';
+      tableBody.innerHTML = '<tr><td colspan="6">No data to display.</td></tr>';
+      return;
     }
-  });
+
+    if (!data.requests || data.requests.length === 0) {
+      withdrawalRequestsNote.textContent = 'No withdrawal requests available yet.';
+      tableBody.innerHTML = '<tr><td colspan="6">No withdrawal requests available.</td></tr>';
+      return;
+    }
+
+    container.classList.remove('hidden');
+    withdrawalRequestsNote.textContent = `Loaded ${data.requests.length} withdrawal request(s).`;
+    tableBody.innerHTML = data.requests.map(request => `
+      <tr>
+        <td>${request.affiliate?.full_name || 'Unknown'}<br><small>${request.affiliate?.email || ''}</small></td>
+        <td>₦${Number(request.amount_ngn).toLocaleString()}</td>
+        <td>${request.bank_name}<br>${request.account_name}<br>${request.account_number}</td>
+        <td>${request.status}</td>
+        <td>${new Date(request.requested_at).toLocaleString()}</td>
+        <td>
+          ${request.status === 'pending' ? `<button class="btn-secondary btn-sm" data-action="mark-paid" data-id="${request.id}">Mark as Paid</button>` : '—'}
+        </td>
+      </tr>
+    `).join('');
+
+    tableBody.querySelectorAll('button[data-action="mark-paid"]').forEach(button => {
+      button.addEventListener('click', async (event) => {
+        const requestId = event.target.dataset.id;
+        if (!requestId || !confirm('Mark this withdrawal request as paid?')) return;
+
+        try {
+          const markRes = await fetch(`/api/admin/withdrawal-requests/${encodeURIComponent(requestId)}/pay`, {
+            method: 'POST',
+            credentials: 'same-origin'
+          });
+          const result = await markRes.json();
+          if (!markRes.ok || !result.success) {
+            alert(result.message || 'Unable to mark as paid.');
+            return;
+          }
+          await loadWithdrawalRequests();
+        } catch (err) {
+          console.error('Mark paid error:', err);
+          alert('Could not complete payment action.');
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Admin withdrawal load failed:', error);
+    withdrawalRequestsNote.textContent = 'Could not load withdrawal requests. Unlock the dashboard to refresh.';
+    tableBody.innerHTML = '<tr><td colspan="6">No data to display.</td></tr>';
+  }
 }
 
 async function loadAdminPosts() {
@@ -118,8 +198,26 @@ function resetEditorState() {
   publishButton.textContent = 'Publish Post';
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initializeQuill();
+
+  tabButtons.forEach(button => {
+    button.addEventListener('click', async () => {
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+      const target = button.dataset.tab;
+      document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+      document.getElementById(target).classList.add('active');
+
+      if (target === 'withdrawal-tab') {
+        if (!adminAuthenticated) {
+          withdrawalRequestsNote.textContent = 'Unlock the dashboard to view withdrawal requests.';
+          return;
+        }
+        await loadWithdrawalRequests();
+      }
+    });
+  });
 
   loginButton.addEventListener('click', async () => {
     const password = passwordInput.value.trim();
@@ -128,6 +226,10 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    loginButton.disabled = true;
+    loginButton.textContent = 'Unlocking...';
+    showStatus(loginStatus, 'Attempting login...', true);
+
     try {
       const response = await fetch('/api/admin/login', {
         method: 'POST',
@@ -135,10 +237,22 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ adminPassword: password })
       });
-      const data = await response.json();
 
-      if (!response.ok || !data.success) {
-        showStatus(loginStatus, data.message || 'Invalid admin password.', false);
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Login response parse error:', parseError);
+      }
+
+      if (!response.ok) {
+        const message = (data && data.message) || 'Server login failed. Make sure the server is running.';
+        showStatus(loginStatus, message, false);
+        return;
+      }
+
+      if (!data || !data.success) {
+        showStatus(loginStatus, (data && data.message) || 'Invalid admin password.', false);
         return;
       }
 
@@ -146,13 +260,19 @@ document.addEventListener('DOMContentLoaded', () => {
       adminPassword = null;
       passwordInput.value = '';
       loginCard.classList.add('hidden');
+      adminTabsCard.classList.remove('hidden');
       postCard.classList.remove('hidden');
       postsListCard.classList.remove('hidden');
+      document.getElementById('blog-tab').classList.add('active');
+      document.getElementById('withdrawal-tab').classList.remove('active');
       showStatus(loginStatus, 'Dashboard unlocked.', true);
       await loadAdminPosts();
     } catch (error) {
-      console.error(error);
+      console.error('Admin login failed:', error);
       showStatus(loginStatus, 'Unable to login. Try again later.', false);
+    } finally {
+      loginButton.disabled = false;
+      loginButton.textContent = 'Unlock Dashboard';
     }
   });
 
@@ -160,11 +280,14 @@ document.addEventListener('DOMContentLoaded', () => {
     adminPassword = null;
     adminAuthenticated = false;
     passwordInput.value = '';
+    adminTabsCard.classList.add('hidden');
     postCard.classList.add('hidden');
     postsListCard.classList.add('hidden');
+    withdrawalTabPanel.classList.add('hidden');
     loginCard.classList.remove('hidden');
     showStatus(loginStatus, 'Dashboard locked.', true);
     postStatus.textContent = '';
+    withdrawalRequestsNote.textContent = 'Unlock the dashboard and open this tab to load withdrawal requests.';
     resetEditorState();
   });
 

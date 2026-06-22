@@ -243,6 +243,247 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 }
 .card-title svg, .card-title .icon { color: var(--blue-light); }
 
+.affiliate-terms {
+  color: var(--text-primary);
+  padding: 1rem 0;
+}
+
+.affiliate-home-highlight {
+  background: linear-gradient(135deg, #081e3d 0%, #0f3674 100%);
+  color: #fff;
+  padding: 2rem 1.5rem;
+  margin: 2rem 1.5rem;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.highlight-inner {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.highlight-copy .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: #7dd3fc;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.highlight-copy h2 {
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.highlight-copy p {
+  max-width: 560px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 1.5rem;
+}
+
+.highlight-steps {
+  display: grid;
+  gap: 1rem;
+}
+
+.step-card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+}
+
+.step-number {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  background: rgba(29, 155, 240, 0.15);
+  color: #bbf7d0;
+  border-radius: 999px;
+  margin-bottom: 0.75rem;
+}
+
+.step-card h3 {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.step-card p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.affiliate-share {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.affiliate-faq dl {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.affiliate-faq dt {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.affiliate-faq dd {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.75;
+}
+
+.affiliate-tabs {
+  margin-top: 1.5rem;
+}
+
+.affiliate-summary.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+.affiliate-link-box {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #f8fafc;
+  padding: 0.9rem;
+  border-radius: 0.95rem;
+}
+
+.affiliate-link-box input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 0.75rem;
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.affiliate-link-box input:focus {
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.12);
+}
+
+.affiliate-form .form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.affiliate-form .form-row label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.affiliate-form .form-row input {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 0.85rem;
+  background: #fff;
+}
+
+.affiliate-note {
+  color: var(--text-secondary);
+  margin-top: 0.75rem;
+  line-height: 1.5;
+}
+
+.affiliate-tabs .tab-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-btn {
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-bottom: 2px solid transparent;
+  border-radius: 10px 10px 0 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tab-btn.active {
+  color: var(--text-primary);
+  border-bottom-color: #0070f3;
+  background: #f8fafc;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+@media (max-width: 800px) {
+  .tab-bar {
+    justify-content: stretch;
+  }
+
+  .tab-btn {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 680px) {
+  .highlight-inner {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .affiliate-home-highlight {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+}
+
+.affiliate-terms ul {
+  list-style: disc;
+  margin: 1rem 0 0 1.2rem;
+  color: var(--text-secondary);
+}
+
+.affiliate-terms li {
+  margin-bottom: 0.85rem;
+}
+
+.affiliate-terms strong {
+  color: var(--text-primary);
+}
+
 .two-col-predictions .card {
   position: relative;
   overflow: hidden;
@@ -703,19 +944,64 @@ tbody tr.highlight td { background: rgba(0,200,83,0.05); }
 
 /* ── Tabs ───────────────────────────────────────────────────── */
 .tab-bar {
-  display: flex; gap: 4px; border-bottom: 2px solid #e2e8f0;
-  margin-bottom: 1.25rem; overflow-x: auto;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 1.25rem;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
+.tab-bar::-webkit-scrollbar {
+  height: 8px;
+}
+.tab-bar::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.16);
+  border-radius: 999px;
+}
+.tab-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .tab-btn {
-  padding: 0.55rem 1rem; font-size: 0.85rem; font-weight: 600;
-  background: none; border: none; color: var(--text-muted);
-  border-bottom: 2px solid transparent; margin-bottom: -2px;
-  cursor: pointer; white-space: nowrap; transition: all 0.15s;
+  flex: 0 0 auto;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
 }
 .tab-btn.active { color: var(--blue-light); border-bottom-color: var(--blue-light); }
 .tab-btn:hover:not(.active) { color: var(--text-primary); }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
+
+@media (max-width: 900px) {
+  .affiliate-summary.grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .affiliate-link-box {
+    grid-template-columns: 1fr;
+  }
+
+  .affiliate-link-box button,
+  .affiliate-link-box input {
+    width: 100%;
+  }
+
+  .tab-btn {
+    padding: 0.55rem 0.85rem;
+  }
+}
 
 /* ── Diff pick card ─────────────────────────────────────────── */
 .diff-row {
