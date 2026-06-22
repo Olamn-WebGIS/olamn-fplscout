@@ -1052,20 +1052,20 @@ footer ul li a:hover { opacity: 1; }
 .footer-copy a:hover { opacity: 1; }
 .footer-socials { display: flex; gap: 10px; }
 .footer-socials a {
-  color: rgba(255,255,255,0.4); font-size: 1rem;
+  color: rgba(255,255,255,0.4); font-size: 0.9rem;
   transition: color 0.15s;
 }
 .footer-socials a:hover { color: var(--yellow); }
 .footer-socials a.social-btn {
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 2rem;
+  height: 2rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
   color: #fff;
   text-decoration: none;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 700;
   font-family: Arial, sans-serif;
   background: #999;
