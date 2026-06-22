@@ -304,8 +304,18 @@ function setupModalInterface() {
 
                     const accountNavItem = document.getElementById('account-nav-item');
                     if (accountNavItem) accountNavItem.classList.remove('account-hidden');
-                    if (authModal) authModal.classList.add('modal-hidden');
 
+                    const pendingAffiliate = localStorage.getItem('affiliate_join_pending') === 'true';
+                    if (pendingAffiliate) {
+                        localStorage.removeItem('affiliate_join_pending');
+                        if (authModal) authModal.classList.add('modal-hidden');
+                        window.dispatchEvent(new Event('affiliate-auth-success'));
+                        submitBtn.innerText = "Create Account";
+                        submitBtn.disabled = false;
+                        return;
+                    }
+
+                    if (authModal) authModal.classList.add('modal-hidden');
                     window.location.href = "/subscribe.html";
                 } else {
                     alert("Signup failed: " + data.message);
@@ -349,8 +359,18 @@ function setupModalInterface() {
 
                     const accountNavItem = document.getElementById('account-nav-item');
                     if (accountNavItem) accountNavItem.classList.remove('account-hidden');
-                    if (authModal) authModal.classList.add('modal-hidden');
 
+                    const pendingAffiliate = localStorage.getItem('affiliate_join_pending') === 'true';
+                    if (pendingAffiliate) {
+                        localStorage.removeItem('affiliate_join_pending');
+                        if (authModal) authModal.classList.add('modal-hidden');
+                        window.dispatchEvent(new Event('affiliate-auth-success'));
+                        submitBtn.innerText = "Log In";
+                        submitBtn.disabled = false;
+                        return;
+                    }
+
+                    if (authModal) authModal.classList.add('modal-hidden');
                     // If user is premium and came from a premium page click, go to that page
                     if (currentUser && currentUser.isPremium === true) {
                         if (intendedPremiumPage && intendedPremiumPage.startsWith('/')) {

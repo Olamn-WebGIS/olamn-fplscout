@@ -67,65 +67,11 @@
         <button id="affiliate-join-button" class="btn btn-primary">Join Affiliate Program</button>
         <button id="affiliate-login-redirect" class="btn btn-outline">Log In / Sign Up</button>
       </div>
+      <p class="affiliate-note" style="margin-top:0.75rem; font-size:0.95rem; color:#555;">
+        Already registered? <a href="#" id="affiliate-signin-link" style="color:#0070f3; text-decoration:underline;">Log in here</a> to join as an affiliate.
+      </p>
       <p id="affiliate-join-status" class="affiliate-note" style="margin-top:0.75rem;"></p>
     </section>
-
-    <div id="affiliate-modal" class="modal-hidden">
-      <div class="modal-content" style="max-width:520px;">
-        <span id="affiliate-modal-close" class="modal-close" style="cursor:pointer;">&times;</span>
-        <div id="affiliate-modal-signup" class="affiliate-modal-panel">
-          <h2>Create your FPL Scout account</h2>
-          <p style="color:#444; margin-bottom:1rem;">You must sign up before joining the affiliate program.</p>
-          <div class="form-group">
-            <label>Full Name</label>
-            <input type="text" id="affiliate-signup-name" placeholder="Enter your full name" required />
-          </div>
-          <div class="form-group">
-            <label>Email Address</label>
-            <input type="email" id="affiliate-signup-email" placeholder="Enter email" required />
-          </div>
-          <div class="form-group">
-            <label>Country</label>
-            <select id="affiliate-signup-country" required>
-              <option value="Nigeria" selected>Nigeria</option>
-              <option value="Ghana">Ghana</option>
-              <option value="United Kingdom">United Kingdom</option>
-              <option value="United States">United States</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="affiliate-signup-password" placeholder="Create password" required />
-          </div>
-          <button id="affiliate-signup-submit" class="btn btn-primary" style="width:100%;">Create Account</button>
-          <p id="affiliate-modal-error" class="affiliate-note" style="margin-top:1rem;color:#c02323; display:none;"></p>
-        </div>
-
-        <div id="affiliate-modal-terms" class="affiliate-modal-panel form-hidden">
-          <h2>Affiliate Terms & Conditions</h2>
-          <p style="color:#444; margin-bottom:1rem;">Accept the affiliate program terms to generate your custom referral link.</p>
-          <div class="affiliate-terms" style="max-height:240px; overflow-y:auto; margin-bottom:1rem; padding-right:0.5rem; border:1px solid #eee; border-radius:12px; background:#fafafa;">
-            <ul style="padding:1rem; margin:0; list-style:disc inside; color:#333;">
-              <li>Affiliate commissions are only earned when a referred user completes a valid premium subscription purchase.</li>
-              <li>Commissions are not payable for self-referrals, duplicate accounts, fake signups, fraud, or any manipulative behavior.</li>
-              <li>FPL Scout team members, employees, contractors, and partners are not permitted to participate. If they do, commissions are forfeited.</li>
-              <li>Any abuse of the referral system will result in commission forfeiture and program removal.</li>
-              <li>Affiliate payments are subject to verification and may be delayed while referrals are validated.</li>
-            </ul>
-          </div>
-          <label style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; font-weight:600;">
-            <input type="checkbox" id="affiliate-accept-terms" /> I accept the affiliate terms and conditions.
-          </label>
-          <div style="margin-bottom:1rem; display:none;" id="affiliate-link-output-wrapper">
-            <label>Your referral link</label>
-            <input type="text" id="affiliate-generated-link" readonly style="width:100%;" />
-          </div>
-          <button id="affiliate-accept-button" class="btn btn-primary" style="width:100%;">Accept Terms & Get Link</button>
-          <button id="affiliate-modal-cancel" class="btn btn-outline" style="width:100%; margin-top:0.75rem;">Cancel</button>
-          <p id="affiliate-terms-error" class="affiliate-note" style="margin-top:1rem;color:#c02323; display:none;"></p>
-        </div>
-      </div>
-    </div>
 
     <section class="affiliate-tabs">
       <div class="tab-bar" role="tablist">
@@ -199,8 +145,10 @@
       <div id="tab-leaderboard" class="tab-panel">
         <section class="affiliate-section card">
           <h2>Top Referrer Leaderboard</h2>
-          <p class="affiliate-note">The top 3 referrers at the end of every Premier League season receive NGN100K, NGN50K, and NGN20K.</p>
-          <div id="affiliate-leaderboard" class="affiliate-leaderboard">Loading leaderboard...</div>
+          <p class="affiliate-note">The top referrer leaderboard will be available once we have more affiliate members in the program.</p>
+          <div id="affiliate-leaderboard" class="affiliate-leaderboard">
+            <p class="affiliate-empty" style="margin: 1.5rem 0;">Coming soon. Check back later for leaderboard rankings and rewards.</p>
+          </div>
         </section>
       </div>
 
@@ -246,6 +194,7 @@
 
   <div id="footer-placeholder"></div>
   <script src="/layout.js"></script>
+  <script src="/app.js"></script>
   <script src="/affiliate.js"></script>
 </body>
 </html>

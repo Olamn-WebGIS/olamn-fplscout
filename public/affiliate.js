@@ -48,41 +48,41 @@ function showAffiliateJoinSection(message) {
   if (joinMessage) joinMessage.textContent = message;
 }
 
-function getAffiliateTermsAccepted(email) {
-  if (!email) return false;
-  return localStorage.getItem(`affiliate_terms_accepted_${email}`) === 'true';
-}
+function openSharedAuthModal(defaultTab = 'signup') {
+  const authModal = document.getElementById('auth-modal');
+  const tabSignIn = document.getElementById('tab-signin');
+  const tabSignUp = document.getElementById('tab-signup');
+  const signInForm = document.getElementById('signin-form');
+  const signUpForm = document.getElementById('signup-form');
+  const authTabsDiv = document.getElementById('auth-tabs');
+  const forgotPasswordForm = document.getElementById('forgot-password-form');
+  const resetOtpForm = document.getElementById('reset-otp-form');
+  const newPasswordForm = document.getElementById('new-password-form');
 
-function setAffiliateTermsAccepted(email) {
-  if (!email) return;
-  localStorage.setItem(`affiliate_terms_accepted_${email}`, 'true');
-}
-
-function openAffiliateModal(section) {
-  const modal = document.getElementById('affiliate-modal');
-  const signupScreen = document.getElementById('affiliate-modal-signup');
-  const termsScreen = document.getElementById('affiliate-modal-terms');
-  const error = document.getElementById('affiliate-modal-error');
-  const termsError = document.getElementById('affiliate-terms-error');
-  const linkWrapper = document.getElementById('affiliate-link-output-wrapper');
-
-  if (modal) modal.classList.remove('modal-hidden');
-  if (signupScreen) signupScreen.classList.toggle('form-hidden', section !== 'signup');
-  if (termsScreen) termsScreen.classList.toggle('form-hidden', section !== 'terms');
-  if (error) {
-    error.textContent = '';
-    error.style.display = 'none';
+  if (authTabsDiv) {
+    authTabsDiv.classList.remove('form-hidden');
   }
-  if (termsError) {
-    termsError.textContent = '';
-    termsError.style.display = 'none';
-  }
-  if (linkWrapper) linkWrapper.style.display = 'none';
-}
+  if (forgotPasswordForm) forgotPasswordForm.classList.add('form-hidden');
+  if (resetOtpForm) resetOtpForm.classList.add('form-hidden');
+  if (newPasswordForm) newPasswordForm.classList.add('form-hidden');
 
-function closeAffiliateModal() {
-  const modal = document.getElementById('affiliate-modal');
-  if (modal) modal.classList.add('modal-hidden');
+  if (tabSignIn && tabSignUp && signInForm && signUpForm) {
+    if (defaultTab === 'signin') {
+      tabSignIn.classList.add('active-tab');
+      tabSignUp.classList.remove('active-tab');
+      signInForm.classList.remove('form-hidden');
+      signUpForm.classList.add('form-hidden');
+    } else {
+      tabSignUp.classList.add('active-tab');
+      tabSignIn.classList.remove('active-tab');
+      signUpForm.classList.remove('form-hidden');
+      signInForm.classList.add('form-hidden');
+    }
+  }
+
+  if (authModal) {
+    authModal.classList.remove('modal-hidden');
+  }
 }
 
 function updateAffiliateJoinButton() {
@@ -93,7 +93,7 @@ function updateAffiliateJoinButton() {
     button.textContent = 'Join Affiliate Program';
     return;
   }
-  if (getAffiliateTermsAccepted(currentUser.email)) {
+  if (currentUser.refCode) {
     button.textContent = 'Visit Affiliate Program Dashboard';
     return;
   }
@@ -103,16 +103,17 @@ function updateAffiliateJoinButton() {
 async function onAffiliateJoinClick() {
   const currentUser = getCurrentUser();
   if (!currentUser || !currentUser.email) {
-    openAffiliateModal('signup');
+    localStorage.setItem('affiliate_join_pending', 'true');
+    openSharedAuthModal('signup');
     return;
   }
 
-  if (!getAffiliateTermsAccepted(currentUser.email)) {
-    openAffiliateModal('terms');
+  if (currentUser.refCode) {
+    loadAffiliateDashboard();
     return;
   }
 
-  loadAffiliateDashboard();
+  await joinAffiliateProgram();
 }
 
 async function joinAffiliateProgram() {
@@ -372,7 +373,6 @@ async function loadAffiliateDashboard() {
 
     showAffiliateDashboardSection();
     renderReferralHistory(data.referrals);
-    renderLeaderboard(data.leaderboard);
   } catch (error) {
     console.error('Dashboard load failed', error);
     if (balanceElem) balanceElem.textContent = '₦0';
@@ -423,10 +423,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const joinButton = document.getElementById('affiliate-join-button');
   if (joinButton) joinButton.addEventListener('click', onAffiliateJoinClick);
 
-  const loginRedirect = document.getElementById('affiliate-login-redirect');
+    const loginRedirect = document.getElementById('affiliate-login-redirect');
   if (loginRedirect) {
     loginRedirect.addEventListener('click', () => {
-      window.location.href = '/account';
+      localStorage.setItem('affiliate_join_pending', 'true');
+      openSharedAuthModal('signin');
+    });
+  }
+
+  const signinLink = document.getElementById('affiliate-signin-link');
+  if (signinLink) {
+    signinLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.setItem('affiliate_join_pending', 'true');
+      openSharedAuthModal('signin');
     });
   }
 
@@ -441,18 +451,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateAffiliateJoinButton();
   loadAffiliateDashboard();
 
-  const signupSubmit = document.getElementById('affiliate-signup-submit');
-  if (signupSubmit) signupSubmit.addEventListener('click', handleAffiliateSignupSubmit);
-
-  const acceptButton = document.getElementById('affiliate-accept-button');
-  if (acceptButton) acceptButton.addEventListener('click', handleAffiliateTermsAccept);
-
-  const modalClose = document.getElementById('affiliate-modal-close');
-  if (modalClose) modalClose.addEventListener('click', closeAffiliateModal);
-
-  const modalCancel = document.getElementById('affiliate-modal-cancel');
-  if (modalCancel) modalCancel.addEventListener('click', (e) => {
-    e.preventDefault();
-    closeAffiliateModal();
+  window.addEventListener('affiliate-auth-success', () => {
+    updateAffiliateJoinButton();
+    loadAffiliateDashboard();
   });
 });
