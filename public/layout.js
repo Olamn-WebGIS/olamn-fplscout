@@ -180,6 +180,7 @@
                     <option value="Ghana">Ghana</option>
                     <option value="United Kingdom">United Kingdom</option>
                     <option value="United States">United States</option>
+                    <option value="Others">Others</option>
                 </select>
             </div>
             <div class="form-group">

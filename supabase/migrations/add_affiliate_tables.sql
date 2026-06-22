@@ -8,6 +8,14 @@ create table if not exists referrals (
   commission_paid_at timestamp with time zone
 );
 
+create table if not exists affiliates (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid not null references users(id) on delete cascade,
+  ref_code text not null unique,
+  balance integer not null default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
 create table if not exists affiliate_earnings (
   id uuid default uuid_generate_v4() primary key,
   affiliate_id uuid not null references users(id) on delete cascade,

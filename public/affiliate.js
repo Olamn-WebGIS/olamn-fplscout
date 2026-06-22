@@ -145,6 +145,7 @@ async function joinAffiliateProgram() {
     currentUser.refCode = data.refCode;
     localStorage.setItem('fpl_user_session', JSON.stringify(currentUser));
     showAffiliateJoinStatus('Affiliate program joined! Your referral link is ready.');
+    updateAffiliateJoinButton();
     await loadAffiliateDashboard();
   } catch (error) {
     console.error('Join affiliate error', error);
@@ -152,7 +153,7 @@ async function joinAffiliateProgram() {
   } finally {
     if (button) {
       button.disabled = false;
-      button.textContent = 'Join Affiliate Program';
+      button.textContent = 'Visit Affiliate Program Dashboard';
     }
   }
 }
@@ -343,36 +344,32 @@ async function loadAffiliateDashboard() {
   if (linkInput) linkInput.value = `${window.location.origin}/?ref=${currentUser.refCode || ''}`;
 
   try {
-    const data = await getAffiliateDashboard(currentUser);
-    if (!data.success) {
-      if (balanceElem) balanceElem.textContent = '₦0';
-      const referralCount = document.getElementById('affiliate-referral-count');
-      if (referralCount) referralCount.textContent = '0';
-      if (data.message === 'User not found.') {
+    const response = await fetch(`/api/affiliate/dashboard?userId=${encodeURIComponent(currentUser.id)}`);
+    if (!response.ok) {
+      if (response.status === 404) {
         showAffiliateJoinSection('You are not yet an affiliate. Click Join to create your referral link.');
         return;
       }
-      console.error('Affiliate dashboard load failed:', data.message);
-      showAffiliateDashboardSection();
-      return;
+      throw new Error(`Dashboard request failed with status ${response.status}`);
     }
 
-    if (!data.isAffiliate) {
+    const data = await response.json();
+    if (!data.success || data.isAffiliate === false) {
       showAffiliateJoinSection('You are not yet an affiliate. Click Join to create your referral link.');
       return;
     }
 
-    showAffiliateDashboardSection();
+    currentUser.refCode = data.ref_code;
+    localStorage.setItem('fpl_user_session', JSON.stringify(currentUser));
+    updateAffiliateJoinButton();
 
-    if (balanceElem) balanceElem.textContent = `₦${data.availableBalance.toLocaleString()}`;
+    showAffiliateDashboardSection();
+    if (balanceElem) balanceElem.textContent = `₦${(data.balance || 0).toLocaleString()}`;
     if (linkInput) linkInput.value = data.referralLink || `${window.location.origin}/?ref=${currentUser.refCode || ''}`;
-    if (withdrawalAmount) withdrawalAmount.value = data.availableBalance >= 10000 ? data.availableBalance : '10000';
-    if (submitButton) submitButton.disabled = data.availableBalance < 10000;
+    if (withdrawalAmount) withdrawalAmount.value = data.balance >= 10000 ? data.balance : '10000';
+    if (submitButton) submitButton.disabled = (data.balance || 0) < 10000;
     const referralCount = document.getElementById('affiliate-referral-count');
-    if (referralCount) referralCount.textContent = data.referrals ? data.referrals.length : 0;
-
-    showAffiliateDashboardSection();
-    renderReferralHistory(data.referrals);
+    if (referralCount) referralCount.textContent = '0';
   } catch (error) {
     console.error('Dashboard load failed', error);
     if (balanceElem) balanceElem.textContent = '₦0';

@@ -148,6 +148,23 @@ async function generateReferralCode(email) {
   return `${base}-${crypto.randomBytes(4).toString('hex')}`;
 }
 
+async function generateAffiliateRefCode() {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  for (let attempt = 0; attempt < 10; attempt++) {
+    let refCode = '';
+    for (let i = 0; i < 6; i++) {
+      refCode += alphabet[Math.floor(Math.random() * alphabet.length)];
+    }
+    const { data, error } = await supabase.from('affiliates').select('id').eq('ref_code', refCode).maybeSingle();
+    if (error) {
+      // If the check fails due to table missing or other issues, still continue to fallback
+      continue;
+    }
+    if (!data) return refCode;
+  }
+  return Array.from({ length: 6 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
+}
+
 async function recordAffiliateEarning({ affiliateId, referredUserId, referralId, amountNgN = 2000, description = 'Premium subscription reward' }) {
   const dbClient = supabaseAdmin || supabase;
   return dbClient.from('affiliate_earnings').insert([{
@@ -1292,7 +1309,7 @@ app.post('/api/affiliate/join', async (req, res) => {
       return res.status(400).json({ success: false, message: 'User ID or email is required to join the affiliate program.' });
     }
 
-    const userQuery = dbClient.from('users').select('id, email, full_name, ref_code');
+    const userQuery = dbClient.from('users').select('id, email');
     if (userId) userQuery.eq('id', userId);
     else userQuery.eq('email', email);
 
@@ -1301,26 +1318,37 @@ app.post('/api/affiliate/join', async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    let refCode = user.ref_code;
-    if (!refCode) {
-      refCode = await generateReferralCode(user.email);
-      const { data: updatedUser, error: updateError } = await dbClient
-        .from('users')
-        .update({ ref_code: refCode })
-        .eq('id', user.id)
+    const { data: existingAffiliate, error: affiliateError } = await dbClient
+      .from('affiliates')
+      .select('id, ref_code')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (affiliateError) {
+      console.error('Affiliate lookup error:', affiliateError);
+      return res.status(500).json({ success: false, message: 'Could not verify affiliate status.' });
+    }
+
+    let refCode;
+    if (existingAffiliate) {
+      refCode = existingAffiliate.ref_code;
+    } else {
+      refCode = await generateAffiliateRefCode();
+      const { data: newAffiliate, error: insertError } = await dbClient
+        .from('affiliates')
+        .insert([{ user_id: user.id, ref_code: refCode, balance: 0 }])
         .select()
         .single();
 
-      if (updateError || !updatedUser) {
-        console.error('Could not save affiliate ref_code:', updateError);
+      if (insertError || !newAffiliate) {
+        console.error('Affiliate insert error:', insertError);
         return res.status(500).json({ success: false, message: 'Failed to join the affiliate program.' });
       }
-      refCode = updatedUser.ref_code;
     }
 
     return res.json({
       success: true,
-      message: 'Affiliate program joined successfully.',
+      isAffiliate: true,
       refCode,
       referralLink: `${BASE_URL}/?ref=${refCode}`
     });
@@ -1859,10 +1887,7 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
             return res.status(400).json({ success: false, message: 'User ID or email is required.' });
         }
 
-        const userQuery = dbClient
-            .from('users')
-            .select('id, email, full_name, ref_code');
-
+        const userQuery = dbClient.from('users').select('id, email');
         if (userId) {
             userQuery.eq('id', userId);
         } else {
@@ -1870,49 +1895,36 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
         }
 
         const { data: user, error: userError } = await userQuery.single();
-
         if (userError || !user) {
             return res.status(404).json({ success: false, message: 'User not found.' });
         }
 
-        const [referralsResult, earningsResult, withdrawalsResult, leaderboardResult] = await Promise.all([
-            dbClient.from('referrals')
-                .select('*, referred_user:users(id, full_name, email)')
-                .eq('affiliate_id', user.id)
-                .order('created_at', { ascending: false }),
-            dbClient.from('affiliate_earnings')
-                .select('amount_ngn')
-                .eq('affiliate_id', user.id),
-            dbClient.from('withdrawal_requests')
-                .select('amount_ngn, status')
-                .eq('affiliate_id', user.id),
-            dbClient.from('affiliate_leaderboard')
-                .select('affiliate_id, full_name, email, referral_count')
-                .order('referral_count', { ascending: false })
-                .limit(3)
-        ]);
+        const { data: affiliate, error: affiliateError } = await dbClient
+            .from('affiliates')
+            .select('ref_code, balance')
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-        if (referralsResult.error || earningsResult.error || withdrawalsResult.error || leaderboardResult.error) {
-            console.error('Affiliate dashboard query error:', referralsResult.error || earningsResult.error || withdrawalsResult.error || leaderboardResult.error);
+        if (affiliateError) {
+            console.error('Affiliate dashboard lookup error:', affiliateError);
             return res.status(500).json({ success: false, message: 'Failed to load affiliate dashboard.' });
         }
 
-        const totalEarned = (earningsResult.data || []).reduce((sum, row) => sum + (row.amount_ngn || 0), 0);
-        const totalWithdrawn = (withdrawalsResult.data || []).reduce((sum, row) => sum + (row.amount_ngn || 0), 0);
-        const availableBalance = totalEarned - totalWithdrawn;
+        if (!affiliate) {
+            return res.json({
+                success: true,
+                isAffiliate: false,
+                ref_code: null,
+                balance: 0
+            });
+        }
 
         return res.json({
             success: true,
-            isAffiliate: Boolean(user.ref_code),
-            referralLink: user.ref_code ? `${BASE_URL}/?ref=${user.ref_code}` : null,
-            availableBalance,
-            referrals: (referralsResult.data || []).map(ref => ({
-                referredName: ref.referred_user?.full_name || null,
-                referredEmail: ref.referred_user?.email || null,
-                joinedAt: ref.created_at,
-                commissionPaid: ref.commission_paid
-            })),
-            leaderboard: leaderboardResult.data || []
+            isAffiliate: true,
+            ref_code: affiliate.ref_code,
+            balance: affiliate.balance || 0,
+            referralLink: `${BASE_URL}/?ref=${affiliate.ref_code}`
         });
     } catch (error) {
         console.error('Affiliate dashboard error:', error);
