@@ -408,6 +408,16 @@ h4 { font-size: 0.95rem; font-weight: 600; }
   line-height: 1.5;
 }
 
+.affiliate-note.error {
+  color: #c02323;
+  font-weight: 600;
+}
+
+.affiliate-note.success {
+  color: #0070f3;
+  font-weight: 600;
+}
+
 .affiliate-tabs .tab-bar {
   display: flex;
   flex-wrap: nowrap;

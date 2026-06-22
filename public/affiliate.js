@@ -173,7 +173,8 @@ function showAffiliatePageStatus(message, isError = false) {
   const status = document.getElementById('withdrawal-status');
   if (!status) return;
   status.textContent = message;
-  status.style.color = isError ? '#c02323' : '#0070f3';
+  status.classList.toggle('error', isError);
+  status.classList.toggle('success', !isError);
 }
 
 function renderReferralHistory(referrals) {
@@ -271,6 +272,8 @@ function shareWhatsApp() {
   window.open(`https://wa.me/?text=${message}`, '_blank');
 }
 
+let affiliateBalance = 0;
+
 async function submitWithdrawalRequest(event) {
   event.preventDefault();
 
@@ -292,6 +295,21 @@ async function submitWithdrawalRequest(event) {
 
   if (amount <= 0) {
     showAffiliatePageStatus('Enter a valid withdrawal amount.', true);
+    return;
+  }
+
+  if (affiliateBalance < 10000) {
+    showAffiliatePageStatus('Balance not up to minimum withdrawal of ₦10,000.', true);
+    return;
+  }
+
+  if (amount < 10000) {
+    showAffiliatePageStatus('Withdrawal amount must be at least ₦10,000.', true);
+    return;
+  }
+
+  if (amount > affiliateBalance) {
+    showAffiliatePageStatus('Withdrawal amount cannot exceed your current balance.', true);
     return;
   }
 
@@ -348,7 +366,7 @@ async function loadAffiliateDashboard() {
 
   if (status) {
     status.textContent = '';
-    status.style.color = ''; 
+    status.style.color = '';
   }
 
   if (balanceElem) balanceElem.textContent = 'Loading...';
@@ -376,10 +394,11 @@ async function loadAffiliateDashboard() {
 
     showAffiliateDashboardSection();
     switchAffiliateTab('tab-overview');
-    if (balanceElem) balanceElem.textContent = `₦${(data.balance || 0).toLocaleString()}`;
+    affiliateBalance = Number(data.balance || 0);
+    if (balanceElem) balanceElem.textContent = `₦${affiliateBalance.toLocaleString()}`;
     if (linkInput) linkInput.value = data.referralLink || `${window.location.origin}/?ref=${currentUser.refCode || ''}`;
-    if (withdrawalAmount) withdrawalAmount.value = data.balance >= 10000 ? data.balance : '10000';
-    if (submitButton) submitButton.disabled = (data.balance || 0) < 10000;
+    if (withdrawalAmount) withdrawalAmount.value = affiliateBalance >= 10000 ? affiliateBalance : '10000';
+    if (submitButton) submitButton.disabled = false;
     const referralCount = document.getElementById('affiliate-referral-count');
     if (referralCount) referralCount.textContent = '0';
   } catch (error) {
