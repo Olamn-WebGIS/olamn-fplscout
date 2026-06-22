@@ -201,6 +201,33 @@ function resetEditorState() {
 document.addEventListener('DOMContentLoaded', async () => {
   initializeQuill();
 
+  // Try to auto-unlock dashboard if admin session cookie exists
+  async function tryAutoUnlock() {
+    try {
+      const res = await fetch('/api/admin/withdrawal-requests', { credentials: 'same-origin' });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        // If endpoint returns success, consider admin authenticated
+        if (data && data.success) {
+          adminAuthenticated = true;
+          adminTabsCard.classList.remove('hidden');
+          postCard.classList.remove('hidden');
+          postsListCard.classList.remove('hidden');
+          loginCard.classList.add('hidden');
+          showStatus(loginStatus, 'Dashboard unlocked (session detected).', true);
+          await loadAdminPosts();
+          // Ensure withdrawal tab stays inactive until selected, but preload data
+          await loadWithdrawalRequests();
+        }
+      }
+    } catch (err) {
+      // ignore — user will need to login manually
+      console.debug('Auto-unlock check failed:', err);
+    }
+  }
+
+  tryAutoUnlock();
+
   tabButtons.forEach(button => {
     button.addEventListener('click', async () => {
       tabButtons.forEach(btn => btn.classList.remove('active'));
