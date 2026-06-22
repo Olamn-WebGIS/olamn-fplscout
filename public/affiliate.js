@@ -89,15 +89,19 @@ function updateAffiliateJoinButton() {
   const button = document.getElementById('affiliate-join-button');
   const currentUser = getCurrentUser();
   if (!button) return;
-  if (!currentUser || !currentUser.email) {
+  
+  if (!currentUser || !currentUser.id) {
     button.textContent = 'Join Affiliate Program';
+    button.disabled = false;
     return;
   }
+  
   if (currentUser.refCode) {
     button.textContent = 'Visit Affiliate Program Dashboard';
-    return;
+  } else {
+    button.textContent = 'Join Affiliate Program';
   }
-  button.textContent = 'Join Affiliate Program';
+  button.disabled = false;
 }
 
 async function onAffiliateJoinClick() {
@@ -151,9 +155,9 @@ async function joinAffiliateProgram() {
     console.error('Join affiliate error', error);
     showAffiliateJoinStatus('Could not join the affiliate program. Please try again later.', true);
   } finally {
+    const button = document.getElementById('affiliate-join-button');
     if (button) {
       button.disabled = false;
-      button.textContent = 'Visit Affiliate Program Dashboard';
     }
   }
 }
@@ -379,9 +383,11 @@ async function loadAffiliateDashboard() {
   }
 }
 
-function switchAffiliateTab(tabId) {
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
-  document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === tabId));
+function showAffiliateDashboardSection() {
+  const joinSection = document.getElementById('affiliate-join-section');
+  const affiliateTabs = document.querySelector('.affiliate-tabs');
+  if (joinSection) joinSection.hidden = true;
+  if (affiliateTabs) affiliateTabs.hidden = false;
 }
 
 function activateAffiliateTabFromHash() {
@@ -448,8 +454,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateAffiliateJoinButton();
   loadAffiliateDashboard();
 
-  window.addEventListener('affiliate-auth-success', () => {
-    updateAffiliateJoinButton();
-    loadAffiliateDashboard();
+  window.addEventListener('affiliate-auth-success', async () => {
+    const currentUser = getCurrentUser();
+    if (currentUser && currentUser.id && !currentUser.refCode) {
+      // User just signed up but hasn't joined yet - auto-join them
+      await joinAffiliateProgram();
+    } else {
+      updateAffiliateJoinButton();
+      loadAffiliateDashboard();
+    }
   });
 });

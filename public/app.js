@@ -51,6 +51,20 @@ function registerServiceWorkerForNotifications() {
             });
     }
 }
+
+function updateAffiliateHomeLink() {
+  const affiliateLink = document.querySelector('.affiliate-home-highlight a');
+  if (!affiliateLink) return;
+  
+  if (currentUser && currentUser.id && currentUser.refCode) {
+    affiliateLink.textContent = 'View Affiliate Program Dashboard';
+    affiliateLink.href = '/affiliate.html';
+  } else {
+    affiliateLink.textContent = 'Join the Affiliate Program';
+    affiliateLink.href = '/affiliate.html';
+  }
+}
+
 // ── Currency Exchange & Pricing ──────────────────────────────
 const PREMIUM_PRICE_NGN = 3000; // NGN price
 
@@ -169,7 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
     captureReferralFromUrl();
     setupPremiumLocks();       
     setupModalInterface();    
-    setupAccountNav();     
+    setupAccountNav();
+    updateAffiliateHomeLink();
     
     // Explicit visibility verification loop tracker
     function verifyAccountLinkVisibility() {
@@ -305,6 +320,8 @@ function setupModalInterface() {
                     const accountNavItem = document.getElementById('account-nav-item');
                     if (accountNavItem) accountNavItem.classList.remove('account-hidden');
 
+                    updateAffiliateHomeLink();
+
                     const pendingAffiliate = localStorage.getItem('affiliate_join_pending') === 'true';
                     if (pendingAffiliate) {
                         localStorage.removeItem('affiliate_join_pending');
@@ -359,6 +376,8 @@ function setupModalInterface() {
 
                     const accountNavItem = document.getElementById('account-nav-item');
                     if (accountNavItem) accountNavItem.classList.remove('account-hidden');
+
+                    updateAffiliateHomeLink();
 
                     const pendingAffiliate = localStorage.getItem('affiliate_join_pending') === 'true';
                     if (pendingAffiliate) {
