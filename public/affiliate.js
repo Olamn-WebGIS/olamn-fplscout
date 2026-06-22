@@ -368,6 +368,7 @@ async function loadAffiliateDashboard() {
     updateAffiliateJoinButton();
 
     showAffiliateDashboardSection();
+    switchAffiliateTab('tab-overview');
     if (balanceElem) balanceElem.textContent = `₦${(data.balance || 0).toLocaleString()}`;
     if (linkInput) linkInput.value = data.referralLink || `${window.location.origin}/?ref=${currentUser.refCode || ''}`;
     if (withdrawalAmount) withdrawalAmount.value = data.balance >= 10000 ? data.balance : '10000';
@@ -388,6 +389,30 @@ function showAffiliateDashboardSection() {
   const affiliateTabs = document.querySelector('.affiliate-tabs');
   if (joinSection) joinSection.hidden = true;
   if (affiliateTabs) affiliateTabs.hidden = false;
+}
+
+function switchAffiliateTab(tabId) {
+  // Hide all tab panels
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    panel.classList.remove('active');
+  });
+  
+  // Deactivate all tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Show the selected tab panel
+  const selectedPanel = document.getElementById(tabId);
+  if (selectedPanel) {
+    selectedPanel.classList.add('active');
+  }
+  
+  // Activate the corresponding button
+  const selectedButton = document.querySelector(`[data-tab="${tabId}"]`);
+  if (selectedButton) {
+    selectedButton.classList.add('active');
+  }
 }
 
 function activateAffiliateTabFromHash() {
@@ -453,6 +478,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   updateAffiliateJoinButton();
   loadAffiliateDashboard();
+  
+  // Set first tab as default
+  switchAffiliateTab('tab-overview');
 
   window.addEventListener('affiliate-auth-success', async () => {
     const currentUser = getCurrentUser();
@@ -461,7 +489,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       await joinAffiliateProgram();
     } else {
       updateAffiliateJoinButton();
-      loadAffiliateDashboard();
+      await loadAffiliateDashboard();
     }
+    
+    // Scroll to dashboard after auth
+    setTimeout(() => {
+      const affiliateTabs = document.querySelector('.affiliate-tabs');
+      if (affiliateTabs && !affiliateTabs.hidden) {
+        affiliateTabs.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 300);
   });
 });
