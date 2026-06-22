@@ -12,6 +12,10 @@ const cancelEditButton = document.getElementById('cancel-edit');
 const withdrawalRequestsNote = document.getElementById('withdrawal-requests-note');
 const financialOverviewCard = document.getElementById('financial-overview-card');
 const financialFilter = document.getElementById('financial-filter');
+const customDateRange = document.getElementById('custom-date-range');
+const financialStartDate = document.getElementById('financial-start-date');
+const financialEndDate = document.getElementById('financial-end-date');
+const financialApplyRange = document.getElementById('financial-apply-range');
 const transactionHistoryBody = document.getElementById('transaction-history-body');
 const financialRevenue = document.getElementById('financial-revenue');
 const financialPayouts = document.getElementById('financial-payouts');
@@ -136,11 +140,18 @@ function formatDate(dateValue) {
   }
 }
 
-async function loadFinancialOverview(period = 'all') {
+async function loadFinancialOverview(options = { period: 'all', startDate: '', endDate: '' }) {
   if (!financialOverviewCard || !transactionHistoryBody || !financialRevenue || !financialPayouts || !financialProfit) return;
 
   try {
-    const res = await fetch(`/api/admin/profit?period=${encodeURIComponent(period)}`, {
+    const params = new URLSearchParams();
+    params.set('period', options.period || 'all');
+    if (options.period === 'custom' && options.startDate && options.endDate) {
+      params.set('start_date', options.startDate);
+      params.set('end_date', options.endDate);
+    }
+
+    const res = await fetch(`/api/admin/profit?${params.toString()}`, {
       credentials: 'same-origin'
     });
     const data = await res.json();
@@ -326,16 +337,51 @@ document.addEventListener('DOMContentLoaded', async () => {
           financialProfit.textContent = '₦0';
           return;
         }
-        await loadFinancialOverview(financialFilter?.value || 'all');
+
+        if (financialFilter.value === 'custom') {
+          await loadFinancialOverview({
+            period: 'custom',
+            startDate: financialStartDate.value,
+            endDate: financialEndDate.value
+          });
+        } else {
+          await loadFinancialOverview({ period: financialFilter.value });
+        }
       }
     });
 
   if (financialFilter) {
     financialFilter.addEventListener('change', async () => {
+      if (financialFilter.value === 'custom') {
+        customDateRange?.classList.remove('hidden');
+        return;
+      }
+      customDateRange?.classList.add('hidden');
       if (!adminAuthenticated) return;
-      await loadFinancialOverview(financialFilter.value);
+      await loadFinancialOverview({ period: financialFilter.value });
     });
   }
+
+  financialApplyRange?.addEventListener('click', async (event) => {
+    event.preventDefault();
+
+    if (!financialStartDate.value || !financialEndDate.value) {
+      alert('Please select both a start and end date.');
+      return;
+    }
+
+    if (new Date(financialStartDate.value) > new Date(financialEndDate.value)) {
+      alert('Start date must be before or equal to end date.');
+      return;
+    }
+
+    if (!adminAuthenticated) return;
+    await loadFinancialOverview({
+      period: 'custom',
+      startDate: financialStartDate.value,
+      endDate: financialEndDate.value
+    });
+  });
   });
 
   loginButton.addEventListener('click', async () => {

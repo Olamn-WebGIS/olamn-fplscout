@@ -2107,13 +2107,19 @@ app.get('/api/admin/withdrawal-requests', requireAdminSession, async (req, res) 
 app.get('/api/admin/profit', requireAdminSession, async (req, res) => {
     try {
         const period = req.query.period || 'all';
+        const startDate = req.query.start_date;
+        const endDate = req.query.end_date;
         const dbClient = supabaseAdmin || supabase;
         const query = dbClient
             .from('transactions')
             .select('id,type,amount,user_id,status,payment_reference,note,created_at,user:users(full_name,email)')
             .order('created_at', { ascending: false });
 
-        if (period === 'month') {
+        if (period === 'custom' && startDate && endDate) {
+            const startIso = new Date(startDate).toISOString();
+            const endIso = new Date(new Date(endDate).setHours(23, 59, 59, 999)).toISOString();
+            query.gte('created_at', startIso).lte('created_at', endIso);
+        } else if (period === 'month') {
             const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
             query.gte('created_at', startOfMonth);
         } else if (period === 'season') {
