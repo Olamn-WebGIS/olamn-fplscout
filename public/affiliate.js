@@ -227,11 +227,18 @@ async function copyReferralLink() {
 
   try {
     await navigator.clipboard.writeText(linkInput.value);
-    showAffiliatePageStatus('Referral link copied to clipboard!');
+    showAffiliateCopyStatus('Referral link copied to clipboard!');
   } catch (error) {
     console.error('Copy failed', error);
-    showAffiliatePageStatus('Could not copy referral link. Please copy it manually.', true);
+    showAffiliateCopyStatus('Could not copy referral link. Please copy it manually.', true);
   }
+}
+
+function showAffiliateCopyStatus(message, isError = false) {
+  const status = document.getElementById('affiliate-copy-status');
+  if (!status) return;
+  status.textContent = message;
+  status.style.color = isError ? '#c02323' : '#0070f3';
 }
 
 function shareReferralLink() {
