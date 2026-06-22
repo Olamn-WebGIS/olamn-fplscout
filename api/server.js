@@ -798,6 +798,63 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
 });
 
+// Admin: fetch pending withdrawal requests (requires admin session)
+app.get('/api/admin/withdrawal-requests', requireAdminSession, async (req, res) => {
+  try {
+    const db = supabaseAdmin || supabase;
+    if (!db) return res.status(500).json({ success: false, message: 'Supabase not configured.' });
+
+    const { data, error } = await db
+      .from('withdrawal_requests')
+      .select(
+        `id,affiliate_id,amount_ngn,status,bank_name,account_name,account_number,requested_at,completed_at,notes,affiliate:users(full_name,email)`
+      )
+      .eq('status', 'pending')
+      .order('requested_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching withdrawal requests:', error);
+      return res.status(500).json({ success: false, message: error.message || 'Database error' });
+    }
+
+    return res.json({ success: true, requests: data || [] });
+  } catch (err) {
+    console.error('Withdrawal requests route failed:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Admin: mark a withdrawal request as paid
+app.post('/api/admin/withdrawal-requests/:id/pay', requireAdminSession, async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!id) return res.status(400).json({ success: false, message: 'Missing request id' });
+
+    if (!supabaseAdmin) {
+      console.warn('Attempt to perform admin write without service role key');
+      return res.status(500).json({ success: false, message: 'Server not configured for admin writes.' });
+    }
+
+    const payload = { status: 'completed', completed_at: new Date().toISOString() };
+    const { data, error } = await supabaseAdmin
+      .from('withdrawal_requests')
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating withdrawal request:', error);
+      return res.status(500).json({ success: false, message: error.message || 'Update failed' });
+    }
+
+    return res.json({ success: true, request: data });
+  } catch (err) {
+    console.error('Mark paid route failed:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
 // ── Blog API ──────────────────────────────────────────────────
 app.get('/api/posts', async (req, res) => {
   try {
