@@ -1,5 +1,9 @@
-async function getAffiliateDashboard(email) {
-  const response = await fetch(`/api/affiliate/dashboard?email=${encodeURIComponent(email)}`);
+async function getAffiliateDashboard(user) {
+  const params = new URLSearchParams();
+  if (user?.id) params.set('userId', user.id);
+  else if (user?.email) params.set('email', user.email);
+
+  const response = await fetch(`/api/affiliate/dashboard?${params.toString()}`);
   if (!response.ok) throw new Error('Could not load affiliate dashboard.');
   return response.json();
 }
@@ -10,7 +14,96 @@ function getCurrentUser() {
   try { return JSON.parse(stored); } catch (e) { return null; }
 }
 
-function showAffiliateStatus(message, isError = false) {
+async function checkAffiliateRegion() {
+  try {
+    const response = await fetch('/api/affiliate/region');
+    if (!response.ok) return { success: false };
+    return await response.json();
+  } catch (error) {
+    console.error('Region lookup failed:', error);
+    return { success: false };
+  }
+}
+
+function showAffiliateRegionBlocked(country) {
+  const blockedSection = document.getElementById('affiliate-region-block-section');
+  const blockedMessage = document.getElementById('affiliate-region-block-message');
+  const joinSection = document.getElementById('affiliate-join-section');
+  const affiliateTabs = document.querySelector('.affiliate-tabs');
+
+  if (blockedSection) blockedSection.hidden = false;
+  if (blockedMessage) blockedMessage.textContent = country
+      ? `This program is available only to users in Nigeria. Access is blocked in your region (${country}).`
+      : 'This program is available only to users in Nigeria. Access is blocked in your region.';
+  if (joinSection) joinSection.hidden = true;
+  if (affiliateTabs) affiliateTabs.hidden = true;
+}
+
+function showAffiliateJoinSection(message) {
+  const joinSection = document.getElementById('affiliate-join-section');
+  const affiliateTabs = document.querySelector('.affiliate-tabs');
+  const joinMessage = document.getElementById('affiliate-join-message');
+  if (joinSection) joinSection.hidden = false;
+  if (affiliateTabs) affiliateTabs.hidden = true;
+  if (joinMessage) joinMessage.textContent = message;
+}
+
+function showAffiliateDashboardSection() {
+  const joinSection = document.getElementById('affiliate-join-section');
+  const affiliateTabs = document.querySelector('.affiliate-tabs');
+  if (joinSection) joinSection.hidden = true;
+  if (affiliateTabs) affiliateTabs.hidden = false;
+}
+
+async function joinAffiliateProgram() {
+  const currentUser = getCurrentUser();
+  if (!currentUser || !currentUser.email) {
+    showAffiliateJoinStatus('Please log in first to join the affiliate program.', true);
+    return;
+  }
+
+  const button = document.getElementById('affiliate-join-button');
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Joining...';
+  }
+
+  try {
+    const response = await fetch('/api/affiliate/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.id, email: currentUser.email })
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      showAffiliateJoinStatus(data.message || 'Could not join the affiliate program.', true);
+      return;
+    }
+
+    currentUser.refCode = data.refCode;
+    localStorage.setItem('fpl_user_session', JSON.stringify(currentUser));
+    showAffiliateJoinStatus('Affiliate program joined! Your referral link is ready.');
+    await loadAffiliateDashboard();
+  } catch (error) {
+    console.error('Join affiliate error', error);
+    showAffiliateJoinStatus('Could not join the affiliate program. Please try again later.', true);
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Join Affiliate Program';
+    }
+  }
+}
+
+function showAffiliateJoinStatus(message, isError = false) {
+  const status = document.getElementById('affiliate-join-status');
+  if (!status) return;
+  status.textContent = message;
+  status.style.color = isError ? '#c02323' : '#0070f3';
+}
+
+function showAffiliatePageStatus(message, isError = false) {
   const status = document.getElementById('withdrawal-status');
   if (!status) return;
   status.textContent = message;
@@ -68,10 +161,10 @@ async function copyReferralLink() {
 
   try {
     await navigator.clipboard.writeText(linkInput.value);
-    showAffiliateStatus('Referral link copied to clipboard!');
+    showAffiliatePageStatus('Referral link copied to clipboard!');
   } catch (error) {
     console.error('Copy failed', error);
-    showAffiliateStatus('Could not copy referral link. Please copy it manually.', true);
+    showAffiliatePageStatus('Could not copy referral link. Please copy it manually.', true);
   }
 }
 
@@ -110,7 +203,7 @@ async function submitWithdrawalRequest(event) {
 
   const currentUser = getCurrentUser();
   if (!currentUser || !currentUser.email) {
-    showAffiliateStatus('Please log in before requesting a withdrawal.', true);
+    showAffiliatePageStatus('Please log in before requesting a withdrawal.', true);
     return;
   }
 
@@ -120,12 +213,12 @@ async function submitWithdrawalRequest(event) {
   let amount = Number(document.getElementById('withdrawal-amount').value || '0');
 
   if (!bankName || !accountName || !accountNumber) {
-    showAffiliateStatus('All bank details are required.', true);
+    showAffiliatePageStatus('All bank details are required.', true);
     return;
   }
 
   if (amount <= 0) {
-    showAffiliateStatus('Enter a valid withdrawal amount.', true);
+    showAffiliatePageStatus('Enter a valid withdrawal amount.', true);
     return;
   }
 
@@ -150,15 +243,15 @@ async function submitWithdrawalRequest(event) {
 
     const data = await response.json();
     if (!response.ok || !data.success) {
-      showAffiliateStatus(data.message || 'Withdrawal request failed.', true);
+      showAffiliatePageStatus(data.message || 'Withdrawal request failed.', true);
       return;
     }
 
-    showAffiliateStatus('Withdrawal request submitted successfully.');
+    showAffiliatePageStatus('Withdrawal request submitted successfully.');
     loadAffiliateDashboard();
   } catch (error) {
     console.error('Withdrawal request failed', error);
-    showAffiliateStatus('Could not reach the server. Please try again later.', true);
+    showAffiliatePageStatus('Could not reach the server. Please try again later.', true);
   } finally {
     if (button) {
       button.disabled = false;
@@ -170,7 +263,7 @@ async function submitWithdrawalRequest(event) {
 async function loadAffiliateDashboard() {
   const currentUser = getCurrentUser();
   if (!currentUser || !currentUser.email) {
-    window.location.href = '/';
+    showAffiliateJoinSection('Please log in or sign up to access the affiliate dashboard.');
     return;
   }
 
@@ -189,25 +282,43 @@ async function loadAffiliateDashboard() {
   if (linkInput) linkInput.value = `${window.location.origin}/?ref=${currentUser.refCode || ''}`;
 
   try {
-    const data = await getAffiliateDashboard(currentUser.email);
+    const data = await getAffiliateDashboard(currentUser);
     if (!data.success) {
-      if (balanceElem) balanceElem.textContent = 'Unable to load data';
+      if (balanceElem) balanceElem.textContent = '₦0';
+      const referralCount = document.getElementById('affiliate-referral-count');
+      if (referralCount) referralCount.textContent = '0';
+      if (data.message === 'User not found.') {
+        showAffiliateJoinSection('You are not yet an affiliate. Click Join to create your referral link.');
+        return;
+      }
       console.error('Affiliate dashboard load failed:', data.message);
+      showAffiliateDashboardSection();
       return;
     }
 
+    if (!data.isAffiliate) {
+      showAffiliateJoinSection('You are not yet an affiliate. Click Join to create your referral link.');
+      return;
+    }
+
+    showAffiliateDashboardSection();
+
     if (balanceElem) balanceElem.textContent = `₦${data.availableBalance.toLocaleString()}`;
-    if (linkInput) linkInput.value = data.referralLink;
+    if (linkInput) linkInput.value = data.referralLink || `${window.location.origin}/?ref=${currentUser.refCode || ''}`;
     if (withdrawalAmount) withdrawalAmount.value = data.availableBalance >= 10000 ? data.availableBalance : '10000';
     if (submitButton) submitButton.disabled = data.availableBalance < 10000;
     const referralCount = document.getElementById('affiliate-referral-count');
     if (referralCount) referralCount.textContent = data.referrals ? data.referrals.length : 0;
 
+    showAffiliateDashboardSection();
     renderReferralHistory(data.referrals);
     renderLeaderboard(data.leaderboard);
   } catch (error) {
     console.error('Dashboard load failed', error);
-    if (balanceElem) balanceElem.textContent = 'Unable to load data';
+    if (balanceElem) balanceElem.textContent = '₦0';
+    const referralCount = document.getElementById('affiliate-referral-count');
+    if (referralCount) referralCount.textContent = '0';
+    showAffiliateDashboardSection();
   }
 }
 
@@ -227,7 +338,7 @@ function activateAffiliateTabFromHash() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const copyButton = document.getElementById('copy-referral-link');
   if (copyButton) copyButton.addEventListener('click', copyReferralLink);
   const shareButton = document.getElementById('share-referral-link');
@@ -249,6 +360,23 @@ document.addEventListener('DOMContentLoaded', () => {
     accountNavItem.classList.remove('account-hidden');
   }
 
+  const joinButton = document.getElementById('affiliate-join-button');
+  if (joinButton) joinButton.addEventListener('click', joinAffiliateProgram);
+
+  const loginRedirect = document.getElementById('affiliate-login-redirect');
+  if (loginRedirect) {
+    loginRedirect.addEventListener('click', () => {
+      window.location.href = '/account';
+    });
+  }
+
   activateAffiliateTabFromHash();
+
+  const region = await checkAffiliateRegion();
+  if (!region.success || !region.allowed) {
+    showAffiliateRegionBlocked(region.country || null);
+    return;
+  }
+
   loadAffiliateDashboard();
 });

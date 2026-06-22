@@ -55,6 +55,21 @@
       <p>Track your referrals, commissions, and withdrawal requests in one place.</p>
     </section>
 
+    <section id="affiliate-region-block-section" class="affiliate-section card" hidden>
+      <h2>Affiliate Program Not Available</h2>
+      <p id="affiliate-region-block-message">This program is not available to users in your region.</p>
+    </section>
+
+    <section id="affiliate-join-section" class="affiliate-section card" hidden>
+      <h2>Join the Affiliate Program</h2>
+      <p id="affiliate-join-message">Please log in or sign up to create your referral link and access the affiliate dashboard.</p>
+      <div class="affiliate-join-actions" style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-top:1rem;">
+        <button id="affiliate-join-button" class="btn btn-primary">Join Affiliate Program</button>
+        <button id="affiliate-login-redirect" class="btn btn-outline">Log In / Sign Up</button>
+      </div>
+      <p id="affiliate-join-status" class="affiliate-note" style="margin-top:0.75rem;"></p>
+    </section>
+
     <section class="affiliate-tabs">
       <div class="tab-bar" role="tablist">
         <button class="tab-btn active" data-tab="tab-overview" type="button">Overview</button>
@@ -127,6 +142,7 @@
       <div id="tab-leaderboard" class="tab-panel">
         <section class="affiliate-section card">
           <h2>Top Referrer Leaderboard</h2>
+          <p class="affiliate-note">The top 3 referrers at the end of every Premier League season receive NGN100K, NGN50K, and NGN20K.</p>
           <div id="affiliate-leaderboard" class="affiliate-leaderboard">Loading leaderboard...</div>
         </section>
       </div>

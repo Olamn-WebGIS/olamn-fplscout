@@ -98,6 +98,42 @@ function parseCookies(req) {
   return cookies;
 }
 
+function getRequestCountry(req) {
+  const countryHeader = req.headers['x-vercel-ip-country'] || req.headers['cf-ipcountry'] || req.headers['x-country-code'] || req.headers['x-appengine-country'];
+  if (!countryHeader) return null;
+  return String(countryHeader).trim().toUpperCase();
+}
+
+async function getCountryFromGeoIp(ip) {
+  const apiKey = process.env.GEOIP_API_KEY;
+  const provider = process.env.GEOIP_PROVIDER || 'ipapi';
+
+  if (!apiKey) {
+    return null;
+  }
+
+  try {
+    if (provider === 'ipapi') {
+      const response = await fetch(`https://ipapi.co/${encodeURIComponent(ip)}/json/`);
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.country_code ? String(data.country_code).trim().toUpperCase() : null;
+    }
+
+    if (provider === 'ipgeolocation') {
+      const response = await fetch(`https://api.ipgeolocation.io/ipgeo?apiKey=${encodeURIComponent(apiKey)}&ip=${encodeURIComponent(ip)}`);
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.country_code2 ? String(data.country_code2).trim().toUpperCase() : null;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('GeoIP lookup failed:', error);
+    return null;
+  }
+}
+
 async function generateReferralCode(email) {
   const base = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase().slice(0, 8) || 'ref';
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -265,6 +301,23 @@ async function reconcileUserSubscriptionExpiry(userProfile) {
 }
 
 // ── Routes ────────────────────────────────────────────────────
+
+app.get('/api/affiliate/region', async (req, res) => {
+  try {
+    let country = getRequestCountry(req);
+    if (!country) {
+      const forwarded = req.headers['x-forwarded-for'];
+      const ip = forwarded ? String(forwarded).split(',')[0].trim() : req.ip;
+      country = ip ? await getCountryFromGeoIp(ip) : null;
+    }
+
+    const allowed = country === 'NG';
+    return res.json({ success: true, country: country || null, allowed });
+  } catch (error) {
+    console.error('Region detection failed:', error);
+    return res.status(500).json({ success: false, message: 'Region detection failed.' });
+  }
+});
 
 // Bootstrap: players, teams, events
 app.get('/api/bootstrap', async (req, res) => {
@@ -1230,6 +1283,53 @@ app.post('/api/signup', async (req, res) => {
   }
 });
 
+app.post('/api/affiliate/join', async (req, res) => {
+  try {
+    const dbClient = supabaseAdmin || supabase;
+    const { userId, email } = req.body;
+
+    if (!userId && !email) {
+      return res.status(400).json({ success: false, message: 'User ID or email is required to join the affiliate program.' });
+    }
+
+    const userQuery = dbClient.from('users').select('id, email, full_name, ref_code');
+    if (userId) userQuery.eq('id', userId);
+    else userQuery.eq('email', email);
+
+    const { data: user, error: userError } = await userQuery.single();
+    if (userError || !user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    let refCode = user.ref_code;
+    if (!refCode) {
+      refCode = await generateReferralCode(user.email);
+      const { data: updatedUser, error: updateError } = await dbClient
+        .from('users')
+        .update({ ref_code: refCode })
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (updateError || !updatedUser) {
+        console.error('Could not save affiliate ref_code:', updateError);
+        return res.status(500).json({ success: false, message: 'Failed to join the affiliate program.' });
+      }
+      refCode = updatedUser.ref_code;
+    }
+
+    return res.json({
+      success: true,
+      message: 'Affiliate program joined successfully.',
+      refCode,
+      referralLink: `${BASE_URL}/?ref=${refCode}`
+    });
+  } catch (error) {
+    console.error('Affiliate join error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to join the affiliate program.' });
+  }
+});
+
 // ── Password Reset Flow ─────────────────────────────────────
 app.post('/api/signin', async (req, res) => {
     const { email, password } = req.body;
@@ -1752,14 +1852,24 @@ app.get('/api/user-profile', async (req, res) => {
 app.get('/api/affiliate/dashboard', async (req, res) => {
     try {
         const dbClient = supabaseAdmin || supabase;
+        const userId = req.query.userId || req.query.user_id;
         const email = req.query.email;
-        if (!email) return res.status(400).json({ success: false, message: 'Email is required.' });
 
-        const { data: user, error: userError } = await dbClient
+        if (!userId && !email) {
+            return res.status(400).json({ success: false, message: 'User ID or email is required.' });
+        }
+
+        const userQuery = dbClient
             .from('users')
-            .select('id, email, full_name, ref_code')
-            .eq('email', email)
-            .single();
+            .select('id, email, full_name, ref_code');
+
+        if (userId) {
+            userQuery.eq('id', userId);
+        } else {
+            userQuery.eq('email', email);
+        }
+
+        const { data: user, error: userError } = await userQuery.single();
 
         if (userError || !user) {
             return res.status(404).json({ success: false, message: 'User not found.' });
@@ -1793,7 +1903,8 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
 
         return res.json({
             success: true,
-            referralLink: `${BASE_URL}/?ref=${user.ref_code}`,
+            isAffiliate: Boolean(user.ref_code),
+            referralLink: user.ref_code ? `${BASE_URL}/?ref=${user.ref_code}` : null,
             availableBalance,
             referrals: (referralsResult.data || []).map(ref => ({
                 referredName: ref.referred_user?.full_name || null,
