@@ -23,6 +23,8 @@
     .btn-secondary.active { background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
     .tab-panel { display: none; }
     .tab-panel.active { display: block !important; }
+    .tab-btn { background: transparent; border: none; }
+    .tab-btn.active { background: transparent; }
     .hidden { display:none; }
     .status { margin-top:1rem; color:#0070f3; }
     .admin-post-list { display:grid; gap:1rem; }
@@ -32,14 +34,28 @@
     .admin-post-actions { display:flex; gap:0.75rem; flex-wrap:wrap; }
     .admin-post-actions button { min-width: 92px; }
     #post-content-editor { min-height: 260px; background: #fff; border: 1px solid #d1d5db; border-radius: 12px; }
-    .tabs { display:flex; gap:0.75rem; margin-bottom:1rem; flex-wrap:nowrap; overflow-x:auto; padding-bottom:0.25rem; }
-    .tabs::-webkit-scrollbar { height: 6px; }
-    .tabs::-webkit-scrollbar-thumb { background: rgba(34, 60, 80, 0.2); border-radius: 999px; }
-    .tab-btn { white-space: nowrap; flex: 0 0 auto; }
+    .admin-page { max-width: 1080px; width: 100%; margin: 0 auto; padding: 2rem 1rem; box-sizing: border-box; }
+    .admin-card { width: 100%; box-sizing: border-box; }
+    .tabs { display:flex; gap:0.5rem; border-bottom: 2px solid #e2e8f0; margin-bottom:1.25rem; overflow-x:auto; white-space:nowrap; scroll-behavior:smooth; -webkit-overflow-scrolling:touch; padding-bottom:0.5rem; }
+    .tabs::-webkit-scrollbar { height: 8px; }
+    .tabs::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, 0.16); border-radius: 999px; }
+    .tabs::-webkit-scrollbar-track { background: transparent; }
+    .tab-btn { flex: 0 0 auto; padding: 0.75rem 1.25rem; font-size: 0.95rem; font-weight: 600; background: transparent; border: none; color: #475569; border-bottom: 3px solid transparent; margin-bottom: -2px; cursor: pointer; white-space: nowrap; transition: all 0.2s ease; }
+    .tab-btn.active { color: #0070f3; border-bottom-color: #0070f3; }
+    .tab-btn:hover:not(.active) { color: #0070f3; }
     .table-responsive { overflow-x:auto; }
-    .withdrawal-table { width:100%; border-collapse: collapse; min-width: 650px; }
-    .withdrawal-table th, .withdrawal-table td { padding: 0.75rem 0.85rem; border-bottom: 1px solid #e5e7eb; text-align: left; }
-    .withdrawal-table th { background:#f8fafc; color:#1f2937; font-weight:700; }
+    .withdrawal-table, .transaction-table { width:100%; border-collapse: collapse; min-width: 650px; }
+    .withdrawal-table th, .withdrawal-table td, .transaction-table th, .transaction-table td { padding: 0.75rem 0.85rem; border-bottom: 1px solid #e5e7eb; text-align: left; }
+    .withdrawal-table th, .transaction-table th { background:#f8fafc; color:#1f2937; font-weight:700; }
+    .transaction-credit { color: #047857; }
+    .transaction-debit { color: #b91c1c; }
+    .financial-grid { display:grid; gap:1rem; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom:1rem; }
+    .financial-card { background:#f8fafc; padding:1rem 1.1rem; border-radius:16px; border:1px solid #e2e8f0; }
+    .financial-card h3 { margin:0 0 0.35rem; font-size:0.95rem; color:#334155; }
+    .financial-card p { margin:0; font-size:1.65rem; font-weight:700; color:#0f172a; }
+    .financial-controls { display:flex; gap:0.75rem; flex-wrap:wrap; margin-bottom:1rem; align-items:center; }
+    .financial-controls label { font-size:0.95rem; color:#475569; }
+    .financial-controls select { padding:0.7rem 0.85rem; border-radius:12px; border:1px solid #d1d5db; background:#fff; }
     .admin-card { width:100%; }
     @media (max-width: 760px) {
       .admin-page { padding: 1rem; }
@@ -49,8 +65,13 @@
       .btn-primary, .btn-secondary { width: 100%; }
       .admin-post-item { padding: 1rem; }
       .admin-post-actions { justify-content: flex-start; }
-      .tabs { gap:0.5rem; }
-      .withdrawal-table th, .withdrawal-table td { padding: 0.65rem 0.7rem; }
+      .tabs { gap:0.4rem; }
+      .tab-btn { flex: 0 0 auto; min-width: 110px; padding: 0.55rem 0.85rem; }
+      .withdrawal-table th, .withdrawal-table td, .transaction-table th, .transaction-table td { padding: 0.65rem 0.7rem; }
+      .financial-grid { grid-template-columns: 1fr; }
+      .financial-controls { flex-direction: column; align-items: stretch; }
+      .financial-controls label { width: 100%; }
+      .financial-controls select { width: 100%; }
     }
   </style>
 </head>
@@ -69,8 +90,9 @@
 
     <div class="admin-card hidden" id="admin-tabs-card">
       <div class="tabs">
-        <button class="btn-secondary tab-btn active" data-tab="blog-tab">Blog</button>
-        <button class="btn-secondary tab-btn" data-tab="withdrawal-tab">Withdrawal Requests</button>
+        <button class="tab-btn active" data-tab="blog-tab">Blog</button>
+        <button class="tab-btn" data-tab="financial-tab">Financial Overview</button>
+        <button class="tab-btn" data-tab="withdrawal-tab">Withdrawal Requests</button>
       </div>
     </div>
 
@@ -108,11 +130,55 @@
     </div>
   </div>
 
+  <div id="financial-tab" class="tab-panel hidden">
+    <div class="admin-card hidden" id="financial-overview-card">
+      <h2>Financial Overview</h2>
+      <div class="financial-controls">
+        <label for="financial-filter">Filter:</label>
+        <select id="financial-filter">
+          <option value="all">All Time</option>
+          <option value="month">This Month</option>
+          <option value="season">This Season</option>
+        </select>
+      </div>
+      <div class="financial-grid">
+        <div class="financial-card">
+          <h3>Total Revenue</h3>
+          <p id="financial-revenue">₦0</p>
+        </div>
+        <div class="financial-card">
+          <h3>Total Payouts</h3>
+          <p id="financial-payouts">₦0</p>
+        </div>
+        <div class="financial-card">
+          <h3>Net Profit</h3>
+          <p id="financial-profit">₦0</p>
+        </div>
+      </div>
+      <h2>Transaction History</h2>
+      <div class="table-responsive">
+        <table class="transaction-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>User</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody id="transaction-history-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div id="withdrawal-tab" class="tab-panel hidden">
     <div class="admin-card hidden" id="withdrawal-requests-card">
       <h2>Affiliate Withdrawal Requests</h2>
       <p class="status" id="withdrawal-requests-note">Unlock the dashboard and open this tab to load withdrawal requests.</p>
-      <div id="withdrawal-requests-container">
+      <div id="withdrawal-requests-container" class="table-responsive">
         <table id="withdrawal-requests-table" class="withdrawal-table">
           <thead>
             <tr>

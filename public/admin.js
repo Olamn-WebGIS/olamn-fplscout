@@ -10,8 +10,15 @@ const logoutButton = document.getElementById('logout-admin');
 const publishButton = document.getElementById('publish-post');
 const cancelEditButton = document.getElementById('cancel-edit');
 const withdrawalRequestsNote = document.getElementById('withdrawal-requests-note');
+const financialOverviewCard = document.getElementById('financial-overview-card');
+const financialFilter = document.getElementById('financial-filter');
+const transactionHistoryBody = document.getElementById('transaction-history-body');
+const financialRevenue = document.getElementById('financial-revenue');
+const financialPayouts = document.getElementById('financial-payouts');
+const financialProfit = document.getElementById('financial-profit');
 const adminTabsCard = document.getElementById('admin-tabs-card');
 const withdrawalTabPanel = document.getElementById('withdrawal-tab');
+const financialTabPanel = document.getElementById('financial-tab');
 const blogTabPanel = document.getElementById('blog-tab');
 const tabButtons = document.querySelectorAll('.tab-btn');
 
@@ -67,6 +74,7 @@ async function loadWithdrawalRequests() {
     }
 
     if (!data.requests || data.requests.length === 0) {
+      container.classList.remove('hidden');
       withdrawalRequestsNote.textContent = 'No withdrawal requests available yet.';
       tableBody.innerHTML = '<tr><td colspan="6">No withdrawal requests available.</td></tr>';
       return;
@@ -113,6 +121,73 @@ async function loadWithdrawalRequests() {
     console.error('Admin withdrawal load failed:', error);
     withdrawalRequestsNote.textContent = 'Could not load withdrawal requests. Unlock the dashboard to refresh.';
     tableBody.innerHTML = '<tr><td colspan="6">No data to display.</td></tr>';
+  }
+}
+
+function formatCurrency(value) {
+  return `₦${Number(value || 0).toLocaleString()}`;
+}
+
+function formatDate(dateValue) {
+  try {
+    return new Date(dateValue).toLocaleString();
+  } catch {
+    return dateValue || '';
+  }
+}
+
+async function loadFinancialOverview(period = 'all') {
+  if (!financialOverviewCard || !transactionHistoryBody || !financialRevenue || !financialPayouts || !financialProfit) return;
+
+  try {
+    const res = await fetch(`/api/admin/profit?period=${encodeURIComponent(period)}`, {
+      credentials: 'same-origin'
+    });
+    const data = await res.json();
+
+    financialOverviewCard.classList.remove('hidden');
+
+    if (!res.ok || !data.success) {
+      financialRevenue.textContent = '₦0';
+      financialPayouts.textContent = '₦0';
+      financialProfit.textContent = '₦0';
+      transactionHistoryBody.innerHTML = `<tr><td colspan="6">${(data && data.message) || 'Unable to load financial overview.'}</td></tr>`;
+      return;
+    }
+
+    financialRevenue.textContent = formatCurrency(data.revenue);
+    financialPayouts.textContent = formatCurrency(data.payouts);
+    financialProfit.textContent = formatCurrency(data.profit);
+
+    if (!data.transactions || data.transactions.length === 0) {
+      transactionHistoryBody.innerHTML = '<tr><td colspan="6">No transactions found.</td></tr>';
+      return;
+    }
+
+    transactionHistoryBody.innerHTML = data.transactions.map(tx => {
+      const isCredit = tx.type === 'subscription';
+      const typeLabel = tx.type === 'subscription' ? 'Subscription' : 'Affiliate Payout';
+      const amountLabel = `${isCredit ? '+' : '-'}${formatCurrency(tx.amount)}`;
+      const rowClass = isCredit ? 'transaction-credit' : 'transaction-debit';
+      const userLabel = tx.user?.full_name || tx.user?.email || 'Unknown';
+
+      return `
+        <tr class="${rowClass}">
+          <td>${typeLabel}</td>
+          <td>${amountLabel}</td>
+          <td>${userLabel}</td>
+          <td>${tx.status || ''}</td>
+          <td>${formatDate(tx.created_at)}</td>
+          <td>${tx.note || ''}</td>
+        </tr>
+      `;
+    }).join('');
+  } catch (error) {
+    console.error('Financial overview load failed:', error);
+    financialRevenue.textContent = '₦0';
+    financialPayouts.textContent = '₦0';
+    financialProfit.textContent = '₦0';
+    transactionHistoryBody.innerHTML = '<tr><td colspan="6">Could not load financial overview.</td></tr>';
   }
 }
 
@@ -243,7 +318,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         await loadWithdrawalRequests();
       }
+      if (target === 'financial-tab') {
+        if (!adminAuthenticated) {
+          transactionHistoryBody.innerHTML = '<tr><td colspan="6">Unlock the dashboard to view financial data.</td></tr>';
+          financialRevenue.textContent = '₦0';
+          financialPayouts.textContent = '₦0';
+          financialProfit.textContent = '₦0';
+          return;
+        }
+        await loadFinancialOverview(financialFilter?.value || 'all');
+      }
     });
+
+  if (financialFilter) {
+    financialFilter.addEventListener('change', async () => {
+      if (!adminAuthenticated) return;
+      await loadFinancialOverview(financialFilter.value);
+    });
+  }
   });
 
   loginButton.addEventListener('click', async () => {
@@ -292,6 +384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       postsListCard.classList.remove('hidden');
       document.getElementById('blog-tab').classList.add('active');
       document.getElementById('withdrawal-tab').classList.remove('active');
+      document.getElementById('financial-tab').classList.remove('active');
       showStatus(loginStatus, 'Dashboard unlocked.', true);
       await loadAdminPosts();
     } catch (error) {
@@ -311,6 +404,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     postCard.classList.add('hidden');
     postsListCard.classList.add('hidden');
     withdrawalTabPanel.classList.add('hidden');
+    financialTabPanel.classList.add('hidden');
     loginCard.classList.remove('hidden');
     showStatus(loginStatus, 'Dashboard locked.', true);
     postStatus.textContent = '';

@@ -176,6 +176,35 @@ async function recordAffiliateEarning({ affiliateId, referredUserId, referralId,
   }]).single();
 }
 
+async function createTransaction({ type, amount, user_id = null, status = 'completed', payment_reference = null, note = null }) {
+  const dbClient = supabaseAdmin || supabase;
+  if (payment_reference) {
+    const { data: existing, error: existingError } = await dbClient
+      .from('transactions')
+      .select('id')
+      .eq('payment_reference', payment_reference)
+      .single();
+    if (existing && !existingError) {
+      return { data: existing, error: null, alreadyExists: true };
+    }
+  }
+
+  const { data, error } = await dbClient
+    .from('transactions')
+    .insert([{
+      type,
+      amount,
+      user_id,
+      status,
+      payment_reference,
+      note,
+      created_at: new Date()
+    }])
+    .single();
+
+  return { data, error };
+}
+
 function createAdminSessionToken() {
   if (!ADMIN_SECRET) return null;
   return crypto.createHmac('sha256', ADMIN_SECRET).update('admin_session').digest('hex');
@@ -1224,6 +1253,7 @@ app.post('/api/admin/login', (req, res) => {
     httpOnly: true,
     sameSite: 'strict',
     secure: req.secure || process.env.NODE_ENV === 'production',
+    path: '/',
     maxAge: 24 * 60 * 60 * 1000,
   });
 
@@ -2074,6 +2104,42 @@ app.get('/api/admin/withdrawal-requests', requireAdminSession, async (req, res) 
     }
 });
 
+app.get('/api/admin/profit', requireAdminSession, async (req, res) => {
+    try {
+        const period = req.query.period || 'all';
+        const dbClient = supabaseAdmin || supabase;
+        const query = dbClient
+            .from('transactions')
+            .select('id,type,amount,user_id,status,payment_reference,note,created_at,user:users(full_name,email)')
+            .order('created_at', { ascending: false });
+
+        if (period === 'month') {
+            const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+            query.gte('created_at', startOfMonth);
+        } else if (period === 'season') {
+            const now = new Date();
+            const seasonStartYear = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+            const seasonStart = new Date(seasonStartYear, 7, 1).toISOString();
+            query.gte('created_at', seasonStart);
+        }
+
+        const { data, error } = await query;
+        if (error) {
+            console.error('Admin profit fetch failed:', error);
+            return res.status(500).json({ success: false, message: error.message || 'Could not calculate profit.' });
+        }
+
+        const revenue = (data || []).filter(tx => tx.type === 'subscription').reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+        const payouts = (data || []).filter(tx => tx.type === 'affiliate_payout').reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+        const profit = revenue - payouts;
+
+        return res.json({ success: true, revenue, payouts, profit, transactions: data || [] });
+    } catch (error) {
+        console.error('Admin profit route error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to calculate profit.' });
+    }
+});
+
 app.post('/api/admin/withdrawal-requests/:id/pay', requireAdminSession, async (req, res) => {
     try {
         const id = req.params.id;
@@ -2092,7 +2158,21 @@ app.post('/api/admin/withdrawal-requests/:id/pay', requireAdminSession, async (r
             return res.status(500).json({ success: false, message: 'Could not mark withdrawal as paid.' });
         }
 
-        return res.json({ success: true, request: data });
+        const transactionResult = await createTransaction({
+            type: 'affiliate_payout',
+            amount: Number(data.amount_ngn || 0),
+            user_id: data.affiliate_id,
+            status: 'completed',
+            payment_reference: `withdrawal_${data.id}`,
+            note: `Affiliate payout for withdrawal request ${data.id}`
+        });
+
+        if (transactionResult.error) {
+            console.error('Affiliate payout transaction failed:', transactionResult.error);
+            return res.status(500).json({ success: false, message: 'Withdrawal paid but failed to record transaction.' });
+        }
+
+        return res.json({ success: true, request: data, transaction: transactionResult.data });
     } catch (error) {
         console.error('Mark paid error:', error);
         return res.status(500).json({ success: false, message: 'Failed to mark withdrawal request as paid.' });
@@ -2174,8 +2254,17 @@ app.post('/api/paystack-webhook', async (req, res) => {
         if (payload && payload.event === 'charge.success') {
             const customerEmail = payload.data.customer.email;
             const amountPaidInKobo = payload.data.amount;
+            const paymentReference = payload.data.reference;
             
             console.log(`Verified Paystack Payment capture for: ${customerEmail}. Amount: ₦${amountPaidInKobo / 100}`);
+
+            const { data: userRecord, error: userFetchError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('email', customerEmail)
+                .single();
+
+            const userId = userRecord?.id || null;
 
             // 3. DATABASE UPDATE: Automatically upgrade the specific profile row
             const { data, error } = await supabase
@@ -2199,6 +2288,19 @@ app.post('/api/paystack-webhook', async (req, res) => {
 
             if (userUpdateError) {
                 console.warn('Could not update users table for webhook user:', userUpdateError.message || userUpdateError);
+            }
+
+            const transactionResult = await createTransaction({
+                type: 'subscription',
+                amount: Math.round(amountPaidInKobo / 100),
+                user_id: userId,
+                status: 'completed',
+                payment_reference: paymentReference,
+                note: 'Premium subscription payment via Paystack webhook'
+            });
+
+            if (transactionResult.error) {
+                console.error('Failed to record webhook subscription transaction:', transactionResult.error);
             }
 
             console.log(`Account permissions unblocked for user: ${customerEmail}`);
@@ -2280,6 +2382,8 @@ app.get('/api/verify-payment', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Payment was not successful.' });
         }
 
+        const amountPaidInKobo = data.data.amount;
+        const paymentReference = data.data.reference;
         const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         const updatePayload = {
             is_premium: true,
@@ -2295,6 +2399,19 @@ app.get('/api/verify-payment', async (req, res) => {
         if (usersError || profilesError) {
             console.error('Paystack verify update failure:', usersError || profilesError);
             return res.status(500).json({ success: false, message: 'Failed to update subscription to premium.' });
+        }
+
+        const transactionResult = await createTransaction({
+            type: 'subscription',
+            amount: Math.round(amountPaidInKobo / 100),
+            user_id: updatedUser?.id || null,
+            status: 'completed',
+            payment_reference: paymentReference,
+            note: 'Premium subscription payment via Paystack verification'
+        });
+
+        if (transactionResult.error && !transactionResult.alreadyExists) {
+            console.error('Failed to record verification subscription transaction:', transactionResult.error);
         }
 
         // Trigger affiliate commission for the referring affiliate if this is the first premium upgrade
