@@ -21,6 +21,8 @@
     .btn-primary { background:#0070f3; color:#fff; border:none; padding:0.95rem 1.4rem; border-radius:999px; cursor:pointer; font-weight:700; }
     .btn-secondary { background:#f3f4f6; color:#111; border:1px solid #d1d5db; padding:0.75rem 1rem; border-radius:999px; cursor:pointer; }
     .btn-secondary.active { background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block !important; }
     .hidden { display:none; }
     .status { margin-top:1rem; color:#0070f3; }
     .admin-post-list { display:grid; gap:1rem; }
@@ -72,7 +74,7 @@
       </div>
     </div>
 
-    <div id="blog-tab" class="tab-panel hidden active">
+    <div id="blog-tab" class="tab-panel active">
       <div class="admin-card hidden" id="post-card">
       <h2>Publish New Blog Post</h2>
       <div class="admin-field">
@@ -99,12 +101,11 @@
       <p class="status" id="admin-post-status"></p>
       <p class="status" id="newsletter-status"></p>
     </div>
-  </div>
 
-  <div class="admin-card hidden" id="posts-list-card">
-    <h2>Existing Posts</h2>
-    <div id="admin-post-list" class="admin-post-list"></div>
-  </div>
+    <div class="admin-card hidden" id="posts-list-card">
+      <h2>Existing Posts</h2>
+      <div id="admin-post-list" class="admin-post-list"></div>
+    </div>
   </div>
 
   <div id="withdrawal-tab" class="tab-panel hidden">
