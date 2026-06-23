@@ -15,6 +15,7 @@
     
     
     { "source": "/account", "destination": "public/account.html" },
+    { "source": "/affiliate", "destination": "public/affiliate.html" },
     { "source": "/blog", "destination": "/api/server.js" },
     { "source": "/blog/:slug", "destination": "/api/server.js" },
     { "source": "/admin", "destination": "public/admin.html" },
