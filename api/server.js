@@ -1296,6 +1296,10 @@ app.get('/account', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'account.html'));
 });
 
+app.get('/affiliate', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'affiliate.html'));
+});
+
 // Temporary memory to hold OTPs used for email change verification
 let tempOtpStore = {};
 

@@ -103,8 +103,8 @@
               <li><a href="/privacy-policy.html">Privacy Policy</a></li>
               <li><a href="/terms-of-service.html">Terms of Service</a></li>
               <li><a href="/refund-policy.html">Refund & Cancellation</a></li>
-              <li><a href="/affiliate.html">Affiliate Program</a></li>
-              <li><a href="/affiliate.html#terms">Affiliate Terms</a></li>
+              <li><a href="/affiliate">Affiliate Program</a></li>
+              <li><a href="/affiliate#terms">Affiliate Terms</a></li>
             </ul>
           </div>
           <div>

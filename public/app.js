@@ -58,10 +58,10 @@ function updateAffiliateHomeLink() {
   
   if (currentUser && currentUser.id && currentUser.refCode) {
     affiliateLink.textContent = 'View Affiliate Program Dashboard';
-    affiliateLink.href = '/affiliate.html';
+    affiliateLink.href = '/affiliate';
   } else {
     affiliateLink.textContent = 'Join the Affiliate Program';
-    affiliateLink.href = '/affiliate.html';
+    affiliateLink.href = '/affiliate';
   }
 }
 
