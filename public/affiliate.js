@@ -182,7 +182,7 @@ function renderReferralHistory(referrals) {
   if (!container) return;
 
   if (!Array.isArray(referrals) || referrals.length === 0) {
-    container.innerHTML = '<p class="affiliate-empty">No referrals yet. Share your link to start earning.</p>';
+    container.innerHTML = '<p class="affiliate-empty">Share your referral link to start earning and see your referrals here.</p>';
     return;
   }
 
@@ -400,7 +400,14 @@ async function loadAffiliateDashboard() {
     if (withdrawalAmount) withdrawalAmount.value = affiliateBalance >= 10000 ? affiliateBalance : '10000';
     if (submitButton) submitButton.disabled = false;
     const referralCount = document.getElementById('affiliate-referral-count');
-    if (referralCount) referralCount.textContent = '0';
+    if (referralCount) referralCount.textContent = (data.referrals && data.referrals.length) || '0';
+    
+    // Load referral history
+    if (data.referrals && data.referrals.length > 0) {
+      renderReferralHistory(data.referrals);
+    } else {
+      renderReferralHistory([]);
+    }
   } catch (error) {
     console.error('Dashboard load failed', error);
     if (balanceElem) balanceElem.textContent = '₦0';

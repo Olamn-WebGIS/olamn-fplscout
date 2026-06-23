@@ -2006,8 +2006,20 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
                 success: true,
                 isAffiliate: false,
                 ref_code: null,
-                balance: 0
+                balance: 0,
+                referrals: []
             });
+        }
+
+        // Fetch referrals for this affiliate
+        const { data: referrals, error: referralsError } = await dbClient
+            .from('referrals')
+            .select('id, referred_user_id, referred_email, referred_name, status, joined_at, commission_paid, users!inner(full_name, email)')
+            .eq('affiliate_user_id', user.id)
+            .order('joined_at', { ascending: false });
+
+        if (referralsError) {
+            console.error('Referrals lookup error:', referralsError);
         }
 
         return res.json({
@@ -2015,7 +2027,8 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
             isAffiliate: true,
             ref_code: affiliate.ref_code,
             balance: affiliate.balance || 0,
-            referralLink: `${BASE_URL}/?ref=${affiliate.ref_code}`
+            referralLink: `${BASE_URL}/?ref=${affiliate.ref_code}`,
+            referrals: referrals || []
         });
     } catch (error) {
         console.error('Affiliate dashboard error:', error);
