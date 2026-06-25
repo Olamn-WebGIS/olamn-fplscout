@@ -2176,6 +2176,55 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
     }
 });
 
+app.get('/api/affiliate/earnings', async (req, res) => {
+    try {
+        const dbClient = supabaseAdmin || supabase;
+        const userId = req.query.userId || req.query.user_id;
+
+        if (!userId) {
+            return res.status(400).json({ success: false, message: 'User ID is required.' });
+        }
+
+        const { data: affiliate, error: affiliateError } = await dbClient
+            .from('affiliates')
+            .select('id')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (affiliateError) {
+            console.error('Affiliate earnings lookup failed:', affiliateError);
+            return res.status(500).json({ success: false, message: 'Unable to load referral history.' });
+        }
+
+        if (!affiliate) {
+            return res.json({ success: true, earnings: [] });
+        }
+
+        const { data, error } = await dbClient
+            .from('affiliate_earnings')
+            .select('amount_ngn, description, earned_at')
+            .eq('affiliate_id', userId)
+            .order('earned_at', { ascending: false });
+
+        if (error) {
+            console.error('Affiliate earnings query failed:', error);
+            return res.status(500).json({ success: false, message: 'Unable to load referral history.' });
+        }
+
+        return res.json({
+            success: true,
+            earnings: (data || []).map(entry => ({
+                amountNgN: entry.amount_ngn,
+                description: entry.description || 'Referral reward',
+                earnedAt: entry.earned_at
+            }))
+        });
+    } catch (error) {
+        console.error('Affiliate earnings route error:', error);
+        return res.status(500).json({ success: false, message: 'Unable to load referral history.' });
+    }
+});
+
 app.post('/api/affiliate/withdrawal-request', async (req, res) => {
     try {
         const dbClient = supabaseAdmin || supabase;

@@ -227,6 +227,48 @@ h4 { font-size: 0.95rem; font-weight: 600; }
   gap: 1rem;
 }
 
+/* ── Affiliate History Table ─────────────────────────────── */
+.affiliate-history-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.affiliate-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 420px;
+}
+
+.affiliate-history-table th,
+.affiliate-history-table td {
+  padding: 0.9rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.affiliate-history-table thead {
+  background: #f8fafc;
+}
+
+.affiliate-history-table th {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.affiliate-history-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.affiliate-empty {
+  color: var(--text-secondary);
+  padding: 1rem 0;
+}
+
 /* ── Cards ──────────────────────────────────────────────────── */
 .card {
   background: var(--bg-card);

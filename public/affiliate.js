@@ -177,30 +177,49 @@ function showAffiliatePageStatus(message, isError = false) {
   status.classList.toggle('success', !isError);
 }
 
-function renderReferralHistory(referrals) {
+function formatHistoryDate(value) {
+  if (!value) return '—';
+  try {
+    return new Date(value).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch (error) {
+    return value;
+  }
+}
+
+function renderReferralHistory(entries) {
   const container = document.getElementById('referral-history');
   if (!container) return;
 
-  if (!Array.isArray(referrals) || referrals.length === 0) {
-    container.innerHTML = '<p class="affiliate-empty">Share your referral link to start earning and see your referrals here.</p>';
+  if (!Array.isArray(entries) || entries.length === 0) {
+    container.innerHTML = '<p class="affiliate-empty">No referral history found yet.</p>';
     return;
   }
 
   container.innerHTML = `
-    <div class="referral-grid header-grid">
-      <div>Name</div>
-      <div>Email</div>
-      <div>Joined</div>
-      <div>Status</div>
+    <div class="affiliate-history-table-wrap">
+      <table class="affiliate-history-table">
+        <thead>
+          <tr>
+            <th>Amount</th>
+            <th>Description</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${entries.map(entry => `
+            <tr>
+              <td>₦${Number(entry.amountNgN || 0).toLocaleString()}</td>
+              <td>${entry.description || 'Referral reward'}</td>
+              <td>${formatHistoryDate(entry.earnedAt)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
     </div>
-    ${referrals.map(ref => `
-      <div class="referral-grid">
-        <div>${ref.referredName || 'Unknown'}</div>
-        <div>${ref.referredEmail || 'Unknown'}</div>
-        <div>${new Date(ref.joinedAt).toLocaleDateString()}</div>
-        <div>${ref.commissionPaid ? 'Paid' : 'Pending'}</div>
-      </div>
-    `).join('')}
   `;
 }
 
@@ -351,6 +370,24 @@ async function submitWithdrawalRequest(event) {
   }
 }
 
+async function loadAffiliateEarningsHistory(userId) {
+  try {
+    const response = await fetch(`/api/affiliate/earnings?userId=${encodeURIComponent(userId)}`);
+    if (!response.ok) {
+      throw new Error('Could not load referral history.');
+    }
+    const data = await response.json();
+    if (!data.success) {
+      renderReferralHistory([]);
+      return;
+    }
+    renderReferralHistory(data.earnings || []);
+  } catch (error) {
+    console.error('Referral history load failed', error);
+    renderReferralHistory([]);
+  }
+}
+
 async function loadAffiliateDashboard() {
   const currentUser = getCurrentUser();
   if (!currentUser || !currentUser.email) {
@@ -402,12 +439,7 @@ async function loadAffiliateDashboard() {
     const referralCount = document.getElementById('affiliate-referral-count');
     if (referralCount) referralCount.textContent = (data.referrals && data.referrals.length) || '0';
     
-    // Load referral history
-    if (data.referrals && data.referrals.length > 0) {
-      renderReferralHistory(data.referrals);
-    } else {
-      renderReferralHistory([]);
-    }
+    await loadAffiliateEarningsHistory(currentUser.id);
   } catch (error) {
     console.error('Dashboard load failed', error);
     if (balanceElem) balanceElem.textContent = '₦0';
