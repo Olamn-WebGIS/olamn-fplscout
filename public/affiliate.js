@@ -338,6 +338,8 @@ async function submitWithdrawalRequest(event) {
     button.textContent = 'Submitting...';
   }
 
+  showAffiliatePageStatus('Withdrawal pending. Your request has been submitted and is awaiting review.');
+
   try {
     const response = await fetch('/api/affiliate/withdrawal-request', {
       method: 'POST',
@@ -357,8 +359,8 @@ async function submitWithdrawalRequest(event) {
       return;
     }
 
-    showAffiliatePageStatus('Withdrawal request submitted successfully.');
-    loadAffiliateDashboard();
+    showAffiliatePageStatus('Withdrawal pending. Your request has been submitted and is awaiting review.');
+    await loadAffiliateDashboard();
   } catch (error) {
     console.error('Withdrawal request failed', error);
     showAffiliatePageStatus('Could not reach the server. Please try again later.', true);
