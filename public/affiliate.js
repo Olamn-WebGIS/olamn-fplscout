@@ -370,7 +370,7 @@ async function submitWithdrawalRequest(event) {
   }
 }
 
-async function loadAffiliateEarningsHistory(userId, fallbackEntries = []) {
+async function loadAffiliateEarningsHistory(userId) {
   try {
     const response = await fetch(`/api/affiliate/earnings?userId=${encodeURIComponent(userId)}`);
     if (!response.ok) {
@@ -378,16 +378,13 @@ async function loadAffiliateEarningsHistory(userId, fallbackEntries = []) {
     }
     const data = await response.json();
     if (!data.success) {
-      renderReferralHistory(Array.isArray(fallbackEntries) ? fallbackEntries : []);
+      renderReferralHistory([]);
       return;
     }
-    const historyEntries = Array.isArray(data.earnings) && data.earnings.length > 0
-      ? data.earnings
-      : (Array.isArray(fallbackEntries) ? fallbackEntries : []);
-    renderReferralHistory(historyEntries);
+    renderReferralHistory(data.earnings || []);
   } catch (error) {
     console.error('Referral history load failed', error);
-    renderReferralHistory(Array.isArray(fallbackEntries) ? fallbackEntries : []);
+    renderReferralHistory([]);
   }
 }
 
@@ -441,8 +438,8 @@ async function loadAffiliateDashboard() {
     if (submitButton) submitButton.disabled = false;
     const referralCount = document.getElementById('affiliate-referral-count');
     if (referralCount) referralCount.textContent = (data.referrals && data.referrals.length) || '0';
-
-    await loadAffiliateEarningsHistory(currentUser.id, data.earnings || []);
+    
+    await loadAffiliateEarningsHistory(currentUser.id);
   } catch (error) {
     console.error('Dashboard load failed', error);
     if (balanceElem) balanceElem.textContent = '₦0';
