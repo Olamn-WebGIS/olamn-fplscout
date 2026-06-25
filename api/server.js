@@ -2134,7 +2134,7 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
 
         const { data: affiliate, error: affiliateError } = await dbClient
             .from('affiliates')
-            .select('id, ref_code, balance')
+            .select('id, user_id, ref_code, balance')
             .eq('user_id', user.id)
             .maybeSingle();
 
