@@ -2190,13 +2190,28 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
             }
         }
 
+        const earningsResponse = await dbClient
+            .from('affiliate_earnings')
+            .select('amount_ngn, description, earned_at')
+            .eq('affiliate_id', affiliateUserId)
+            .order('earned_at', { ascending: false });
+
+        const fallbackHistory = !earningsResponse.error && (earningsResponse.data || []).length > 0
+            ? (earningsResponse.data || []).map(entry => ({
+                amountNgN: entry.amount_ngn,
+                description: entry.description || 'Referral reward',
+                earnedAt: entry.earned_at
+            }))
+            : [];
+
         return res.json({
             success: true,
             isAffiliate: true,
             ref_code: affiliate.ref_code,
             balance: affiliate.balance || 0,
             referralLink: `${BASE_URL}/?ref=${affiliate.ref_code}`,
-            referrals
+            referrals,
+            earnings: fallbackHistory
         });
     } catch (error) {
         console.error('Affiliate dashboard error:', error);
