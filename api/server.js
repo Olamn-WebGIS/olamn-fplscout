@@ -1389,6 +1389,10 @@ app.post('/api/signup', async (req, res) => {
       created_at: new Date()
     };
 
+    if (referralCode) {
+      insertPayload.ref_code = referralCode;
+    }
+
     let referredAffiliateId = null;
 
     if (referralCode) {

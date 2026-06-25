@@ -320,6 +320,11 @@ function setupModalInterface() {
                     bodyPayload.ref_code = refCode;
                     bodyPayload.ref = refCode;
                 }
+                const refInput = document.getElementById('signup-ref-code');
+                if (refInput && refInput.value) {
+                    bodyPayload.ref_code = refInput.value;
+                    bodyPayload.ref = refInput.value;
+                }
 
                 const response = await fetch('/api/signup', {
                     method: 'POST',
