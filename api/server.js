@@ -2134,7 +2134,7 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
 
         const { data: affiliate, error: affiliateError } = await dbClient
             .from('affiliates')
-            .select('id, ref_code, balance')
+            .select('id, user_id, ref_code, balance')
             .eq('user_id', user.id)
             .maybeSingle();
 
@@ -2154,10 +2154,11 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
         }
 
         // Fetch referrals for this affiliate using the actual referrals table schema.
+        const affiliateUserId = affiliate?.user_id || user.id;
         const { data: referralRows, error: referralsError } = await dbClient
             .from('referrals')
             .select('id, affiliate_id, referred_user_id, created_at, commission_paid, commission_paid_at')
-            .eq('affiliate_id', affiliate?.id || user.id)
+            .eq('affiliate_id', affiliateUserId)
             .order('created_at', { ascending: false });
 
         if (referralsError) {
@@ -2214,7 +2215,7 @@ app.get('/api/affiliate/earnings', async (req, res) => {
 
         const { data: affiliate, error: affiliateError } = await dbClient
             .from('affiliates')
-            .select('id')
+            .select('user_id')
             .eq('user_id', userId)
             .maybeSingle();
 
@@ -2227,10 +2228,11 @@ app.get('/api/affiliate/earnings', async (req, res) => {
             return res.json({ success: true, earnings: [] });
         }
 
+        const affiliateUserId = affiliate?.user_id || userId;
         const { data, error } = await dbClient
             .from('affiliate_earnings')
             .select('amount_ngn, description, earned_at')
-            .eq('affiliate_id', affiliate?.id || userId)
+            .eq('affiliate_id', affiliateUserId)
             .order('earned_at', { ascending: false });
 
         if (error) {
@@ -2270,20 +2272,40 @@ app.post('/api/affiliate/withdrawal-request', async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found.' });
         }
 
-        const { data: affiliateRecord, error: affiliateLookupError } = await dbClient
+        let affiliateRecord = null;
+        const { data: existingAffiliate, error: affiliateLookupError } = await dbClient
             .from('affiliates')
-            .select('id, balance')
+            .select('id, user_id, balance')
             .eq('user_id', user.id)
             .maybeSingle();
 
-        if (affiliateLookupError || !affiliateRecord) {
+        if (affiliateLookupError) {
             console.error('Could not find affiliate record for this user.', affiliateLookupError);
-            return res.status(404).json({ success: false, message: 'Could not find affiliate record for this user.' });
+            return res.status(500).json({ success: false, message: 'Failed to verify affiliate account.' });
         }
 
+        if (!existingAffiliate) {
+            const newAffiliateCode = await generateAffiliateRefCode();
+            const { data: createdAffiliate, error: createAffiliateError } = await dbClient
+                .from('affiliates')
+                .insert([{ user_id: user.id, ref_code: newAffiliateCode, balance: 0 }])
+                .select()
+                .single();
+
+            if (createAffiliateError || !createdAffiliate) {
+                console.error('Failed to create affiliate record for this user.', createAffiliateError);
+                return res.status(500).json({ success: false, message: 'Failed to create affiliate account.' });
+            }
+
+            affiliateRecord = createdAffiliate;
+        } else {
+            affiliateRecord = existingAffiliate;
+        }
+
+        const affiliateUserId = affiliateRecord.user_id || user.id;
         const [earningsResult, withdrawalsResult] = await Promise.all([
-            dbClient.from('affiliate_earnings').select('amount_ngn').eq('affiliate_id', affiliateRecord.id),
-            dbClient.from('withdrawal_requests').select('amount_ngn').eq('affiliate_id', affiliateRecord.id)
+            dbClient.from('affiliate_earnings').select('amount_ngn').eq('affiliate_id', affiliateUserId),
+            dbClient.from('withdrawal_requests').select('amount_ngn').eq('affiliate_id', affiliateUserId)
         ]);
 
         if (earningsResult.error || withdrawalsResult.error) {
@@ -2305,7 +2327,7 @@ app.post('/api/affiliate/withdrawal-request', async (req, res) => {
         }
 
         const insertResult = await dbClient.from('withdrawal_requests').insert([{
-            affiliate_id: affiliateRecord.id,
+            affiliate_id: affiliateUserId,
             amount_ngn: amount,
             bank_name,
             account_name,
