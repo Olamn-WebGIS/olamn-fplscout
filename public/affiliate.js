@@ -366,8 +366,8 @@ async function submitWithdrawalRequest(event) {
     showAffiliatePageStatus('Could not reach the server. Please try again later.', true);
   } finally {
     if (button) {
-      button.disabled = false;
-      button.textContent = 'Request Withdrawal';
+      button.disabled = true;
+      button.textContent = 'Pending...';
     }
   }
 }
