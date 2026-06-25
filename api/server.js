@@ -157,10 +157,10 @@ async function generateReferralCode(email) {
   for (let attempt = 0; attempt < 5; attempt++) {
     const candidate = `${base}-${crypto.randomBytes(3).toString('hex')}`;
     const { data, error } = await supabase
-      .from('users')
+      .from('affiliates')
       .select('id')
       .eq('ref_code', candidate)
-      .single();
+      .maybeSingle();
     if (error || !data) return candidate;
   }
   return `${base}-${crypto.randomBytes(4).toString('hex')}`;
@@ -1366,19 +1366,20 @@ app.post('/api/signup', async (req, res) => {
       password,
       is_premium: false,
       is_admin: false,
-      created_at: new Date(),
-      ref_code: generatedRefCode
+      created_at: new Date()
     };
 
+    let referredAffiliateId = null;
+
     if (ref) {
-      const { data: referrer, error: refError } = await supabase
-        .from('users')
+      const { data: referrerAffiliate, error: refError } = await supabase
+        .from('affiliates')
         .select('id')
         .eq('ref_code', ref)
-        .single();
+        .maybeSingle();
 
-      if (!refError && referrer) {
-        insertPayload.referred_by = referrer.id;
+      if (!refError && referrerAffiliate) {
+        referredAffiliateId = referrerAffiliate.id;
       }
     }
 
@@ -1402,9 +1403,29 @@ app.post('/api/signup', async (req, res) => {
       return res.status(500).json({ success: false, message: 'Failed to create user account.' });
     }
 
-    if (insertPayload.referred_by) {
-      const referralResult = await supabase.from('referrals').insert([{
-        affiliate_id: insertPayload.referred_by,
+    const dbClient = supabaseAdmin || supabase;
+
+    const { data: existingAffiliate, error: affiliateLookupError } = await dbClient
+      .from('affiliates')
+      .select('id')
+      .eq('user_id', newUser.id)
+      .maybeSingle();
+
+    if (!affiliateLookupError && !existingAffiliate) {
+      const affiliateInsertResult = await dbClient
+        .from('affiliates')
+        .insert([{ user_id: newUser.id, ref_code: generatedRefCode, balance: 0 }])
+        .select()
+        .single();
+
+      if (affiliateInsertResult.error) {
+        console.warn('Could not create affiliate record for new user:', affiliateInsertResult.error.message || affiliateInsertResult.error);
+      }
+    }
+
+    if (referredAffiliateId) {
+      const referralResult = await dbClient.from('referrals').insert([{
+        affiliate_id: referredAffiliateId,
         referred_user_id: newUser.id
       }]);
 
