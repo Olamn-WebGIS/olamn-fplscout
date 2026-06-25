@@ -1452,17 +1452,6 @@ app.post('/api/signup', async (req, res) => {
       }
     }
 
-    if (referredAffiliateId) {
-      const referralResult = await dbClient.from('referrals').insert([{
-        affiliate_id: referredAffiliateId,
-        referred_user_id: newUser.id
-      }]);
-
-      if (referralResult.error) {
-        console.warn('Could not record referral:', referralResult.error.message || referralResult.error);
-      }
-    }
-
     recordSignupAttempt({
       email,
       fullName,
