@@ -2126,15 +2126,40 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
             });
         }
 
-        // Fetch referrals for this affiliate
-        const { data: referrals, error: referralsError } = await dbClient
+        // Fetch referrals for this affiliate using the actual referrals table schema.
+        const { data: referralRows, error: referralsError } = await dbClient
             .from('referrals')
-            .select('id, referred_user_id, referred_email, referred_name, status, joined_at, commission_paid, users!inner(full_name, email)')
-            .eq('affiliate_user_id', user.id)
-            .order('joined_at', { ascending: false });
+            .select('id, affiliate_id, referred_user_id, created_at, commission_paid, commission_paid_at')
+            .eq('affiliate_id', user.id)
+            .order('created_at', { ascending: false });
 
         if (referralsError) {
             console.error('Referrals lookup error:', referralsError);
+        }
+
+        let referrals = [];
+        const referredUserIds = [...new Set((referralRows || [])
+            .map(row => row.referred_user_id)
+            .filter(Boolean))];
+
+        if (referredUserIds.length > 0) {
+            const { data: referredUsers, error: referredUsersError } = await dbClient
+                .from('users')
+                .select('id, full_name, email')
+                .in('id', referredUserIds);
+
+            if (!referredUsersError && referredUsers) {
+                const referredUsersById = Object.fromEntries((referredUsers || []).map(userRow => [userRow.id, userRow]));
+                referrals = (referralRows || []).map(row => ({
+                    id: row.id,
+                    referredUserId: row.referred_user_id,
+                    referredName: referredUsersById[row.referred_user_id]?.full_name || null,
+                    referredEmail: referredUsersById[row.referred_user_id]?.email || null,
+                    joinedAt: row.created_at,
+                    commissionPaid: Boolean(row.commission_paid),
+                    status: row.commission_paid ? 'Paid' : 'Pending'
+                }));
+            }
         }
 
         return res.json({
@@ -2143,7 +2168,7 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
             ref_code: affiliate.ref_code,
             balance: affiliate.balance || 0,
             referralLink: `${BASE_URL}/?ref=${affiliate.ref_code}`,
-            referrals: referrals || []
+            referrals
         });
     } catch (error) {
         console.error('Affiliate dashboard error:', error);
@@ -2215,6 +2240,101 @@ app.post('/api/affiliate/withdrawal-request', async (req, res) => {
     }
 });
 
+async function approveAffiliatePayout({ affiliateIdOrUserId, amount, affiliateUserId = null, requestId = null, note = 'Admin payout approved' }) {
+    const payoutAmount = Number(amount);
+    if (!affiliateIdOrUserId || Number.isNaN(payoutAmount) || payoutAmount <= 0) {
+        return { success: false, message: 'affiliate_id and a positive amount are required.' };
+    }
+
+    const dbClient = supabaseAdmin || supabase;
+    let affiliateRecord = null;
+    let affiliateLookupError = null;
+
+    const candidateUserId = affiliateUserId || affiliateIdOrUserId;
+
+    const { data: affiliateByUser, error: affiliateByUserError } = await dbClient
+        .from('affiliates')
+        .select('id, balance, user_id')
+        .eq('user_id', candidateUserId)
+        .maybeSingle();
+
+    if (!affiliateByUserError && affiliateByUser) {
+        affiliateRecord = affiliateByUser;
+    } else {
+        affiliateLookupError = affiliateByUserError;
+    }
+
+    if (!affiliateRecord) {
+        const { data: affiliateById, error: affiliateByIdError } = await dbClient
+            .from('affiliates')
+            .select('id, balance, user_id')
+            .eq('id', affiliateIdOrUserId)
+            .maybeSingle();
+
+        if (!affiliateByIdError && affiliateById) {
+            affiliateRecord = affiliateById;
+        } else {
+            affiliateLookupError = affiliateByIdError || affiliateLookupError;
+        }
+    }
+
+    if (!affiliateRecord) {
+        return { success: false, message: 'Affiliate record not found.' };
+    }
+
+    if (Number(affiliateRecord.balance || 0) < payoutAmount) {
+        return { success: false, message: 'Insufficient affiliate balance for this payout.' };
+    }
+
+    const { data: transaction, error: transactionError } = await dbClient
+        .from('transactions')
+        .insert([{
+            type: 'affiliate_payout',
+            amount: payoutAmount,
+            user_id: affiliateRecord.user_id || candidateUserId,
+            status: 'completed',
+            payment_reference: `payout_${affiliateRecord.id}_${Date.now()}`,
+            note,
+            created_at: new Date()
+        }])
+        .select()
+        .single();
+
+    if (transactionError) {
+        console.error('Admin payout transaction insert failed:', transactionError);
+        return { success: false, message: 'Failed to record payout transaction.' };
+    }
+
+    const { data: updatedAffiliate, error: balanceError } = await dbClient
+        .from('affiliates')
+        .update({ balance: Number(affiliateRecord.balance || 0) - payoutAmount })
+        .eq('id', affiliateRecord.id)
+        .select()
+        .single();
+
+    if (balanceError) {
+        console.error('Affiliate balance update failed:', balanceError);
+        return { success: false, message: 'Payout was recorded but balance update failed.' };
+    }
+
+    if (requestId) {
+        await dbClient
+            .from('withdrawal_requests')
+            .update({ status: 'completed', completed_at: new Date() })
+            .eq('id', requestId);
+    }
+
+    return {
+        success: true,
+        payout: {
+            affiliate_id: affiliateRecord.id,
+            amount: payoutAmount,
+            balance: updatedAffiliate?.balance ?? null,
+            transaction_id: transaction?.id || null
+        }
+    };
+}
+
 app.get('/api/admin/withdrawal-requests', requireAdminSession, async (req, res) => {
     try {
         const dbClient = supabaseAdmin || supabase;
@@ -2280,6 +2400,28 @@ app.get('/api/admin/profit', requireAdminSession, async (req, res) => {
     }
 });
 
+app.post('/api/admin/approve-payout', requireAdminSession, async (req, res) => {
+    try {
+        const { affiliate_id, amount, affiliate_user_id } = req.body;
+        const result = await approveAffiliatePayout({
+            affiliateIdOrUserId: affiliate_id || affiliate_user_id,
+            amount,
+            affiliateUserId: affiliate_user_id,
+            note: 'Admin payout approved'
+        });
+
+        if (!result.success) {
+            const statusCode = result.message === 'Affiliate record not found.' ? 404 : 400;
+            return res.status(statusCode).json({ success: false, message: result.message });
+        }
+
+        return res.json({ success: true, message: 'Payout approved successfully.', payout: result.payout });
+    } catch (error) {
+        console.error('Approve payout error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to approve payout.' });
+    }
+});
+
 app.post('/api/admin/withdrawal-requests/:id/pay', requireAdminSession, async (req, res) => {
     try {
         const id = req.params.id;
@@ -2298,21 +2440,19 @@ app.post('/api/admin/withdrawal-requests/:id/pay', requireAdminSession, async (r
             return res.status(500).json({ success: false, message: 'Could not mark withdrawal as paid.' });
         }
 
-        const transactionResult = await createTransaction({
-            type: 'affiliate_payout',
+        const payoutResult = await approveAffiliatePayout({
+            affiliateIdOrUserId: data.affiliate_id,
             amount: Number(data.amount_ngn || 0),
-            user_id: data.affiliate_id,
-            status: 'completed',
-            payment_reference: `withdrawal_${data.id}`,
+            affiliateUserId: data.affiliate_id,
+            requestId: data.id,
             note: `Affiliate payout for withdrawal request ${data.id}`
         });
 
-        if (transactionResult.error) {
-            console.error('Affiliate payout transaction failed:', transactionResult.error);
-            return res.status(500).json({ success: false, message: 'Withdrawal paid but failed to record transaction.' });
+        if (!payoutResult.success) {
+            return res.status(500).json({ success: false, message: payoutResult.message || 'Withdrawal paid but failed to record payout.' });
         }
 
-        return res.json({ success: true, request: data, transaction: transactionResult.data });
+        return res.json({ success: true, request: data, payout: payoutResult.payout });
     } catch (error) {
         console.error('Mark paid error:', error);
         return res.status(500).json({ success: false, message: 'Failed to mark withdrawal request as paid.' });

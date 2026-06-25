@@ -96,7 +96,7 @@ async function loadWithdrawalRequests() {
         <td>${request.status}</td>
         <td>${new Date(request.requested_at).toLocaleString()}</td>
         <td>
-          ${request.status === 'pending' ? `<button class="btn-secondary btn-sm" data-action="mark-paid" data-id="${request.id}">Mark as Paid</button>` : '—'}
+          ${request.status === 'pending' ? `<button class="btn-secondary btn-sm" data-action="mark-paid" data-id="${request.id}">Approve Payout</button>` : '—'}
         </td>
       </tr>
     `).join('');
