@@ -11,6 +11,14 @@ function getReferralCookie() {
     const [name, value] = pair.split('=');
     if (name === 'affiliate_ref') return decodeURIComponent(value || '');
   }
+
+  try {
+    const stored = localStorage.getItem('affiliate_ref');
+    if (stored) return decodeURIComponent(stored);
+  } catch (error) {
+    console.warn('Unable to read stored referral code:', error);
+  }
+
   return null;
 }
 
@@ -18,6 +26,12 @@ function setReferralCookie(refCode) {
   if (!refCode) return;
   const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
   document.cookie = `affiliate_ref=${encodeURIComponent(refCode)}; expires=${expires}; path=/; SameSite=Lax`;
+
+  try {
+    localStorage.setItem('affiliate_ref', refCode);
+  } catch (error) {
+    console.warn('Unable to store referral code:', error);
+  }
 }
 
 function captureReferralFromUrl() {
@@ -300,9 +314,12 @@ function setupModalInterface() {
             submitBtn.disabled = true;
 
             try {
-                const refCode = getReferralCookie();
+                const refCode = getReferralCookie() || new URLSearchParams(window.location.search).get('ref') || null;
                 const bodyPayload = { fullName, email, country, password };
-                if (refCode) bodyPayload.ref = refCode;
+                if (refCode) {
+                    bodyPayload.ref_code = refCode;
+                    bodyPayload.ref = refCode;
+                }
 
                 const response = await fetch('/api/signup', {
                     method: 'POST',

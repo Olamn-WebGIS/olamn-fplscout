@@ -1341,8 +1341,9 @@ let tempOtpStore = {};
 
 // 2. Create the API Route to handle Sign-Up without requiring email verification
 app.post('/api/signup', async (req, res) => {
-  const { fullName, email, country, password, ref } = req.body;
+  const { fullName, email, country, password, ref, ref_code, referrer_id, referrerId } = req.body;
   const requestMetadata = getRequestMetadata(req);
+  const referralCode = (ref_code || ref || referrer_id || referrerId || '').toString().trim();
 
   if (!fullName || !email || !country || !password) {
     recordSignupAttempt({
@@ -1351,6 +1352,7 @@ app.post('/api/signup', async (req, res) => {
       country: country || null,
       status: 'failed',
       reason: 'missing_fields',
+      referralCode: referralCode || null,
       ...requestMetadata
     });
     return res.status(400).json({ success: false, message: 'All fields are required.' });
@@ -1370,7 +1372,7 @@ app.post('/api/signup', async (req, res) => {
         country,
         status: 'failed',
         reason: 'duplicate_email',
-        ref,
+        referralCode: referralCode || null,
         ...requestMetadata
       });
       return res.status(400).json({ success: false, message: 'User with this email already exists.' });
@@ -1389,11 +1391,11 @@ app.post('/api/signup', async (req, res) => {
 
     let referredAffiliateId = null;
 
-    if (ref) {
+    if (referralCode) {
       const { data: referrerAffiliate, error: refError } = await supabase
         .from('affiliates')
-        .select('id')
-        .eq('ref_code', ref)
+        .select('id, user_id')
+        .eq('ref_code', referralCode)
         .maybeSingle();
 
       if (!refError && referrerAffiliate) {
@@ -1415,29 +1417,34 @@ app.post('/api/signup', async (req, res) => {
         country,
         status: 'failed',
         reason: 'insert_error',
-        ref,
+        referralCode: referralCode || null,
         ...requestMetadata
       });
       return res.status(500).json({ success: false, message: 'Failed to create user account.' });
     }
 
     const dbClient = supabaseAdmin || supabase;
+    let createdAffiliate = null;
 
-    const { data: existingAffiliate, error: affiliateLookupError } = await dbClient
-      .from('affiliates')
-      .select('id')
-      .eq('user_id', newUser.id)
-      .maybeSingle();
-
-    if (!affiliateLookupError && !existingAffiliate) {
-      const affiliateInsertResult = await dbClient
+    if (referredAffiliateId) {
+      const { data: existingAffiliate, error: affiliateLookupError } = await dbClient
         .from('affiliates')
-        .insert([{ user_id: newUser.id, ref_code: generatedRefCode, balance: 0 }])
-        .select()
-        .single();
+        .select('id')
+        .eq('user_id', newUser.id)
+        .maybeSingle();
 
-      if (affiliateInsertResult.error) {
-        console.warn('Could not create affiliate record for new user:', affiliateInsertResult.error.message || affiliateInsertResult.error);
+      if (!affiliateLookupError && !existingAffiliate) {
+        const affiliateInsertResult = await dbClient
+          .from('affiliates')
+          .insert([{ user_id: newUser.id, ref_code: generatedRefCode, balance: 0 }])
+          .select()
+          .single();
+
+        if (!affiliateInsertResult.error && affiliateInsertResult.data) {
+          createdAffiliate = affiliateInsertResult.data;
+        } else {
+          console.warn('Could not create affiliate record for referral signup:', affiliateInsertResult.error?.message || affiliateInsertResult.error);
+        }
       }
     }
 
@@ -1458,7 +1465,7 @@ app.post('/api/signup', async (req, res) => {
       country,
       status: 'success',
       reason: 'created',
-      ref,
+      referralCode: referralCode || null,
       ...requestMetadata
     });
 
@@ -1476,7 +1483,7 @@ app.post('/api/signup', async (req, res) => {
         isAdmin: false,
         subscription_status: 'Free Member',
         premium_expiry: null,
-        refCode: generatedRefCode
+        refCode: createdAffiliate?.ref_code || null
       }
     });
   } catch (error) {
@@ -1487,7 +1494,7 @@ app.post('/api/signup', async (req, res) => {
       country: country || null,
       status: 'failed',
       reason: 'exception',
-      ref,
+      referralCode: referralCode || null,
       ...requestMetadata
     });
     return res.status(500).json({ success: false, message: 'An unexpected error occurred.' });
