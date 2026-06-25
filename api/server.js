@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const sanitizeHtml = require('sanitize-html');
 const { createClient } = require('@supabase/supabase-js');
+const { calculateAvailableAffiliateBalance } = require('./affiliate-balance');
 require('dotenv').config(); // Load environment variables
 
 const app = express();
@@ -2054,19 +2055,21 @@ app.post('/api/affiliate/withdrawal-request', async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found.' });
         }
 
-        const [earningsResult, withdrawalsResult] = await Promise.all([
+        const [affiliateResult, earningsResult, withdrawalsResult] = await Promise.all([
+            dbClient.from('affiliates').select('balance').eq('user_id', user.id).maybeSingle(),
             dbClient.from('affiliate_earnings').select('amount_ngn').eq('affiliate_id', user.id),
             dbClient.from('withdrawal_requests').select('amount_ngn').eq('affiliate_id', user.id)
         ]);
 
-        if (earningsResult.error || withdrawalsResult.error) {
-            console.error('Affiliate balance query failed:', earningsResult.error || withdrawalsResult.error);
+        if (affiliateResult.error || earningsResult.error || withdrawalsResult.error) {
+            console.error('Affiliate balance query failed:', affiliateResult.error || earningsResult.error || withdrawalsResult.error);
             return res.status(500).json({ success: false, message: 'Failed to verify affiliate balance.' });
         }
 
+        const affiliateBalance = Number((affiliateResult.data && affiliateResult.data.balance) || 0);
         const totalEarned = (earningsResult.data || []).reduce((sum, row) => sum + (row.amount_ngn || 0), 0);
         const totalRequested = (withdrawalsResult.data || []).reduce((sum, row) => sum + (row.amount_ngn || 0), 0);
-        const availableBalance = totalEarned - totalRequested;
+        const availableBalance = calculateAvailableAffiliateBalance({ affiliateBalance, totalEarned, totalRequested });
 
         if (amount > availableBalance) {
             return res.status(400).json({ success: false, message: 'Withdrawal amount exceeds available balance.' });
