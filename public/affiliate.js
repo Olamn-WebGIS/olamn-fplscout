@@ -295,6 +295,7 @@ let affiliateBalance = 0;
 
 async function submitWithdrawalRequest(event) {
   event.preventDefault();
+  switchAffiliateTab('tab-withdraw');
 
   const currentUser = getCurrentUser();
   if (!currentUser || !currentUser.email) {
