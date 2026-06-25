@@ -1396,7 +1396,7 @@ app.post('/api/signup', async (req, res) => {
       insertPayload.ref_code = referralCode;
     }
 
-    let referredAffiliateId = null;
+    let referredAffiliate = null;
 
     if (referralCode) {
       const { data: referrerAffiliate, error: refError } = await supabase
@@ -1406,7 +1406,7 @@ app.post('/api/signup', async (req, res) => {
         .maybeSingle();
 
       if (!refError && referrerAffiliate) {
-        referredAffiliateId = referrerAffiliate.id;
+        referredAffiliate = referrerAffiliate;
       }
     }
 
@@ -1433,7 +1433,34 @@ app.post('/api/signup', async (req, res) => {
     const dbClient = supabaseAdmin || supabase;
     let createdAffiliate = null;
 
-    if (referredAffiliateId) {
+    if (referredAffiliate?.user_id) {
+      const { data: referralRow, error: referralError } = await dbClient
+        .from('referrals')
+        .insert([{
+          affiliate_id: referredAffiliate.user_id,
+          referred_user_id: newUser.id,
+          created_at: new Date(),
+          commission_paid: false
+        }])
+        .select()
+        .single();
+
+      if (!referralError && referralRow) {
+        const earningResult = await recordAffiliateEarning({
+          affiliateId: referredAffiliate.user_id,
+          referredUserId: newUser.id,
+          referralId: referralRow.id
+        });
+
+        if (earningResult?.error) {
+          console.warn('Could not create affiliate earnings record for referral signup:', earningResult.error?.message || earningResult.error);
+        }
+      } else {
+        console.warn('Could not create referral record for signup:', referralError?.message || referralError);
+      }
+    }
+
+    if (referredAffiliate?.user_id) {
       const { data: existingAffiliate, error: affiliateLookupError } = await dbClient
         .from('affiliates')
         .select('id')
