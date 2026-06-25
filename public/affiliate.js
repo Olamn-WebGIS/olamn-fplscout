@@ -292,6 +292,7 @@ function shareWhatsApp() {
 }
 
 let affiliateBalance = 0;
+let activeAffiliateTab = 'tab-overview';
 
 async function submitWithdrawalRequest(event) {
   event.preventDefault();
@@ -433,7 +434,7 @@ async function loadAffiliateDashboard() {
     updateAffiliateJoinButton();
 
     showAffiliateDashboardSection();
-    switchAffiliateTab('tab-overview');
+    switchAffiliateTab(activeAffiliateTab || 'tab-overview');
     affiliateBalance = Number(data.balance || 0);
     if (balanceElem) balanceElem.textContent = `₦${affiliateBalance.toLocaleString()}`;
     if (linkInput) linkInput.value = data.referralLink || `${window.location.origin}/?ref=${currentUser.refCode || ''}`;
@@ -460,6 +461,8 @@ function showAffiliateDashboardSection() {
 }
 
 function switchAffiliateTab(tabId) {
+  activeAffiliateTab = tabId;
+
   // Hide all tab panels
   document.querySelectorAll('.tab-panel').forEach(panel => {
     panel.classList.remove('active');
@@ -548,7 +551,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadAffiliateDashboard();
   
   // Set first tab as default
-  switchAffiliateTab('tab-overview');
+  switchAffiliateTab(activeAffiliateTab);
 
   window.addEventListener('affiliate-auth-success', async () => {
     const currentUser = getCurrentUser();
