@@ -10,6 +10,8 @@ const logoutButton = document.getElementById('logout-admin');
 const publishButton = document.getElementById('publish-post');
 const cancelEditButton = document.getElementById('cancel-edit');
 const withdrawalRequestsNote = document.getElementById('withdrawal-requests-note');
+const signupAttemptsNote = document.getElementById('signup-attempts-note');
+const signupAttemptsBody = document.getElementById('signup-attempts-body');
 const financialOverviewCard = document.getElementById('financial-overview-card');
 const financialFilter = document.getElementById('financial-filter');
 const customDateRange = document.getElementById('custom-date-range');
@@ -137,6 +139,46 @@ function formatDate(dateValue) {
     return new Date(dateValue).toLocaleString();
   } catch {
     return dateValue || '';
+  }
+}
+
+async function loadSignupAttempts() {
+  if (!signupAttemptsBody || !signupAttemptsNote) return;
+
+  const card = document.getElementById('signup-attempts-card');
+  if (card) card.classList.remove('hidden');
+
+  try {
+    const res = await fetch('/api/admin/signup-attempts', { credentials: 'same-origin' });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      signupAttemptsNote.textContent = data?.message || 'Unable to load signup attempts.';
+      signupAttemptsBody.innerHTML = '<tr><td colspan="6">No data to display.</td></tr>';
+      return;
+    }
+
+    if (!data.attempts || data.attempts.length === 0) {
+      signupAttemptsNote.textContent = 'No signup attempts recorded yet.';
+      signupAttemptsBody.innerHTML = '<tr><td colspan="6">No signup attempts recorded yet.</td></tr>';
+      return;
+    }
+
+    signupAttemptsNote.textContent = `Showing ${data.attempts.length} recent signup attempt(s).`;
+    signupAttemptsBody.innerHTML = data.attempts.map((attempt) => `
+      <tr>
+        <td>${new Date(attempt.timestamp).toLocaleString()}</td>
+        <td>${attempt.email || '—'}</td>
+        <td>${attempt.status || 'unknown'}</td>
+        <td>${attempt.reason || '—'}</td>
+        <td>${attempt.country || '—'}</td>
+        <td>${attempt.ipAddress || '—'}</td>
+      </tr>
+    `).join('');
+  } catch (error) {
+    console.error('Signup attempts load failed:', error);
+    signupAttemptsNote.textContent = 'Could not load signup attempts.';
+    signupAttemptsBody.innerHTML = '<tr><td colspan="6">Could not load signup attempts.</td></tr>';
   }
 }
 
@@ -304,6 +346,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           await loadAdminPosts();
           // Ensure withdrawal tab stays inactive until selected, but preload data
           await loadWithdrawalRequests();
+          await loadSignupAttempts();
         }
       }
     } catch (err) {
@@ -347,6 +390,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
           await loadFinancialOverview({ period: financialFilter.value });
         }
+      }
+      if (target === 'signup-attempts-tab') {
+        if (!adminAuthenticated) {
+          signupAttemptsNote.textContent = 'Unlock the dashboard to view signup attempts.';
+          signupAttemptsBody.innerHTML = '<tr><td colspan="6">Unlock the dashboard to view signup attempts.</td></tr>';
+          return;
+        }
+        await loadSignupAttempts();
       }
     });
 
@@ -433,6 +484,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('financial-tab').classList.remove('active');
       showStatus(loginStatus, 'Dashboard unlocked.', true);
       await loadAdminPosts();
+      await loadSignupAttempts();
     } catch (error) {
       console.error('Admin login failed:', error);
       showStatus(loginStatus, 'Unable to login. Try again later.', false);

@@ -11,10 +11,12 @@ const nodemailer = require('nodemailer');
 const sanitizeHtml = require('sanitize-html');
 const { createClient } = require('@supabase/supabase-js');
 const { calculateAvailableAffiliateBalance } = require('./affiliate-balance');
+const { createSignupAttemptStore } = require('./signup-attempts');
 require('dotenv').config(); // Load environment variables
 
 const app = express();
 const cache = new NodeCache({ stdTTL: 120 }); // 2-min default cache
+const signupAttemptStore = createSignupAttemptStore(100);
 
 const FPL_BASE = 'https://fantasy.premierleague.com/api';
 const BASE_URL = process.env.BASE_URL || 'https://fplscout.name.ng';
@@ -103,6 +105,21 @@ function getRequestCountry(req) {
   const countryHeader = req.headers['x-vercel-ip-country'] || req.headers['cf-ipcountry'] || req.headers['x-country-code'] || req.headers['x-appengine-country'];
   if (!countryHeader) return null;
   return String(countryHeader).trim().toUpperCase();
+}
+
+function getRequestMetadata(req) {
+  const forwardedFor = req.headers['x-forwarded-for'];
+  const ipAddress = Array.isArray(forwardedFor)
+    ? forwardedFor[0]
+    : typeof forwardedFor === 'string'
+      ? forwardedFor.split(',')[0].trim()
+      : req.ip || null;
+
+  return {
+    ipAddress,
+    userAgent: req.headers['user-agent'] || null,
+    country: getRequestCountry(req)
+  };
 }
 
 async function getCountryFromGeoIp(ip) {
@@ -1307,8 +1324,17 @@ let tempOtpStore = {};
 // 2. Create the API Route to handle Sign-Up without requiring email verification
 app.post('/api/signup', async (req, res) => {
   const { fullName, email, country, password, ref } = req.body;
+  const requestMetadata = getRequestMetadata(req);
 
   if (!fullName || !email || !country || !password) {
+    signupAttemptStore.record({
+      email: email || null,
+      fullName: fullName || null,
+      country: country || null,
+      status: 'failed',
+      reason: 'missing_fields',
+      ...requestMetadata
+    });
     return res.status(400).json({ success: false, message: 'All fields are required.' });
   }
 
@@ -1320,6 +1346,15 @@ app.post('/api/signup', async (req, res) => {
       .single();
 
     if (!checkError && existingUser) {
+      signupAttemptStore.record({
+        email,
+        fullName,
+        country,
+        status: 'failed',
+        reason: 'duplicate_email',
+        ref,
+        ...requestMetadata
+      });
       return res.status(400).json({ success: false, message: 'User with this email already exists.' });
     }
 
@@ -1355,6 +1390,15 @@ app.post('/api/signup', async (req, res) => {
 
     if (insertError) {
       console.error('Supabase insert error:', insertError);
+      signupAttemptStore.record({
+        email,
+        fullName,
+        country,
+        status: 'failed',
+        reason: 'insert_error',
+        ref,
+        ...requestMetadata
+      });
       return res.status(500).json({ success: false, message: 'Failed to create user account.' });
     }
 
@@ -1368,6 +1412,16 @@ app.post('/api/signup', async (req, res) => {
         console.warn('Could not record referral:', referralResult.error.message || referralResult.error);
       }
     }
+
+    signupAttemptStore.record({
+      email,
+      fullName,
+      country,
+      status: 'success',
+      reason: 'created',
+      ref,
+      ...requestMetadata
+    });
 
     console.log(`User registered successfully: ${email}`);
 
@@ -1388,7 +1442,25 @@ app.post('/api/signup', async (req, res) => {
     });
   } catch (error) {
     console.error('Signup error:', error);
+    signupAttemptStore.record({
+      email: email || null,
+      fullName: fullName || null,
+      country: country || null,
+      status: 'failed',
+      reason: 'exception',
+      ref,
+      ...requestMetadata
+    });
     return res.status(500).json({ success: false, message: 'An unexpected error occurred.' });
+  }
+});
+
+app.get('/api/admin/signup-attempts', requireAdminSession, async (req, res) => {
+  try {
+    return res.json({ success: true, attempts: signupAttemptStore.list() });
+  } catch (error) {
+    console.error('Signup attempts lookup failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to load signup attempts.' });
   }
 });
 
