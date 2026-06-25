@@ -11,12 +11,30 @@ const nodemailer = require('nodemailer');
 const sanitizeHtml = require('sanitize-html');
 const { createClient } = require('@supabase/supabase-js');
 const { calculateAvailableAffiliateBalance } = require('./affiliate-balance');
-const { createSignupAttemptStore } = require('./signup-attempts');
 require('dotenv').config(); // Load environment variables
 
 const app = express();
 const cache = new NodeCache({ stdTTL: 120 }); // 2-min default cache
-const signupAttemptStore = createSignupAttemptStore(100);
+const signupAttempts = [];
+
+function recordSignupAttempt(entry) {
+  const attempt = {
+    ...entry,
+    timestamp: entry.timestamp || new Date().toISOString()
+  };
+
+  signupAttempts.unshift(attempt);
+
+  if (signupAttempts.length > 100) {
+    signupAttempts.length = 100;
+  }
+
+  return attempt;
+}
+
+function getSignupAttempts() {
+  return signupAttempts.slice();
+}
 
 const FPL_BASE = 'https://fantasy.premierleague.com/api';
 const BASE_URL = process.env.BASE_URL || 'https://fplscout.name.ng';
@@ -1327,7 +1345,7 @@ app.post('/api/signup', async (req, res) => {
   const requestMetadata = getRequestMetadata(req);
 
   if (!fullName || !email || !country || !password) {
-    signupAttemptStore.record({
+    recordSignupAttempt({
       email: email || null,
       fullName: fullName || null,
       country: country || null,
@@ -1346,7 +1364,7 @@ app.post('/api/signup', async (req, res) => {
       .single();
 
     if (!checkError && existingUser) {
-      signupAttemptStore.record({
+      recordSignupAttempt({
         email,
         fullName,
         country,
@@ -1391,7 +1409,7 @@ app.post('/api/signup', async (req, res) => {
 
     if (insertError) {
       console.error('Supabase insert error:', insertError);
-      signupAttemptStore.record({
+      recordSignupAttempt({
         email,
         fullName,
         country,
@@ -1434,7 +1452,7 @@ app.post('/api/signup', async (req, res) => {
       }
     }
 
-    signupAttemptStore.record({
+    recordSignupAttempt({
       email,
       fullName,
       country,
@@ -1463,7 +1481,7 @@ app.post('/api/signup', async (req, res) => {
     });
   } catch (error) {
     console.error('Signup error:', error);
-    signupAttemptStore.record({
+    recordSignupAttempt({
       email: email || null,
       fullName: fullName || null,
       country: country || null,
@@ -1478,7 +1496,7 @@ app.post('/api/signup', async (req, res) => {
 
 app.get('/api/admin/signup-attempts', requireAdminSession, async (req, res) => {
   try {
-    return res.json({ success: true, attempts: signupAttemptStore.list() });
+    return res.json({ success: true, attempts: getSignupAttempts() });
   } catch (error) {
     console.error('Signup attempts lookup failed:', error);
     return res.status(500).json({ success: false, message: 'Unable to load signup attempts.' });
