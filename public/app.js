@@ -314,7 +314,8 @@ function setupModalInterface() {
             submitBtn.disabled = true;
 
             try {
-                const refCode = getReferralCookie() || new URLSearchParams(window.location.search).get('ref') || null;
+                const urlParams = new URLSearchParams(window.location.search);
+                const refCode = urlParams.get('ref_code') || urlParams.get('ref') || getReferralCookie() || null;
                 const bodyPayload = { fullName, email, country, password };
                 if (refCode) {
                     bodyPayload.ref_code = refCode;

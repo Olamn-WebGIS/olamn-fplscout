@@ -1379,6 +1379,9 @@ app.post('/api/signup', async (req, res) => {
     }
 
     const generatedRefCode = await generateReferralCode(email);
+
+    // Keep the user insert payload limited to columns that are used by the users table.
+    // Referral codes are handled through the affiliates table instead of the users row.
     const insertPayload = {
       full_name: fullName,
       email,
