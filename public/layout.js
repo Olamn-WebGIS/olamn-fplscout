@@ -72,7 +72,7 @@
   </a>
   
   <!-- Facebook Link -->
-  <a href="https://www.facebook.com/share/14fgQGCqgKv/?mibextid=wwXIfr" target="_blank" rel="noopener" aria-label="Facebook" class="social-btn social-btn-facebook" style="color: currentColor; text-decoration: none;">
+  <a href="https://facebook.com/olamnfplscout" target="_blank" rel="noopener" aria-label="Facebook" class="social-btn social-btn-facebook" style="color: currentColor; text-decoration: none;">
     <i class="fa-brands fa-facebook"></i>
   </a>
 </div>
