@@ -2058,9 +2058,9 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
             success: true,
             isAffiliate: true,
             ref_code: affiliate.ref_code,
-            balance: affiliate.balance || 0,
+            balance: Number(affiliate.balance || 0),
             referralLink: `${BASE_URL}/?ref=${affiliate.ref_code}`,
-            referrals: referrals || []
+            referrals: referralRows || []
         });
     } catch (error) {
         console.error('Affiliate dashboard error:', error);
