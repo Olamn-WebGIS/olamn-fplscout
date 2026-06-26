@@ -1301,7 +1301,7 @@ app.get('/api/admin/signup-attempts', requireAdminSession, async (req, res) => {
 
     const { data, error } = await dbClient
       .from('users')
-      .select('id, email, full_name, country, created_at, is_premium, subscription_status')
+      .select('id, email, full_name, country, created_at, is_premium, subscription_status, ref_code')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -1313,9 +1313,13 @@ app.get('/api/admin/signup-attempts', requireAdminSession, async (req, res) => {
       id: user.id,
       timestamp: user.created_at,
       email: user.email || '—',
+      name: user.full_name || user.email || '—',
+      full_name: user.full_name || user.email || '—',
       status: user.is_premium ? 'premium' : 'registered',
       reason: user.subscription_status || 'Account created',
       country: user.country || '—',
+      ref_code: user.ref_code || null,
+      refCode: user.ref_code || null,
       ipAddress: null
     }));
 

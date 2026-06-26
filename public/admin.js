@@ -176,7 +176,7 @@ function renderSignupAttempts() {
   signupAttemptsNote.textContent = label;
   signupAttemptsBody.innerHTML = filteredAttempts.map((attempt) => `
     <tr>
-      <td>${attempt.full_name || attempt.name || '—'}</td>
+      <td>${attempt.name || attempt.full_name || '—'}</td>
       <td>${attempt.status || 'unknown'}</td>
       <td>${attempt.country || '—'}</td>
       <td>${attempt.ref_code || attempt.refCode || '—'}</td>
