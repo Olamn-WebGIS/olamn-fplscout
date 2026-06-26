@@ -223,6 +223,39 @@ function renderReferralHistory(entries) {
   `;
 }
 
+function renderWithdrawalHistory(entries) {
+  const container = document.getElementById('withdrawal-history');
+  if (!container) return;
+
+  if (!Array.isArray(entries) || entries.length === 0) {
+    container.innerHTML = '<p class="affiliate-empty">No withdrawal requests yet.</p>';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="affiliate-history-table-wrap">
+      <table class="affiliate-history-table">
+        <thead>
+          <tr>
+            <th>Requested Date</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${entries.map(entry => `
+            <tr>
+              <td>${formatHistoryDate(entry.requestedAt)}</td>
+              <td>₦${Number(entry.amountNgN || 0).toLocaleString()}</td>
+              <td>${entry.status || 'Pending'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
 function renderLeaderboard(leaderboard) {
   const container = document.getElementById('affiliate-leaderboard');
   if (!container) return;
@@ -293,6 +326,39 @@ function shareWhatsApp() {
 
 let affiliateBalance = 0;
 let activeAffiliateTab = 'tab-overview';
+let hasPendingWithdrawal = false;
+
+async function loadWithdrawalHistory(userId) {
+  try {
+    const response = await fetch(`/api/affiliate/withdrawals?userId=${encodeURIComponent(userId)}`);
+    if (!response.ok) {
+      throw new Error('Could not load withdrawal history.');
+    }
+    const data = await response.json();
+    if (!data.success) {
+      renderWithdrawalHistory([]);
+      hasPendingWithdrawal = false;
+      return;
+    }
+
+    renderWithdrawalHistory(data.withdrawals || []);
+    hasPendingWithdrawal = Boolean(data.hasPendingWithdrawal);
+
+    const button = document.getElementById('withdrawal-submit');
+    if (button) {
+      button.disabled = hasPendingWithdrawal;
+      button.textContent = hasPendingWithdrawal ? 'Pending...' : 'Request Withdrawal';
+    }
+
+    if (hasPendingWithdrawal) {
+      showAffiliatePageStatus('You already have a pending withdrawal request', true);
+    }
+  } catch (error) {
+    console.error('Withdrawal history load failed', error);
+    renderWithdrawalHistory([]);
+    hasPendingWithdrawal = false;
+  }
+}
 
 async function submitWithdrawalRequest(event) {
   event.preventDefault();
@@ -332,6 +398,23 @@ async function submitWithdrawalRequest(event) {
   if (amount > affiliateBalance) {
     showAffiliatePageStatus('Withdrawal amount cannot exceed your current balance.', true);
     return;
+  }
+
+  const pendingCheckResponse = await fetch(`/api/affiliate/withdrawals?userId=${encodeURIComponent(currentUser.id)}`);
+  if (pendingCheckResponse.ok) {
+    const pendingCheckData = await pendingCheckResponse.json();
+    if (pendingCheckData.success && pendingCheckData.hasPendingWithdrawal) {
+      hasPendingWithdrawal = true;
+      const button = document.getElementById('withdrawal-submit');
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Pending...';
+      }
+      window.alert('You already have a pending withdrawal request');
+      showAffiliatePageStatus('You already have a pending withdrawal request', true);
+      await loadWithdrawalHistory(currentUser.id);
+      return;
+    }
   }
 
   const button = document.getElementById('withdrawal-submit');
@@ -443,7 +526,10 @@ async function loadAffiliateDashboard() {
     const referralCount = document.getElementById('affiliate-referral-count');
     if (referralCount) referralCount.textContent = (data.referrals && data.referrals.length) || '0';
     
-    await loadAffiliateEarningsHistory(currentUser.id);
+    await Promise.all([
+      loadAffiliateEarningsHistory(currentUser.id),
+      loadWithdrawalHistory(currentUser.id)
+    ]);
   } catch (error) {
     console.error('Dashboard load failed', error);
     if (balanceElem) balanceElem.textContent = '₦0';

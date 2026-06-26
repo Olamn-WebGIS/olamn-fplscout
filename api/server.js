@@ -2269,6 +2269,70 @@ app.get('/api/affiliate/earnings', async (req, res) => {
     }
 });
 
+app.get('/api/affiliate/withdrawals', async (req, res) => {
+    try {
+        const dbClient = supabaseAdmin || supabase;
+        const userId = req.query.userId || req.query.user_id;
+
+        if (!userId) {
+            return res.status(400).json({ success: false, message: 'User ID is required.' });
+        }
+
+        const { data: user, error: userError } = await dbClient
+            .from('users')
+            .select('id')
+            .eq('id', userId)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        const { data: affiliate, error: affiliateError } = await dbClient
+            .from('affiliates')
+            .select('user_id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+        if (affiliateError) {
+            console.error('Affiliate withdrawals lookup failed:', affiliateError);
+            return res.status(500).json({ success: false, message: 'Unable to load withdrawal history.' });
+        }
+
+        if (!affiliate) {
+            return res.json({ success: true, withdrawals: [], hasPendingWithdrawal: false });
+        }
+
+        const affiliateUserId = affiliate.user_id || user.id;
+        const { data, error } = await dbClient
+            .from('withdrawal_requests')
+            .select('id, amount_ngn, status, requested_at')
+            .eq('affiliate_id', affiliateUserId)
+            .order('requested_at', { ascending: false });
+
+        if (error) {
+            console.error('Withdrawal history query failed:', error);
+            return res.status(500).json({ success: false, message: 'Unable to load withdrawal history.' });
+        }
+
+        const withdrawals = (data || []).map(entry => ({
+            id: entry.id,
+            amountNgN: entry.amount_ngn,
+            status: entry.status || 'pending',
+            requestedAt: entry.requested_at
+        }));
+
+        return res.json({
+            success: true,
+            withdrawals,
+            hasPendingWithdrawal: withdrawals.some(entry => String(entry.status).toLowerCase() === 'pending')
+        });
+    } catch (error) {
+        console.error('Affiliate withdrawals route error:', error);
+        return res.status(500).json({ success: false, message: 'Unable to load withdrawal history.' });
+    }
+});
+
 app.post('/api/affiliate/withdrawal-request', async (req, res) => {
     try {
         const dbClient = supabaseAdmin || supabase;
@@ -2339,6 +2403,21 @@ app.post('/api/affiliate/withdrawal-request', async (req, res) => {
 
         if (availableBalance < 10000) {
             return res.status(400).json({ success: false, message: 'Balance must be at least ₦10,000 before requesting withdrawal.' });
+        }
+
+        const { data: existingPending, error: pendingLookupError } = await dbClient
+            .from('withdrawal_requests')
+            .select('id')
+            .eq('affiliate_id', affiliateUserId)
+            .eq('status', 'pending');
+
+        if (pendingLookupError) {
+            console.error('Pending withdrawal lookup failed:', pendingLookupError);
+            return res.status(500).json({ success: false, message: 'Failed to verify your withdrawal request status.' });
+        }
+
+        if ((existingPending || []).length > 0) {
+            return res.status(409).json({ success: false, message: 'You already have a pending withdrawal request' });
         }
 
         const insertResult = await dbClient.from('withdrawal_requests').insert([{
