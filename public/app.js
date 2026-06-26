@@ -315,12 +315,14 @@ function setupModalInterface() {
 
             try {
                 const urlParams = new URLSearchParams(window.location.search);
-                const refCode = urlParams.get('ref_code') || urlParams.get('ref') || getReferralCookie() || null;
-                const bodyPayload = { fullName, email, country, password };
-                if (refCode) {
-                    bodyPayload.ref_code = refCode;
-                    bodyPayload.ref = refCode;
-                }
+                const referralCode = urlParams.get('ref_code') || urlParams.get('ref') || getReferralCookie() || null;
+                const bodyPayload = {
+                    fullName,
+                    email,
+                    country,
+                    password,
+                    ...(referralCode ? { ref_code: referralCode, ref: referralCode } : {})
+                };
                 const refInput = document.getElementById('signup-ref-code');
                 if (refInput && refInput.value) {
                     bodyPayload.ref_code = refInput.value;

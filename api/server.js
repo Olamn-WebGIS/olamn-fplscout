@@ -1356,7 +1356,8 @@ let tempOtpStore = {};
 
 // 2. Create the API Route to handle Sign-Up without requiring email verification
 app.post('/api/signup', async (req, res) => {
-  const { fullName, email, country, password, ref } = req.body;
+  const { fullName, email, country, password, ref, ref_code } = req.body;
+  const referralCode = ref_code || ref || null;
 
   if (!fullName || !email || !country || !password) {
     return res.status(400).json({ success: false, message: 'All fields are required.' });
@@ -1385,11 +1386,11 @@ app.post('/api/signup', async (req, res) => {
       ref_code: generatedRefCode
     };
 
-    if (ref) {
+    if (referralCode) {
       const { data: referrer, error: refError } = await supabase
         .from('users')
         .select('id')
-        .eq('ref_code', ref)
+        .eq('ref_code', referralCode)
         .single();
 
       if (!refError && referrer) {
