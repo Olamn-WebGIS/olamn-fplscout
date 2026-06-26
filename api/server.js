@@ -2154,11 +2154,11 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
         }
 
         // Fetch referrals for this affiliate using the actual referrals table schema.
-        const affiliateUserId = affiliate?.user_id || user.id;
+        const currentUserId = user.id;
         const { data: referralRows, error: referralsError } = await dbClient
             .from('referrals')
-            .select('id, affiliate_id, referred_user_id, created_at, commission_paid, commission_paid_at')
-            .eq('affiliate_id', affiliateUserId)
+            .select('*')
+            .eq('affiliate_id', currentUserId)
             .order('created_at', { ascending: false });
 
         if (referralsError) {
