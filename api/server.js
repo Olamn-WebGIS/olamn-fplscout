@@ -1387,6 +1387,8 @@ app.post('/api/signup', async (req, res) => {
       ref_code: referralCode
     };
 
+    let referrerId = null;
+
     if (referralCode) {
       const { data: referrer, error: refError } = await supabase
         .from('users')
@@ -1395,7 +1397,7 @@ app.post('/api/signup', async (req, res) => {
         .single();
 
       if (!refError && referrer) {
-        insertPayload.referred_by = referrer.id;
+        referrerId = referrer.id;
       }
     }
 
@@ -1410,9 +1412,9 @@ app.post('/api/signup', async (req, res) => {
       return res.status(500).json({ success: false, message: 'Failed to create user account.' });
     }
 
-    if (insertPayload.referred_by) {
+    if (referrerId) {
       const referralResult = await supabase.from('referrals').insert([{
-        affiliate_id: insertPayload.referred_by,
+        affiliate_id: referrerId,
         referred_user_id: newUser.id
       }]);
 
