@@ -103,8 +103,12 @@ async function loadWithdrawalRequests() {
 
     tableBody.querySelectorAll('button[data-action="mark-paid"]').forEach(button => {
       button.addEventListener('click', async (event) => {
-        const requestId = event.target.dataset.id;
-        if (!requestId || !confirm('Mark this withdrawal request as paid?')) return;
+        const targetButton = event.currentTarget;
+        const requestId = targetButton.dataset.id;
+        if (!requestId || targetButton.disabled || !confirm('Mark this withdrawal request as paid?')) return;
+
+        targetButton.disabled = true;
+        targetButton.textContent = 'Approving...';
 
         try {
           const markRes = await fetch(`/api/admin/withdrawal-requests/${encodeURIComponent(requestId)}/pay`, {
@@ -113,12 +117,16 @@ async function loadWithdrawalRequests() {
           });
           const result = await markRes.json();
           if (!markRes.ok || !result.success) {
+            targetButton.disabled = false;
+            targetButton.textContent = 'Approve Payout';
             alert(result.message || 'Unable to mark as paid.');
             return;
           }
           await loadWithdrawalRequests();
         } catch (err) {
           console.error('Mark paid error:', err);
+          targetButton.disabled = false;
+          targetButton.textContent = 'Approve Payout';
           alert('Could not complete payment action.');
         }
       });

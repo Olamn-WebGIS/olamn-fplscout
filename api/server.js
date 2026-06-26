@@ -860,13 +860,29 @@ app.post('/api/admin/withdrawal-requests/:id/pay', requireAdminSession, async (r
     const id = req.params.id;
     if (!id) return res.status(400).json({ success: false, message: 'Missing request id' });
 
-    if (!supabaseAdmin) {
-      console.warn('Attempt to perform admin write without service role key');
+    const dbClient = supabaseAdmin || supabase;
+    if (!dbClient) {
+      console.warn('Attempt to perform admin write without a database client');
       return res.status(500).json({ success: false, message: 'Server not configured for admin writes.' });
     }
 
+    const { data: existingRequest, error: fetchError } = await dbClient
+      .from('withdrawal_requests')
+      .select('id, affiliate_id, amount_ngn, status')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existingRequest) {
+      console.error('Error fetching withdrawal request:', fetchError);
+      return res.status(404).json({ success: false, message: 'Withdrawal request not found.' });
+    }
+
+    if (existingRequest.status === 'completed') {
+      return res.json({ success: true, request: existingRequest, alreadyCompleted: true });
+    }
+
     const payload = { status: 'completed', completed_at: new Date().toISOString() };
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await dbClient
       .from('withdrawal_requests')
       .update(payload)
       .eq('id', id)
@@ -878,7 +894,21 @@ app.post('/api/admin/withdrawal-requests/:id/pay', requireAdminSession, async (r
       return res.status(500).json({ success: false, message: error.message || 'Update failed' });
     }
 
-    return res.json({ success: true, request: data });
+    const transactionResult = await createTransaction({
+      type: 'affiliate_payout',
+      amount: Number(existingRequest.amount_ngn || 0),
+      user_id: existingRequest.affiliate_id,
+      status: 'completed',
+      payment_reference: `withdrawal-${id}`,
+      note: `Affiliate payout approved for withdrawal request ${id}`
+    });
+
+    if (transactionResult.error && !transactionResult.alreadyExists) {
+      console.error('Affiliate payout transaction failed:', transactionResult.error);
+      return res.status(500).json({ success: false, message: 'Withdrawal marked paid but transaction recording failed.' });
+    }
+
+    return res.json({ success: true, request: data, transaction: transactionResult.data, alreadyCompleted: false });
   } catch (err) {
     console.error('Mark paid route failed:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
@@ -2167,35 +2197,7 @@ app.get('/api/admin/profit', requireAdminSession, async (req, res) => {
     }
 });
 
-app.post('/api/admin/withdrawal-requests/:id/pay', requireAdminSession, async (req, res) => {
-    try {
-        const id = req.params.id;
-        if (!id) return res.status(400).json({ success: false, message: 'Request id is required.' });
 
-        const dbClient = supabaseAdmin || supabase;
-        const { data, error } = await dbClient
-            .from('withdrawal_requests')
-            .update({ status: 'completed', completed_at: new Date() })
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Mark paid failed:', error);
-            return res.status(500).json({ success: false, message: 'Could not mark withdrawal as paid.' });
-        }
-
-        if (transactionResult.error) {
-            console.error('Affiliate payout transaction failed:', transactionResult.error);
-            return res.status(500).json({ success: false, message: 'Withdrawal paid but failed to record transaction.' });
-        }
-
-        return res.json({ success: true, request: data, transaction: transactionResult.data });
-    } catch (error) {
-        console.error('Mark paid error:', error);
-        return res.status(500).json({ success: false, message: 'Failed to mark withdrawal request as paid.' });
-    }
-});
 
 // Send Support Request
 app.post('/api/send-support-request', async (req, res) => {
