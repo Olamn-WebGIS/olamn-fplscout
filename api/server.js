@@ -1383,7 +1383,7 @@ app.post('/api/signup', async (req, res) => {
       is_premium: false,
       is_admin: false,
       created_at: new Date(),
-      ref_code: generatedRefCode
+      ref_code: referralCode || generatedRefCode
     };
 
     if (referralCode) {
@@ -1434,7 +1434,7 @@ app.post('/api/signup', async (req, res) => {
         isAdmin: false,
         subscription_status: 'Free Member',
         premium_expiry: null,
-        refCode: generatedRefCode
+        refCode: referralCode || generatedRefCode
       }
     });
   } catch (error) {
