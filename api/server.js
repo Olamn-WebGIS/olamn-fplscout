@@ -894,21 +894,7 @@ app.post('/api/admin/withdrawal-requests/:id/pay', requireAdminSession, async (r
       return res.status(500).json({ success: false, message: error.message || 'Update failed' });
     }
 
-    const transactionResult = await createTransaction({
-      type: 'affiliate_payout',
-      amount: Number(existingRequest.amount_ngn || 0),
-      user_id: existingRequest.affiliate_id,
-      status: 'completed',
-      payment_reference: `withdrawal-${id}`,
-      note: `Affiliate payout approved for withdrawal request ${id}`
-    });
-
-    if (transactionResult.error && !transactionResult.alreadyExists) {
-      console.error('Affiliate payout transaction failed:', transactionResult.error);
-      return res.status(500).json({ success: false, message: 'Withdrawal marked paid but transaction recording failed.' });
-    }
-
-    return res.json({ success: true, request: data, transaction: transactionResult.data, alreadyCompleted: false });
+    return res.json({ success: true, request: data, alreadyCompleted: false });
   } catch (err) {
     console.error('Mark paid route failed:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
