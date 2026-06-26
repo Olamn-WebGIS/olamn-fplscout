@@ -1357,7 +1357,9 @@ let tempOtpStore = {};
 // 2. Create the API Route to handle Sign-Up without requiring email verification
 app.post('/api/signup', async (req, res) => {
   const { fullName, email, country, password, ref, ref_code } = req.body;
-  const referralCode = ref_code || ref || null;
+  const urlParams = new URLSearchParams(req.url.split('?')[1] || '');
+  const rawReferralCode = (urlParams.get('ref') ?? ref ?? ref_code ?? '').toString().trim();
+  const referralCode = rawReferralCode ? rawReferralCode : null;
 
   if (!fullName || !email || !country || !password) {
     return res.status(400).json({ success: false, message: 'All fields are required.' });
@@ -1374,7 +1376,6 @@ app.post('/api/signup', async (req, res) => {
       return res.status(400).json({ success: false, message: 'User with this email already exists.' });
     }
 
-    const generatedRefCode = await generateReferralCode(email);
     const insertPayload = {
       full_name: fullName,
       email,
@@ -1383,7 +1384,7 @@ app.post('/api/signup', async (req, res) => {
       is_premium: false,
       is_admin: false,
       created_at: new Date(),
-      ref_code: referralCode || generatedRefCode
+      ref_code: referralCode
     };
 
     if (referralCode) {
@@ -1434,7 +1435,7 @@ app.post('/api/signup', async (req, res) => {
         isAdmin: false,
         subscription_status: 'Free Member',
         premium_expiry: null,
-        refCode: referralCode || generatedRefCode
+        refCode: referralCode
       }
     });
   } catch (error) {
