@@ -15,26 +15,6 @@ require('dotenv').config(); // Load environment variables
 
 const app = express();
 const cache = new NodeCache({ stdTTL: 120 }); // 2-min default cache
-const signupAttempts = [];
-
-function recordSignupAttempt(entry) {
-  const attempt = {
-    ...entry,
-    timestamp: entry.timestamp || new Date().toISOString()
-  };
-
-  signupAttempts.unshift(attempt);
-
-  if (signupAttempts.length > 100) {
-    signupAttempts.length = 100;
-  }
-
-  return attempt;
-}
-
-function getSignupAttempts() {
-  return signupAttempts.slice();
-}
 
 const FPL_BASE = 'https://fantasy.premierleague.com/api';
 const BASE_URL = process.env.BASE_URL || 'https://fplscout.name.ng';
@@ -125,21 +105,6 @@ function getRequestCountry(req) {
   return String(countryHeader).trim().toUpperCase();
 }
 
-function getRequestMetadata(req) {
-  const forwardedFor = req.headers['x-forwarded-for'];
-  const ipAddress = Array.isArray(forwardedFor)
-    ? forwardedFor[0]
-    : typeof forwardedFor === 'string'
-      ? forwardedFor.split(',')[0].trim()
-      : req.ip || null;
-
-  return {
-    ipAddress,
-    userAgent: req.headers['user-agent'] || null,
-    country: getRequestCountry(req)
-  };
-}
-
 async function getCountryFromGeoIp(ip) {
   const apiKey = process.env.GEOIP_API_KEY;
   const provider = process.env.GEOIP_PROVIDER || 'ipapi';
@@ -175,10 +140,10 @@ async function generateReferralCode(email) {
   for (let attempt = 0; attempt < 5; attempt++) {
     const candidate = `${base}-${crypto.randomBytes(3).toString('hex')}`;
     const { data, error } = await supabase
-      .from('affiliates')
+      .from('users')
       .select('id')
       .eq('ref_code', candidate)
-      .maybeSingle();
+      .single();
     if (error || !data) return candidate;
   }
   return `${base}-${crypto.randomBytes(4).toString('hex')}`;
@@ -1341,20 +1306,9 @@ let tempOtpStore = {};
 
 // 2. Create the API Route to handle Sign-Up without requiring email verification
 app.post('/api/signup', async (req, res) => {
-  const { fullName, email, country, password, ref, ref_code, referrer_id, referrerId } = req.body;
-  const requestMetadata = getRequestMetadata(req);
-  const referralCode = (ref_code || ref || referrer_id || referrerId || '').toString().trim();
+  const { fullName, email, country, password, ref } = req.body;
 
   if (!fullName || !email || !country || !password) {
-    recordSignupAttempt({
-      email: email || null,
-      fullName: fullName || null,
-      country: country || null,
-      status: 'failed',
-      reason: 'missing_fields',
-      referralCode: referralCode || null,
-      ...requestMetadata
-    });
     return res.status(400).json({ success: false, message: 'All fields are required.' });
   }
 
@@ -1366,22 +1320,10 @@ app.post('/api/signup', async (req, res) => {
       .single();
 
     if (!checkError && existingUser) {
-      recordSignupAttempt({
-        email,
-        fullName,
-        country,
-        status: 'failed',
-        reason: 'duplicate_email',
-        referralCode: referralCode || null,
-        ...requestMetadata
-      });
       return res.status(400).json({ success: false, message: 'User with this email already exists.' });
     }
 
     const generatedRefCode = await generateReferralCode(email);
-
-    // Keep the user insert payload limited to columns that are used by the users table.
-    // Referral codes are handled through the affiliates table instead of the users row.
     const insertPayload = {
       full_name: fullName,
       email,
@@ -1389,24 +1331,19 @@ app.post('/api/signup', async (req, res) => {
       password,
       is_premium: false,
       is_admin: false,
-      created_at: new Date()
+      created_at: new Date(),
+      ref_code: generatedRefCode
     };
 
-    if (referralCode) {
-      insertPayload.ref_code = referralCode;
-    }
+    if (ref) {
+      const { data: referrer, error: refError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('ref_code', ref)
+        .single();
 
-    let referredAffiliate = null;
-
-    if (referralCode) {
-      const { data: referrerAffiliate, error: refError } = await supabase
-        .from('affiliates')
-        .select('id, user_id')
-        .eq('ref_code', referralCode)
-        .maybeSingle();
-
-      if (!refError && referrerAffiliate) {
-        referredAffiliate = referrerAffiliate;
+      if (!refError && referrer) {
+        insertPayload.referred_by = referrer.id;
       }
     }
 
@@ -1418,79 +1355,19 @@ app.post('/api/signup', async (req, res) => {
 
     if (insertError) {
       console.error('Supabase insert error:', insertError);
-      recordSignupAttempt({
-        email,
-        fullName,
-        country,
-        status: 'failed',
-        reason: 'insert_error',
-        referralCode: referralCode || null,
-        ...requestMetadata
-      });
       return res.status(500).json({ success: false, message: 'Failed to create user account.' });
     }
 
-    const dbClient = supabaseAdmin || supabase;
-    let createdAffiliate = null;
+    if (insertPayload.referred_by) {
+      const referralResult = await supabase.from('referrals').insert([{
+        affiliate_id: insertPayload.referred_by,
+        referred_user_id: newUser.id
+      }]);
 
-    if (referredAffiliate?.user_id) {
-      const { data: referralRow, error: referralError } = await dbClient
-        .from('referrals')
-        .insert([{
-          affiliate_id: referredAffiliate.user_id,
-          referred_user_id: newUser.id,
-          created_at: new Date(),
-          commission_paid: false
-        }])
-        .select()
-        .single();
-
-      if (!referralError && referralRow) {
-        const earningResult = await recordAffiliateEarning({
-          affiliateId: referredAffiliate.user_id,
-          referredUserId: newUser.id,
-          referralId: referralRow.id
-        });
-
-        if (earningResult?.error) {
-          console.warn('Could not create affiliate earnings record for referral signup:', earningResult.error?.message || earningResult.error);
-        }
-      } else {
-        console.warn('Could not create referral record for signup:', referralError?.message || referralError);
+      if (referralResult.error) {
+        console.warn('Could not record referral:', referralResult.error.message || referralResult.error);
       }
     }
-
-    if (referredAffiliate?.user_id) {
-      const { data: existingAffiliate, error: affiliateLookupError } = await dbClient
-        .from('affiliates')
-        .select('id')
-        .eq('user_id', newUser.id)
-        .maybeSingle();
-
-      if (!affiliateLookupError && !existingAffiliate) {
-        const affiliateInsertResult = await dbClient
-          .from('affiliates')
-          .insert([{ user_id: newUser.id, ref_code: generatedRefCode, balance: 0 }])
-          .select()
-          .single();
-
-        if (!affiliateInsertResult.error && affiliateInsertResult.data) {
-          createdAffiliate = affiliateInsertResult.data;
-        } else {
-          console.warn('Could not create affiliate record for referral signup:', affiliateInsertResult.error?.message || affiliateInsertResult.error);
-        }
-      }
-    }
-
-    recordSignupAttempt({
-      email,
-      fullName,
-      country,
-      status: 'success',
-      reason: 'created',
-      referralCode: referralCode || null,
-      ...requestMetadata
-    });
 
     console.log(`User registered successfully: ${email}`);
 
@@ -1506,30 +1383,12 @@ app.post('/api/signup', async (req, res) => {
         isAdmin: false,
         subscription_status: 'Free Member',
         premium_expiry: null,
-        refCode: createdAffiliate?.ref_code || null
+        refCode: generatedRefCode
       }
     });
   } catch (error) {
     console.error('Signup error:', error);
-    recordSignupAttempt({
-      email: email || null,
-      fullName: fullName || null,
-      country: country || null,
-      status: 'failed',
-      reason: 'exception',
-      referralCode: referralCode || null,
-      ...requestMetadata
-    });
     return res.status(500).json({ success: false, message: 'An unexpected error occurred.' });
-  }
-});
-
-app.get('/api/admin/signup-attempts', requireAdminSession, async (req, res) => {
-  try {
-    return res.json({ success: true, attempts: getSignupAttempts() });
-  } catch (error) {
-    console.error('Signup attempts lookup failed:', error);
-    return res.status(500).json({ success: false, message: 'Unable to load signup attempts.' });
   }
 });
 
@@ -2134,7 +1993,7 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
 
         const { data: affiliate, error: affiliateError } = await dbClient
             .from('affiliates')
-            .select('id, user_id, ref_code, balance')
+            .select('ref_code, balance')
             .eq('user_id', user.id)
             .maybeSingle();
 
@@ -2165,171 +2024,17 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
             console.error('Referrals lookup error:', referralsError);
         }
 
-        let referrals = [];
-        const referredUserIds = [...new Set((referralRows || [])
-            .map(row => row.referred_user_id)
-            .filter(Boolean))];
-
-        if (referredUserIds.length > 0) {
-            const { data: referredUsers, error: referredUsersError } = await dbClient
-                .from('users')
-                .select('id, full_name, email')
-                .in('id', referredUserIds);
-
-            if (!referredUsersError && referredUsers) {
-                const referredUsersById = Object.fromEntries((referredUsers || []).map(userRow => [userRow.id, userRow]));
-                referrals = (referralRows || []).map(row => ({
-                    id: row.id,
-                    referredUserId: row.referred_user_id,
-                    referredName: referredUsersById[row.referred_user_id]?.full_name || null,
-                    referredEmail: referredUsersById[row.referred_user_id]?.email || null,
-                    joinedAt: row.created_at,
-                    commissionPaid: Boolean(row.commission_paid),
-                    status: row.commission_paid ? 'Paid' : 'Pending'
-                }));
-            }
-        }
-
-        const earningsResponse = await dbClient
-            .from('affiliate_earnings')
-            .select('amount_ngn, description, earned_at')
-            .eq('affiliate_id', affiliateUserId)
-            .order('earned_at', { ascending: false });
-
-        const fallbackHistory = !earningsResponse.error && (earningsResponse.data || []).length > 0
-            ? (earningsResponse.data || []).map(entry => ({
-                amountNgN: entry.amount_ngn,
-                description: entry.description || 'Referral reward',
-                earnedAt: entry.earned_at
-            }))
-            : [];
-
         return res.json({
             success: true,
             isAffiliate: true,
             ref_code: affiliate.ref_code,
             balance: affiliate.balance || 0,
             referralLink: `${BASE_URL}/?ref=${affiliate.ref_code}`,
-            referrals,
-            earnings: fallbackHistory
+            referrals: referrals || []
         });
     } catch (error) {
         console.error('Affiliate dashboard error:', error);
         return res.status(500).json({ success: false, message: 'Failed to load affiliate dashboard.' });
-    }
-});
-
-app.get('/api/affiliate/earnings', async (req, res) => {
-    try {
-        const dbClient = supabaseAdmin || supabase;
-        const userId = req.query.userId || req.query.user_id;
-
-        if (!userId) {
-            return res.status(400).json({ success: false, message: 'User ID is required.' });
-        }
-
-        const { data: affiliate, error: affiliateError } = await dbClient
-            .from('affiliates')
-            .select('user_id')
-            .eq('user_id', userId)
-            .maybeSingle();
-
-        if (affiliateError) {
-            console.error('Affiliate earnings lookup failed:', affiliateError);
-            return res.status(500).json({ success: false, message: 'Unable to load referral history.' });
-        }
-
-        if (!affiliate) {
-            return res.json({ success: true, earnings: [] });
-        }
-
-        const affiliateUserId = affiliate?.user_id || userId;
-        const { data, error } = await dbClient
-            .from('affiliate_earnings')
-            .select('amount_ngn, description, earned_at')
-            .eq('affiliate_id', affiliateUserId)
-            .order('earned_at', { ascending: false });
-
-        if (error) {
-            console.error('Affiliate earnings query failed:', error);
-            return res.status(500).json({ success: false, message: 'Unable to load referral history.' });
-        }
-
-        return res.json({
-            success: true,
-            earnings: (data || []).map(entry => ({
-                amountNgN: entry.amount_ngn,
-                description: entry.description || 'Referral reward',
-                earnedAt: entry.earned_at
-            }))
-        });
-    } catch (error) {
-        console.error('Affiliate earnings route error:', error);
-        return res.status(500).json({ success: false, message: 'Unable to load referral history.' });
-    }
-});
-
-app.get('/api/affiliate/withdrawals', async (req, res) => {
-    try {
-        const dbClient = supabaseAdmin || supabase;
-        const userId = req.query.userId || req.query.user_id;
-
-        if (!userId) {
-            return res.status(400).json({ success: false, message: 'User ID is required.' });
-        }
-
-        const { data: user, error: userError } = await dbClient
-            .from('users')
-            .select('id')
-            .eq('id', userId)
-            .single();
-
-        if (userError || !user) {
-            return res.status(404).json({ success: false, message: 'User not found.' });
-        }
-
-        const { data: affiliate, error: affiliateError } = await dbClient
-            .from('affiliates')
-            .select('user_id')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-        if (affiliateError) {
-            console.error('Affiliate withdrawals lookup failed:', affiliateError);
-            return res.status(500).json({ success: false, message: 'Unable to load withdrawal history.' });
-        }
-
-        if (!affiliate) {
-            return res.json({ success: true, withdrawals: [], hasPendingWithdrawal: false });
-        }
-
-        const affiliateUserId = affiliate.user_id || user.id;
-        const { data, error } = await dbClient
-            .from('withdrawal_requests')
-            .select('id, amount_ngn, status, requested_at')
-            .eq('affiliate_id', affiliateUserId)
-            .order('requested_at', { ascending: false });
-
-        if (error) {
-            console.error('Withdrawal history query failed:', error);
-            return res.status(500).json({ success: false, message: 'Unable to load withdrawal history.' });
-        }
-
-        const withdrawals = (data || []).map(entry => ({
-            id: entry.id,
-            amountNgN: entry.amount_ngn,
-            status: entry.status || 'pending',
-            requestedAt: entry.requested_at
-        }));
-
-        return res.json({
-            success: true,
-            withdrawals,
-            hasPendingWithdrawal: withdrawals.some(entry => String(entry.status).toLowerCase() === 'pending')
-        });
-    } catch (error) {
-        console.error('Affiliate withdrawals route error:', error);
-        return res.status(500).json({ success: false, message: 'Unable to load withdrawal history.' });
     }
 });
 
@@ -2351,48 +2056,18 @@ app.post('/api/affiliate/withdrawal-request', async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found.' });
         }
 
-        let affiliateRecord = null;
-        const { data: existingAffiliate, error: affiliateLookupError } = await dbClient
-            .from('affiliates')
-            .select('id, user_id, balance')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-        if (affiliateLookupError) {
-            console.error('Could not find affiliate record for this user.', affiliateLookupError);
-            return res.status(500).json({ success: false, message: 'Failed to verify affiliate account.' });
-        }
-
-        if (!existingAffiliate) {
-            const newAffiliateCode = await generateAffiliateRefCode();
-            const { data: createdAffiliate, error: createAffiliateError } = await dbClient
-                .from('affiliates')
-                .insert([{ user_id: user.id, ref_code: newAffiliateCode, balance: 0 }])
-                .select()
-                .single();
-
-            if (createAffiliateError || !createdAffiliate) {
-                console.error('Failed to create affiliate record for this user.', createAffiliateError);
-                return res.status(500).json({ success: false, message: 'Failed to create affiliate account.' });
-            }
-
-            affiliateRecord = createdAffiliate;
-        } else {
-            affiliateRecord = existingAffiliate;
-        }
-
-        const affiliateUserId = affiliateRecord.user_id || user.id;
-        const [earningsResult, withdrawalsResult] = await Promise.all([
-            dbClient.from('affiliate_earnings').select('amount_ngn').eq('affiliate_id', affiliateUserId),
-            dbClient.from('withdrawal_requests').select('amount_ngn').eq('affiliate_id', affiliateUserId)
+        const [affiliateResult, earningsResult, withdrawalsResult] = await Promise.all([
+            dbClient.from('affiliates').select('balance').eq('user_id', user.id).maybeSingle(),
+            dbClient.from('affiliate_earnings').select('amount_ngn').eq('affiliate_id', user.id),
+            dbClient.from('withdrawal_requests').select('amount_ngn').eq('affiliate_id', user.id)
         ]);
 
-        if (earningsResult.error || withdrawalsResult.error) {
-            console.error('Affiliate balance query failed:', earningsResult.error || withdrawalsResult.error);
+        if (affiliateResult.error || earningsResult.error || withdrawalsResult.error) {
+            console.error('Affiliate balance query failed:', affiliateResult.error || earningsResult.error || withdrawalsResult.error);
             return res.status(500).json({ success: false, message: 'Failed to verify affiliate balance.' });
         }
 
-        const affiliateBalance = Number(affiliateRecord.balance || 0);
+        const affiliateBalance = Number((affiliateResult.data && affiliateResult.data.balance) || 0);
         const totalEarned = (earningsResult.data || []).reduce((sum, row) => sum + (row.amount_ngn || 0), 0);
         const totalRequested = (withdrawalsResult.data || []).reduce((sum, row) => sum + (row.amount_ngn || 0), 0);
         const availableBalance = calculateAvailableAffiliateBalance({ affiliateBalance, totalEarned, totalRequested });
@@ -2405,23 +2080,8 @@ app.post('/api/affiliate/withdrawal-request', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Balance must be at least ₦10,000 before requesting withdrawal.' });
         }
 
-        const { data: existingPending, error: pendingLookupError } = await dbClient
-            .from('withdrawal_requests')
-            .select('id')
-            .eq('affiliate_id', affiliateUserId)
-            .eq('status', 'pending');
-
-        if (pendingLookupError) {
-            console.error('Pending withdrawal lookup failed:', pendingLookupError);
-            return res.status(500).json({ success: false, message: 'Failed to verify your withdrawal request status.' });
-        }
-
-        if ((existingPending || []).length > 0) {
-            return res.status(409).json({ success: false, message: 'You already have a pending withdrawal request' });
-        }
-
-        const insertResult = await dbClient.from('withdrawal_requests').insert([{
-            affiliate_id: affiliateUserId,
+        const insertResult = await supabase.from('withdrawal_requests').insert([{
+            affiliate_id: user.id,
             amount_ngn: amount,
             bank_name,
             account_name,
@@ -2441,101 +2101,6 @@ app.post('/api/affiliate/withdrawal-request', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to process withdrawal request.' });
     }
 });
-
-async function approveAffiliatePayout({ affiliateIdOrUserId, amount, affiliateUserId = null, requestId = null, note = 'Admin payout approved' }) {
-    const payoutAmount = Number(amount);
-    if (!affiliateIdOrUserId || Number.isNaN(payoutAmount) || payoutAmount <= 0) {
-        return { success: false, message: 'affiliate_id and a positive amount are required.' };
-    }
-
-    const dbClient = supabaseAdmin || supabase;
-    let affiliateRecord = null;
-    let affiliateLookupError = null;
-
-    const candidateUserId = affiliateUserId || affiliateIdOrUserId;
-
-    const { data: affiliateByUser, error: affiliateByUserError } = await dbClient
-        .from('affiliates')
-        .select('id, balance, user_id')
-        .eq('user_id', candidateUserId)
-        .maybeSingle();
-
-    if (!affiliateByUserError && affiliateByUser) {
-        affiliateRecord = affiliateByUser;
-    } else {
-        affiliateLookupError = affiliateByUserError;
-    }
-
-    if (!affiliateRecord) {
-        const { data: affiliateById, error: affiliateByIdError } = await dbClient
-            .from('affiliates')
-            .select('id, balance, user_id')
-            .eq('id', affiliateIdOrUserId)
-            .maybeSingle();
-
-        if (!affiliateByIdError && affiliateById) {
-            affiliateRecord = affiliateById;
-        } else {
-            affiliateLookupError = affiliateByIdError || affiliateLookupError;
-        }
-    }
-
-    if (!affiliateRecord) {
-        return { success: false, message: 'Affiliate record not found.' };
-    }
-
-    if (Number(affiliateRecord.balance || 0) < payoutAmount) {
-        return { success: false, message: 'Insufficient affiliate balance for this payout.' };
-    }
-
-    const { data: transaction, error: transactionError } = await dbClient
-        .from('transactions')
-        .insert([{
-            type: 'affiliate_payout',
-            amount: payoutAmount,
-            user_id: affiliateRecord.user_id || candidateUserId,
-            status: 'completed',
-            payment_reference: `payout_${affiliateRecord.id}_${Date.now()}`,
-            note,
-            created_at: new Date()
-        }])
-        .select()
-        .single();
-
-    if (transactionError) {
-        console.error('Admin payout transaction insert failed:', transactionError);
-        return { success: false, message: 'Failed to record payout transaction.' };
-    }
-
-    const { data: updatedAffiliate, error: balanceError } = await dbClient
-        .from('affiliates')
-        .update({ balance: Number(affiliateRecord.balance || 0) - payoutAmount })
-        .eq('id', affiliateRecord.id)
-        .select()
-        .single();
-
-    if (balanceError) {
-        console.error('Affiliate balance update failed:', balanceError);
-        return { success: false, message: 'Payout was recorded but balance update failed.' };
-    }
-
-    if (requestId) {
-        await dbClient
-            .from('withdrawal_requests')
-            .update({ status: 'completed', completed_at: new Date() })
-            .eq('id', requestId);
-    }
-
-    return {
-        success: true,
-        payout: {
-            affiliate_id: affiliateRecord.id,
-            amount: payoutAmount,
-            balance: updatedAffiliate?.balance ?? null,
-            transaction_id: transaction?.id || null
-        }
-    };
-}
 
 app.get('/api/admin/withdrawal-requests', requireAdminSession, async (req, res) => {
     try {
@@ -2602,28 +2167,6 @@ app.get('/api/admin/profit', requireAdminSession, async (req, res) => {
     }
 });
 
-app.post('/api/admin/approve-payout', requireAdminSession, async (req, res) => {
-    try {
-        const { affiliate_id, amount, affiliate_user_id } = req.body;
-        const result = await approveAffiliatePayout({
-            affiliateIdOrUserId: affiliate_id || affiliate_user_id,
-            amount,
-            affiliateUserId: affiliate_user_id,
-            note: 'Admin payout approved'
-        });
-
-        if (!result.success) {
-            const statusCode = result.message === 'Affiliate record not found.' ? 404 : 400;
-            return res.status(statusCode).json({ success: false, message: result.message });
-        }
-
-        return res.json({ success: true, message: 'Payout approved successfully.', payout: result.payout });
-    } catch (error) {
-        console.error('Approve payout error:', error);
-        return res.status(500).json({ success: false, message: 'Failed to approve payout.' });
-    }
-});
-
 app.post('/api/admin/withdrawal-requests/:id/pay', requireAdminSession, async (req, res) => {
     try {
         const id = req.params.id;
@@ -2642,19 +2185,12 @@ app.post('/api/admin/withdrawal-requests/:id/pay', requireAdminSession, async (r
             return res.status(500).json({ success: false, message: 'Could not mark withdrawal as paid.' });
         }
 
-        const payoutResult = await approveAffiliatePayout({
-            affiliateIdOrUserId: data.affiliate_id,
-            amount: Number(data.amount_ngn || 0),
-            affiliateUserId: data.affiliate_id,
-            requestId: data.id,
-            note: `Affiliate payout for withdrawal request ${data.id}`
-        });
-
-        if (!payoutResult.success) {
-            return res.status(500).json({ success: false, message: payoutResult.message || 'Withdrawal paid but failed to record payout.' });
+        if (transactionResult.error) {
+            console.error('Affiliate payout transaction failed:', transactionResult.error);
+            return res.status(500).json({ success: false, message: 'Withdrawal paid but failed to record transaction.' });
         }
 
-        return res.json({ success: true, request: data, payout: payoutResult.payout });
+        return res.json({ success: true, request: data, transaction: transactionResult.data });
     } catch (error) {
         console.error('Mark paid error:', error);
         return res.status(500).json({ success: false, message: 'Failed to mark withdrawal request as paid.' });
