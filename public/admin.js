@@ -12,6 +12,7 @@ const cancelEditButton = document.getElementById('cancel-edit');
 const withdrawalRequestsNote = document.getElementById('withdrawal-requests-note');
 const signupAttemptsNote = document.getElementById('signup-attempts-note');
 const signupAttemptsBody = document.getElementById('signup-attempts-body');
+const signupStatusFilter = document.getElementById('signup-status-filter');
 const financialOverviewCard = document.getElementById('financial-overview-card');
 const financialFilter = document.getElementById('financial-filter');
 const customDateRange = document.getElementById('custom-date-range');
@@ -31,6 +32,7 @@ const tabButtons = document.querySelectorAll('.tab-btn');
 let adminPassword = null;
 let adminAuthenticated = false;
 let quill;
+let signupAttemptsData = [];
 let editingPostId = null;
 let editingPostSlug = null;
 let existingSlugs = new Set();
@@ -150,6 +152,38 @@ function formatDate(dateValue) {
   }
 }
 
+function renderSignupAttempts() {
+  if (!signupAttemptsBody || !signupAttemptsNote) return;
+
+  const selectedStatus = (signupStatusFilter?.value || 'all').toLowerCase();
+  const filteredAttempts = signupAttemptsData.filter((attempt) => {
+    const status = (attempt.status || 'registered').toLowerCase();
+    return selectedStatus === 'all' || status === selectedStatus;
+  });
+
+  if (filteredAttempts.length === 0) {
+    const emptyMessage = selectedStatus === 'all'
+      ? 'No signup attempts recorded yet.'
+      : `No ${selectedStatus} signups found.`;
+    signupAttemptsNote.textContent = emptyMessage;
+    signupAttemptsBody.innerHTML = '<tr><td colspan="4">No data to display.</td></tr>';
+    return;
+  }
+
+  const label = selectedStatus === 'all'
+    ? `Showing ${filteredAttempts.length} recent signup(s).`
+    : `Showing ${filteredAttempts.length} ${selectedStatus} signup(s).`;
+  signupAttemptsNote.textContent = label;
+  signupAttemptsBody.innerHTML = filteredAttempts.map((attempt) => `
+    <tr>
+      <td>${attempt.name || attempt.full_name || attempt.email || '—'}</td>
+      <td>${attempt.status || 'unknown'}</td>
+      <td>${attempt.country || '—'}</td>
+      <td>${attempt.ref_code || attempt.refCode || '—'}</td>
+    </tr>
+  `).join('');
+}
+
 async function loadSignupAttempts() {
   if (!signupAttemptsBody || !signupAttemptsNote) return;
 
@@ -161,32 +195,19 @@ async function loadSignupAttempts() {
     const data = await res.json();
 
     if (!res.ok || !data.success) {
+      signupAttemptsData = [];
       signupAttemptsNote.textContent = data?.message || 'Unable to load signup attempts.';
-      signupAttemptsBody.innerHTML = '<tr><td colspan="6">No data to display.</td></tr>';
+      signupAttemptsBody.innerHTML = '<tr><td colspan="4">No data to display.</td></tr>';
       return;
     }
 
-    if (!data.attempts || data.attempts.length === 0) {
-      signupAttemptsNote.textContent = 'No signup attempts recorded yet.';
-      signupAttemptsBody.innerHTML = '<tr><td colspan="6">No signup attempts recorded yet.</td></tr>';
-      return;
-    }
-
-    signupAttemptsNote.textContent = `Showing ${data.attempts.length} recent signup(s).`;
-    signupAttemptsBody.innerHTML = data.attempts.map((attempt) => `
-      <tr>
-        <td>${new Date(attempt.timestamp).toLocaleString()}</td>
-        <td>${attempt.email || '—'}</td>
-        <td>${attempt.status || 'unknown'}</td>
-        <td>${attempt.reason || '—'}</td>
-        <td>${attempt.country || '—'}</td>
-        <td>${attempt.ipAddress || '—'}</td>
-      </tr>
-    `).join('');
+    signupAttemptsData = Array.isArray(data.attempts) ? data.attempts : [];
+    renderSignupAttempts();
   } catch (error) {
     console.error('Signup attempts load failed:', error);
+    signupAttemptsData = [];
     signupAttemptsNote.textContent = 'Could not load signup attempts.';
-    signupAttemptsBody.innerHTML = '<tr><td colspan="6">Could not load signup attempts.</td></tr>';
+    signupAttemptsBody.innerHTML = '<tr><td colspan="4">Could not load signup attempts.</td></tr>';
   }
 }
 
@@ -336,7 +357,9 @@ function resetEditorState() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   initializeQuill();
-
+  if (signupStatusFilter) {
+    signupStatusFilter.addEventListener('change', renderSignupAttempts);
+  }
   // Try to auto-unlock dashboard if admin session cookie exists
   async function tryAutoUnlock() {
     try {

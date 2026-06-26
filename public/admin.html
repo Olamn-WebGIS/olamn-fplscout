@@ -215,16 +215,22 @@
     <div class="admin-card hidden" id="signup-attempts-card">
       <h2>Signups</h2>
       <p class="status" id="signup-attempts-note">Unlock the dashboard and open this tab to review recent account-creation attempts.</p>
+      <div style="margin: 0.75rem 0 1rem; max-width: 220px;">
+        <label for="signup-status-filter" style="display:block; margin-bottom:0.35rem; font-weight:600;">Filter by status</label>
+        <select id="signup-status-filter" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #d5dbe4; border-radius:6px;">
+          <option value="all">All</option>
+          <option value="registered">Registered</option>
+          <option value="premium">Premium</option>
+        </select>
+      </div>
       <div class="table-responsive">
         <table class="transaction-table">
           <thead>
             <tr>
-              <th>Time</th>
-              <th>Email</th>
+              <th>Name</th>
               <th>Status</th>
-              <th>Reason</th>
               <th>Country</th>
-              <th>IP</th>
+              <th>Ref Code</th>
             </tr>
           </thead>
           <tbody id="signup-attempts-body"></tbody>
