@@ -2068,6 +2068,57 @@ app.get('/api/affiliate/dashboard', async (req, res) => {
     }
 });
 
+app.get('/api/affiliate/withdrawals', async (req, res) => {
+    try {
+        const dbClient = supabaseAdmin || supabase;
+        const userId = req.query.userId || req.query.user_id;
+        const email = req.query.email;
+
+        if (!userId && !email) {
+            return res.status(400).json({ success: false, message: 'User ID or email is required.' });
+        }
+
+        const userQuery = dbClient.from('users').select('id').limit(1);
+        if (userId) {
+            userQuery.eq('id', userId);
+        } else {
+            userQuery.eq('email', email);
+        }
+
+        const { data: user, error: userError } = await userQuery.single();
+        if (userError || !user) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        const { data: withdrawals, error } = await dbClient
+            .from('withdrawal_requests')
+            .select('id, amount_ngn, status, requested_at, completed_at, bank_name, account_name, account_number')
+            .eq('affiliate_id', user.id)
+            .order('requested_at', { ascending: false });
+
+        if (error) {
+            console.error('Affiliate withdrawals fetch failed:', error);
+            return res.status(500).json({ success: false, message: 'Failed to load withdrawal history.' });
+        }
+
+        const formattedWithdrawals = (withdrawals || []).map(row => ({
+            id: row.id,
+            requestedAt: row.requested_at,
+            amountNgN: row.amount_ngn,
+            status: row.status || 'pending'
+        }));
+
+        return res.json({
+            success: true,
+            withdrawals: formattedWithdrawals,
+            hasPendingWithdrawal: formattedWithdrawals.some(row => row.status === 'pending')
+        });
+    } catch (error) {
+        console.error('Affiliate withdrawals error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to load withdrawal history.' });
+    }
+});
+
 app.post('/api/affiliate/withdrawal-request', async (req, res) => {
     try {
         const dbClient = supabaseAdmin || supabase;
@@ -2110,15 +2161,15 @@ app.post('/api/affiliate/withdrawal-request', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Balance must be at least ₦10,000 before requesting withdrawal.' });
         }
 
-        const insertResult = await supabase.from('withdrawal_requests').insert([{
+        const insertResult = await dbClient.from('withdrawal_requests').insert([{
             affiliate_id: user.id,
             amount_ngn: amount,
             bank_name,
             account_name,
             account_number,
             status: 'pending',
-            requested_at: new Date()
-        }]).single();
+            requested_at: new Date().toISOString()
+        }]).select().single();
 
         if (insertResult.error) {
             console.error('Withdrawal insert failed:', insertResult.error);
@@ -2131,7 +2182,6 @@ app.post('/api/affiliate/withdrawal-request', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to process withdrawal request.' });
     }
 });
-
 app.get('/api/admin/withdrawal-requests', requireAdminSession, async (req, res) => {
     try {
         const dbClient = supabaseAdmin || supabase;
