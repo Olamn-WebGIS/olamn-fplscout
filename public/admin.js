@@ -171,7 +171,7 @@ function renderSignupAttempts() {
   }
 
   const label = selectedStatus === 'all'
-    ? `Showing ${filteredAttempts.length} recent signup(s).`
+    ? `Showing ${filteredAttempts.length} signup(s).`
     : `Showing ${filteredAttempts.length} ${selectedStatus} signup(s).`;
   signupAttemptsNote.textContent = label;
   signupAttemptsBody.innerHTML = filteredAttempts.map((attempt) => `
