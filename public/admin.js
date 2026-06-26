@@ -172,7 +172,7 @@ async function loadSignupAttempts() {
       return;
     }
 
-    signupAttemptsNote.textContent = `Showing ${data.attempts.length} recent signup attempt(s).`;
+    signupAttemptsNote.textContent = `Showing ${data.attempts.length} recent signup(s).`;
     signupAttemptsBody.innerHTML = data.attempts.map((attempt) => `
       <tr>
         <td>${new Date(attempt.timestamp).toLocaleString()}</td>
