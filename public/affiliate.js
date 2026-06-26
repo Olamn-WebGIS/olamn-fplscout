@@ -210,13 +210,23 @@ function renderReferralHistory(entries) {
           </tr>
         </thead>
         <tbody>
-          ${entries.map(entry => `
-            <tr>
-              <td>₦${Number(entry.amountNgN || 0).toLocaleString()}</td>
-              <td>${entry.description || 'Referral reward'}</td>
-              <td>${formatHistoryDate(entry.earnedAt)}</td>
-            </tr>
-          `).join('')}
+          ${entries.map(entry => {
+            const amountValue = entry.amountNgN !== undefined && entry.amountNgN !== null
+              ? `₦${Number(entry.amountNgN || 0).toLocaleString()}`
+              : (entry.commissionPaid ? '₦2,000' : 'Pending');
+            const descriptionText = entry.description
+              || (entry.referredName || entry.referredEmail
+                ? `Referral from ${entry.referredName || entry.referredEmail}`
+                : 'Referral reward');
+            const dateValue = entry.earnedAt || entry.joinedAt || entry.createdAt || entry.created_at;
+            return `
+              <tr>
+                <td>${amountValue}</td>
+                <td>${descriptionText}</td>
+                <td>${formatHistoryDate(dateValue)}</td>
+              </tr>
+            `;
+          }).join('')}
         </tbody>
       </table>
     </div>
@@ -457,18 +467,34 @@ async function submitWithdrawalRequest(event) {
   }
 }
 
-async function loadAffiliateEarningsHistory(userId) {
+async function loadAffiliateEarningsHistory(userId, dashboardData = null) {
   try {
-    const response = await fetch(`/api/affiliate/earnings?userId=${encodeURIComponent(userId)}`);
-    if (!response.ok) {
-      throw new Error('Could not load referral history.');
+    let historyEntries = [];
+
+    if (dashboardData) {
+      if (Array.isArray(dashboardData.referrals) && dashboardData.referrals.length > 0) {
+        historyEntries = dashboardData.referrals;
+      } else if (Array.isArray(dashboardData.earnings) && dashboardData.earnings.length > 0) {
+        historyEntries = dashboardData.earnings;
+      }
     }
-    const data = await response.json();
-    if (!data.success) {
-      renderReferralHistory([]);
-      return;
+
+    if (historyEntries.length === 0) {
+      const response = await fetch(`/api/affiliate/dashboard?userId=${encodeURIComponent(userId)}`);
+      if (!response.ok) {
+        throw new Error('Could not load referral history.');
+      }
+      const data = await response.json();
+      if (!data.success) {
+        renderReferralHistory([]);
+        return;
+      }
+      historyEntries = (Array.isArray(data.referrals) && data.referrals.length > 0)
+        ? data.referrals
+        : (data.earnings || []);
     }
-    renderReferralHistory(data.earnings || []);
+
+    renderReferralHistory(historyEntries);
   } catch (error) {
     console.error('Referral history load failed', error);
     renderReferralHistory([]);
@@ -527,7 +553,7 @@ async function loadAffiliateDashboard() {
     if (referralCount) referralCount.textContent = (data.referrals && data.referrals.length) || '0';
     
     await Promise.all([
-      loadAffiliateEarningsHistory(currentUser.id),
+      loadAffiliateEarningsHistory(currentUser.id, data),
       loadWithdrawalHistory(currentUser.id)
     ]);
   } catch (error) {
