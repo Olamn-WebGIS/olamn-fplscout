@@ -1292,6 +1292,40 @@ app.get('/api/giscus-config', (req, res) => {
   });
 });
 
+app.get('/api/admin/signup-attempts', requireAdminSession, async (req, res) => {
+  try {
+    const dbClient = supabaseAdmin || supabase;
+    if (!dbClient) {
+      return res.status(500).json({ success: false, message: 'Database client unavailable.' });
+    }
+
+    const { data, error } = await dbClient
+      .from('users')
+      .select('id, email, full_name, country, created_at, is_premium, subscription_status')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Signup attempts load failed:', error);
+      return res.status(500).json({ success: false, message: error.message || 'Failed to load signup attempts.' });
+    }
+
+    const attempts = (data || []).map(user => ({
+      id: user.id,
+      timestamp: user.created_at,
+      email: user.email || '—',
+      status: user.is_premium ? 'premium' : 'registered',
+      reason: user.subscription_status || 'Account created',
+      country: user.country || '—',
+      ipAddress: null
+    }));
+
+    return res.json({ success: true, attempts });
+  } catch (error) {
+    console.error('Signup attempts route error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to load signup attempts.' });
+  }
+});
+
 // ── Page routes ──────────────────────────────────────────────
 app.get('/recommendations', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'recommendations.html'));
