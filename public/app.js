@@ -219,19 +219,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── Authentication Protection Framework (Dynamic Click Tracker) ──
 function setupPremiumLocks() {
-    // 💡 Watch clicks globally across the body so elements injected late are ALWAYS caught!
+    // Temporary review mode: allow premium links to proceed without opening the auth modal or forcing the subscription page.
+    // The original premium-gating logic is left commented below so it can be restored later.
     document.body.addEventListener('click', (e) => {
-        // Find if the clicked item (or its text wrapper link) has the spy-lock class name
         const lockButton = e.target.closest('.spy-lock');
         if (!lockButton) return;
 
-        e.preventDefault(); // Stop standard links jumping pages instantly
+        e.preventDefault();
+        const targetHref = lockButton.getAttribute('href');
+        if (targetHref && targetHref.startsWith('/')) {
+            window.location.href = targetHref;
+        } else {
+            window.location.href = '/spy';
+        }
+    });
 
-        // Get the target href to determine where to redirect if premium
+    /*
+    document.body.addEventListener('click', (e) => {
+        const lockButton = e.target.closest('.spy-lock');
+        if (!lockButton) return;
+
+        e.preventDefault();
         const targetHref = lockButton.getAttribute('href');
         console.log("Premium restriction click intercepted. Target href:", targetHref);
 
-        // Condition 1: User is not logged in -> Force registration modal open
         if (!currentUser) {
             const authModal = document.getElementById('auth-modal');
             const tabSignUp = document.getElementById('tab-signup');
@@ -239,38 +250,32 @@ function setupPremiumLocks() {
             const signInForm = document.getElementById('signin-form');
             const signUpForm = document.getElementById('signup-form');
             const authTabsDiv = document.getElementById('auth-tabs');
-            
-            // Reset modal to show signup tab
+
             if (authTabsDiv) authTabsDiv.classList.remove('form-hidden');
             if (signInForm) signInForm.classList.add('form-hidden');
             if (signUpForm) signUpForm.classList.remove('form-hidden');
             if (tabSignUp) tabSignUp.classList.add('active-tab');
             if (tabSignIn) tabSignIn.classList.remove('active-tab');
-            
-            // Show modal
             if (authModal) authModal.classList.remove('modal-hidden');
             console.log("Auth modal opened for signup");
             return;
         }
 
-        // Condition 2: Logged in, but has not completed premium package payment yet
         if (currentUser && currentUser.isPremium !== true) {
             alert("Redirecting you to the subscription payment page...");
             window.location.href = "/subscribe.html"; 
             return;
         }
 
-        // Condition 3: Logged in AND Premium Verified -> Grant Entry Access
         if (currentUser && currentUser.isPremium === true) {
-            // Redirect to the actual target page (recommendations or spy)
             if (targetHref && targetHref.startsWith('/')) {
                 window.location.href = targetHref;
             } else {
-                // Default to spy if no specific href
                 window.location.href = "/spy";
             }
         }
     });
+    */
 }
 
 // ── Modal Actions & Input Listeners Setup ──────────────────

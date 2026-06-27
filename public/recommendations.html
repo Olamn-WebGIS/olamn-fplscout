@@ -166,21 +166,22 @@
 <script>
 
 // ── PREMIUM PAGE ACCESS CHECK ──
+// Temporary review mode: keep the page accessible without enforced premium checks.
+/*
 (function checkPremiumAccess() {
   const currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
-  
-  // If not logged in, redirect to home and trigger signup modal
+
   if (!currentUser) {
     window.location.href = '/';
     return;
   }
-  
-  // If logged in but not premium, redirect to subscribe
+
   if (currentUser.isPremium !== true) {
     window.location.href = '/subscribe.html';
     return;
   }
 })();
+*/
 
 let bsData = null;
 

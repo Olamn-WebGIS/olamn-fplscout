@@ -358,18 +358,16 @@
 <script>
 
 // ── PREMIUM PAGE ACCESS CHECK ──
+// Temporary review mode: keep the page accessible without enforced premium checks.
+/*
 (function checkPremiumAccess() {
-  // Relaxed premium gating: allow page to load for guests but
-  // keep premium redirect logic in place for enforced environments.
   try {
     const currentUser = Store.get('fpl_user_session', null);
     if (!currentUser) {
-      // Do not redirect anonymous users — allow them to view the spy page.
       console.warn('Spy page: no user session found — loading in read-only mode');
       return;
     }
     if (!currentUser.isPremium) {
-      // Instead of forcing a redirect, show a console warning and let the page load.
       console.warn('Spy page: user is not premium — some features may be limited');
       return;
     }
@@ -377,6 +375,7 @@
     console.warn('Spy premium check failed, continuing to load page', e);
   }
 })();
+*/
 
 /* ── League Spy ────────────────────────────────────────────────── */
 let leagueData = null;
