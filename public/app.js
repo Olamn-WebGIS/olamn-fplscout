@@ -219,22 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── Authentication Protection Framework (Dynamic Click Tracker) ──
 function setupPremiumLocks() {
-    // Temporary review mode: allow premium links to proceed without opening the auth modal or forcing the subscription page.
-    // The original premium-gating logic is left commented below so it can be restored later.
-    document.body.addEventListener('click', (e) => {
-        const lockButton = e.target.closest('.spy-lock');
-        if (!lockButton) return;
-
-        e.preventDefault();
-        const targetHref = lockButton.getAttribute('href');
-        if (targetHref && targetHref.startsWith('/')) {
-            window.location.href = targetHref;
-        } else {
-            window.location.href = '/spy';
-        }
-    });
-
-    /*
     document.body.addEventListener('click', (e) => {
         const lockButton = e.target.closest('.spy-lock');
         if (!lockButton) return;
@@ -275,7 +259,6 @@ function setupPremiumLocks() {
             }
         }
     });
-    */
 }
 
 // ── Modal Actions & Input Listeners Setup ──────────────────

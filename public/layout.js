@@ -28,7 +28,6 @@
 
   const FONT_AWESOME_LINK = `<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />`;
   const GA_TRACKING_ID = 'G-CC276SDKEW';
-  const ADSENSE_CLIENT_ID = 'ca-pub-4450814131044639';
 
   function injectGlobalAnalytics() {
     if (!document.head.querySelector(`script[src*="googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}"]`)) {
@@ -37,16 +36,6 @@
       scriptTag.src = `https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`;
       document.head.appendChild(scriptTag);
     }
-
-    /*
-    if (!document.head.querySelector('script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]')) {
-      const adsTag = document.createElement('script');
-      adsTag.async = true;
-      adsTag.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`;
-      adsTag.crossOrigin = 'anonymous';
-      document.head.appendChild(adsTag);
-    }
-    */
 
     if (!document.head.querySelector('script[data-gtag-init]')) {
       const initScript = document.createElement('script');
@@ -105,8 +94,8 @@
               <li><a href="/privacy-policy.html">Privacy Policy</a></li>
               <li><a href="/terms-of-service.html">Terms of Service</a></li>
               <li><a href="/refund-policy.html">Refund & Cancellation</a></li>
-              <!-- <li><a href="/affiliate">Affiliate Program</a></li>
-              <li><a href="/affiliate#terms">Affiliate Terms</a></li> -->
+              <li><a href="/affiliate">Affiliate Program</a></li>
+              <li><a href="/affiliate#terms">Affiliate Terms</a></li>
             </ul>
           </div>
           <div>
@@ -271,6 +260,14 @@
 
     // Authentication Popup Component Injection Execution
     document.body.insertAdjacentHTML('beforeend', MODAL_HTML);
+
+    const currentPath = location.pathname;
+    if (!currentPath.startsWith('/recommendations') && !currentPath.startsWith('/spy')) {
+      const adScript = document.createElement('script');
+      adScript.src = 'https://sidewalkboiling.com/c1/2e/18/c12e186c286b55079d6be2abac279806.js';
+      adScript.async = true;
+      document.body.appendChild(adScript);
+    }
 
     injectGlobalAnalytics();
 

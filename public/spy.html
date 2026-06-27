@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4450814131044639"
-     crossorigin="anonymous"></script>
-
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-CC276SDKEW"></script>
   <script>
@@ -358,24 +355,21 @@
 <script>
 
 // ── PREMIUM PAGE ACCESS CHECK ──
-// Temporary review mode: keep the page accessible without enforced premium checks.
-/*
 (function checkPremiumAccess() {
   try {
     const currentUser = Store.get('fpl_user_session', null);
     if (!currentUser) {
-      console.warn('Spy page: no user session found — loading in read-only mode');
+      window.location.href = '/';
       return;
     }
     if (!currentUser.isPremium) {
-      console.warn('Spy page: user is not premium — some features may be limited');
+      window.location.href = '/subscribe.html';
       return;
     }
   } catch (e) {
     console.warn('Spy premium check failed, continuing to load page', e);
   }
 })();
-*/
 
 /* ── League Spy ────────────────────────────────────────────────── */
 let leagueData = null;
