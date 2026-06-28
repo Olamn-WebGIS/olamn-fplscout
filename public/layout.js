@@ -29,6 +29,78 @@
   const FONT_AWESOME_LINK = `<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />`;
   const GA_TRACKING_ID = 'G-CC276SDKEW';
 
+  function readStoredUserSession() {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') return null;
+
+    try {
+      const rawSession = localStorage.getItem('fpl_user_session');
+      return rawSession ? JSON.parse(rawSession) : null;
+    } catch (error) {
+      console.warn('Unable to read premium session state:', error);
+      return null;
+    }
+  }
+
+  function isPremiumUser(user) {
+    if (!user) return false;
+    if (user.isPremium === true || user.is_premium === true) return true;
+    if (user.subscription_status && ['Premium Member', 'premium'].includes(String(user.subscription_status))) return true;
+
+    if (user.premium_expiry) {
+      const expiryDate = new Date(user.premium_expiry);
+      if (!Number.isNaN(expiryDate.getTime()) && expiryDate > new Date()) return true;
+    }
+
+    return false;
+  }
+
+  function shouldLoadAdScripts() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return false;
+
+    const currentPath = window.location.pathname || '/';
+    if (currentPath.startsWith('/recommendations') || currentPath.startsWith('/spy')) return false;
+
+    return !isPremiumUser(readStoredUserSession());
+  }
+
+  function removeInjectedAdScripts() {
+    if (typeof document === 'undefined') return;
+
+    document.querySelectorAll('script[data-ad-script], script[data-ad-script-inline]').forEach(script => script.remove());
+    delete window.__adScriptsInjected;
+  }
+
+  function injectAdScripts() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    if (!shouldLoadAdScripts()) {
+      removeInjectedAdScripts();
+      return;
+    }
+
+    if (window.__adScriptsInjected) return;
+    window.__adScriptsInjected = true;
+
+    const adScripts = [
+      { src: 'https://sidewalkboiling.com/c1/2e/18/c12e186c286b55079d6be2abac279806.js', attrs: { async: true, 'data-ad-script': 'true' } },
+      { src: 'https://5gvci.com/act/files/tag.min.js?z=11206227', attrs: { async: true, 'data-ad-script': 'true', 'data-cfasync': 'false' } },
+      { src: 'https://sidewalkboiling.com/a971d37adb76d2f7565f5acc30b1239e/invoke.js', attrs: { async: true, 'data-ad-script': 'true', 'data-cfasync': 'false' } }
+    ];
+
+    adScripts.forEach(({ src, attrs }) => {
+      const script = document.createElement('script');
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (typeof value === 'boolean') {
+          if (value) script.setAttribute(key, '');
+        } else {
+          script.setAttribute(key, String(value));
+        }
+      });
+      script.src = src;
+      document.body.appendChild(script);
+    });
+  }
+
   function injectGlobalAnalytics() {
     if (!document.head.querySelector(`script[src*="googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}"]`)) {
       const scriptTag = document.createElement('script');
@@ -452,14 +524,7 @@
     // Authentication Popup Component Injection Execution
     document.body.insertAdjacentHTML('beforeend', MODAL_HTML);
 
-    const currentPath = location.pathname;
-    if (!currentPath.startsWith('/recommendations') && !currentPath.startsWith('/spy')) {
-      const adScript = document.createElement('script');
-      adScript.src = 'https://sidewalkboiling.com/c1/2e/18/c12e186c286b55079d6be2abac279806.js';
-      adScript.async = true;
-      document.body.appendChild(adScript);
-    }
-
+    injectAdScripts();
     injectGlobalAnalytics();
 
     // Load Font Awesome if not already loaded
