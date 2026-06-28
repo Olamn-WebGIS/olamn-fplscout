@@ -55,9 +55,9 @@ async function loadPublicFixtures() {
             <span class="team-name">${escapeHtml(f.home_team)}</span>
           </div>
           <span class="vs">vs</span>
-          <div class="team-block">
-            ${renderTeamLogo(f.away_team, f.away_logo_url)}
+          <div class="team-block away-block">
             <span class="team-name">${escapeHtml(f.away_team)}</span>
+            ${renderTeamLogo(f.away_team, f.away_logo_url)}
           </div>
         </div>
         <div class="time">${new Date(f.match_time).toLocaleString()}</div>
