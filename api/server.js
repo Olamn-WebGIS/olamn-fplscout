@@ -349,6 +349,14 @@ async function reconcileUserSubscriptionExpiry(userProfile) {
 
 // ── Routes ────────────────────────────────────────────────────
 
+// Mount fixtures API router
+try {
+  const fixturesRouter = require('./fixtures');
+  app.use('/api/fixtures', fixturesRouter);
+} catch (err) {
+  console.warn('Could not mount fixtures router:', err.message);
+}
+
 app.get('/api/affiliate/region', async (req, res) => {
   try {
     let country = getRequestCountry(req);

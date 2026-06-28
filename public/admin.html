@@ -98,6 +98,7 @@
         <button class="tab-btn" data-tab="financial-tab">Financial Overview</button>
         <button class="tab-btn" data-tab="withdrawal-tab">Withdrawal Requests</button>
         <button class="tab-btn" data-tab="signup-attempts-tab">Signups</button>
+        <button class="tab-btn" data-tab="fixtures-tab">Live Fixtures</button>
       </div>
     </div>
 
@@ -233,6 +234,52 @@
           </thead>
           <tbody id="signup-attempts-body"></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="fixtures-tab" class="tab-panel hidden">
+    <div class="admin-card hidden" id="fixtures-card">
+      <h2>Live Fixtures Management</h2>
+      <p class="status" id="fixtures-status">Manage live fixture entries (stored in UTC).</p>
+      <div class="admin-field">
+        <label for="fixture-home">Home Team</label>
+        <input id="fixture-home" type="text" placeholder="Home team name" />
+      </div>
+      <div class="admin-field">
+        <label for="fixture-away">Away Team</label>
+        <input id="fixture-away" type="text" placeholder="Away team name" />
+      </div>
+      <div class="admin-field">
+        <label for="fixture-time">Match Time (local) — will be stored as UTC</label>
+        <input id="fixture-time" type="datetime-local" />
+      </div>
+      <div class="admin-field">
+        <label for="fixture-live-link">Live Link (https://...)</label>
+        <input id="fixture-live-link" type="url" placeholder="https://..." />
+      </div>
+      <div class="admin-field">
+        <label for="fixture-logo">Logo URL</label>
+        <input id="fixture-logo" type="url" placeholder="https://.../logo.png" />
+      </div>
++      <div class="admin-field" id="fixture-preview-section" style="display:none; gap:1rem; align-items:center;">
++        <div>
++          <label>Home logo preview</label>
++          <img id="fixture-home-preview" src="/images/default-logo.png" alt="Home logo preview" style="width:64px;height:64px;object-fit:contain;border:1px solid #ddd;padding:4px;" />
++        </div>
++        <div>
++          <label>Away logo preview</label>
++          <img id="fixture-away-preview" src="/images/default-logo.png" alt="Away logo preview" style="width:64px;height:64px;object-fit:contain;border:1px solid #ddd;padding:4px;" />
++        </div>
++      </div>
+      <div class="admin-actions">
+        <button id="create-fixture" class="btn-primary">Create Fixture</button>
+        <button id="update-fixture" class="btn-primary hidden">Update Fixture</button>
+        <button id="cancel-fixture" class="btn-secondary hidden">Cancel</button>
+      </div>
+      <div style="margin-top:1rem;">
+        <h3>Existing Fixtures</h3>
+        <div id="fixtures-list" class="admin-post-list"></div>
       </div>
     </div>
   </div>

@@ -28,6 +28,23 @@ const withdrawalTabPanel = document.getElementById('withdrawal-tab');
 const financialTabPanel = document.getElementById('financial-tab');
 const blogTabPanel = document.getElementById('blog-tab');
 const tabButtons = document.querySelectorAll('.tab-btn');
+// Fixtures elements
+const fixturesCard = document.getElementById('fixtures-card');
+const fixturesList = document.getElementById('fixtures-list');
+const fixturesStatus = document.getElementById('fixtures-status');
+const fixtureHome = document.getElementById('fixture-home');
+const fixtureAway = document.getElementById('fixture-away');
+const fixtureTime = document.getElementById('fixture-time');
+const fixtureLiveLink = document.getElementById('fixture-live-link');
+const fixtureLogo = document.getElementById('fixture-logo');
+const fixturePreviewSection = document.getElementById('fixture-preview-section');
+const fixtureHomePreview = document.getElementById('fixture-home-preview');
+const fixtureAwayPreview = document.getElementById('fixture-away-preview');
+const createFixtureBtn = document.getElementById('create-fixture');
+const updateFixtureBtn = document.getElementById('update-fixture');
+const cancelFixtureBtn = document.getElementById('cancel-fixture');
+let editingFixtureId = null;
+let previewTimeout = null;
 
 let adminPassword = null;
 let adminAuthenticated = false;
@@ -305,6 +322,220 @@ async function loadAdminPosts() {
   }
 }
 
+// ── Fixtures management ───────────────────────────────────
+function validateUrl(url) {
+  try {
+    if (!url) return true; // optional
+    const u = new URL(url);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch (e) { return false; }
+}
+
+async function loadFixtures() {
+  if (fixturesCard) fixturesCard.classList.remove('hidden');
+  fixturesStatus.textContent = 'Loading fixtures...';
+  try {
+    const res = await fetch('/api/fixtures');
+    if (!res.ok) throw new Error('Failed to load fixtures');
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'Failed to load fixtures');
+    renderFixturesList(Array.isArray(data.fixtures) ? data.fixtures : []);
+    fixturesStatus.textContent = `Loaded ${data.fixtures.length} fixture(s).`;
+  } catch (err) {
+    console.error('Load fixtures error:', err);
+    fixturesStatus.textContent = 'Could not load fixtures.';
+    fixturesList.innerHTML = '<p>No fixtures found.</p>';
+  }
+}
+
+function updateFixturePreviews(homeUrl, awayUrl) {
+  if (!fixturePreviewSection) return;
+  fixturePreviewSection.style.display = 'flex';
+  fixtureHomePreview.src = homeUrl || '/images/default-logo.png';
+  fixtureAwayPreview.src = awayUrl || '/images/default-logo.png';
+}
+
+function clearFixturePreviews() {
+  if (!fixturePreviewSection) return;
+  fixturePreviewSection.style.display = 'none';
+  fixtureHomePreview.src = '/images/default-logo.png';
+  fixtureAwayPreview.src = '/images/default-logo.png';
+}
+
+async function fetchTeamPreview(teamName) {
+  if (!teamName || !teamName.trim()) return '/images/default-logo.png';
+  try {
+    const res = await fetch(`/api/fixtures/team-logo?teamName=${encodeURIComponent(teamName.trim())}`, {
+      credentials: 'same-origin'
+    });
+    const data = await res.json();
+    if (res.ok && data.success && data.url) return data.url;
+  } catch (err) {
+    console.error('Preview fetch failed:', err);
+  }
+  return '/images/default-logo.png';
+}
+
+function schedulePreviewUpdate() {
+  if (previewTimeout) clearTimeout(previewTimeout);
+  previewTimeout = setTimeout(async () => {
+    const homeTeam = fixtureHome.value.trim();
+    const awayTeam = fixtureAway.value.trim();
+    if (!homeTeam && !awayTeam) {
+      clearFixturePreviews();
+      return;
+    }
+    const [homeUrl, awayUrl] = await Promise.all([fetchTeamPreview(homeTeam), fetchTeamPreview(awayTeam)]);
+    updateFixturePreviews(homeUrl, awayUrl);
+  }, 400);
+}
+
+function renderFixturesList(fixtures) {
+  if (!fixturesList) return;
+  if (!fixtures || fixtures.length === 0) {
+    fixturesList.innerHTML = '<p>No fixtures added yet.</p>';
+    return;
+  }
+
+  fixturesList.innerHTML = fixtures.map(f => `
+    <div class="admin-post-item" data-id="${f.id}">
+      <div style="display:flex;align-items:center;gap:0.75rem">
+        <img src="${f.home_logo_url || f.logo_url || '/images/default-logo.png'}" alt="${f.home_team}" style="width:48px;height:48px;object-fit:contain" />
+        <div style="flex:1">
+          <h3 style="margin:0">${f.home_team} <small style="opacity:0.6">vs</small> ${f.away_team}</h3>
+          <div style="font-size:0.9rem;color:#444">${new Date(f.match_time).toLocaleString()}</div>
+        </div>
+        <img src="${f.away_logo_url || '/images/default-logo.png'}" alt="${f.away_team}" style="width:48px;height:48px;object-fit:contain" />
+      </div>
+      <p>Live Link: <a href="${f.live_link || '#'}" target="_blank">${f.live_link || '—'}</a></p>
+      <div class="admin-post-actions">
+        <button class="btn-secondary" data-action="edit" data-id="${f.id}">Edit</button>
+        <button class="btn-secondary" data-action="delete" data-id="${f.id}">Delete</button>
+      </div>
+    </div>
+  `).join('');
+
+  fixturesList.querySelectorAll('button[data-action="edit"]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = e.currentTarget.dataset.id;
+      try {
+        const res = await fetch(`/api/fixtures/${encodeURIComponent(id)}`);
+        if (!res.ok) throw new Error('Could not load fixture');
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Could not load fixture');
+        const f = data.fixture;
+        fixtureHome.value = f.home_team || '';
+        fixtureAway.value = f.away_team || '';
+        // Convert UTC ISO string to local datetime-local value
+        fixtureTime.value = f.match_time ? new Date(f.match_time).toISOString().slice(0,16) : '';
+        fixtureLiveLink.value = f.live_link || '';
+        fixtureLogo.value = f.logo_url || '';
+        editingFixtureId = f.id;
+        createFixtureBtn.classList.add('hidden');
+        updateFixtureBtn.classList.remove('hidden');
+        cancelFixtureBtn.classList.remove('hidden');
+        fixturesStatus.textContent = 'Editing fixture ' + f.id;
+      } catch (err) {
+        console.error('Edit fixture failed:', err);
+        alert('Could not load fixture for editing.');
+      }
+    });
+  });
+
+  fixturesList.querySelectorAll('button[data-action="delete"]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = e.currentTarget.dataset.id;
+      if (!confirm('Delete this fixture?')) return;
+      try {
+        const res = await fetch(`/api/fixtures/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'same-origin' });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.message || 'Delete failed');
+        await loadFixtures();
+      } catch (err) {
+        console.error('Delete fixture failed:', err);
+        alert('Could not delete fixture.');
+      }
+    });
+  });
+}
+
+function clearFixtureForm() {
+  fixtureHome.value = '';
+  fixtureAway.value = '';
+  fixtureTime.value = '';
+  fixtureLiveLink.value = '';
+  fixtureLogo.value = '';
+  editingFixtureId = null;
+  createFixtureBtn.classList.remove('hidden');
+  updateFixtureBtn.classList.add('hidden');
+  cancelFixtureBtn.classList.add('hidden');
+  clearFixturePreviews();
+}
+
+async function submitCreateFixture() {
+  if (!adminAuthenticated) { alert('Unlock the dashboard first.'); return; }
+  const home = fixtureHome.value.trim();
+  const away = fixtureAway.value.trim();
+  const timeLocal = fixtureTime.value;
+  const live = fixtureLiveLink.value.trim();
+  const logo = fixtureLogo.value.trim();
+
+  if (!home || !away || !timeLocal) { alert('Home, away and time are required.'); return; }
+  if (live && !validateUrl(live)) { alert('Live link must be a valid URL.'); return; }
+  if (logo && !validateUrl(logo)) { alert('Logo must be a valid URL.'); return; }
+
+  // Convert local datetime-local value to ISO UTC string
+  const utcIso = new Date(timeLocal).toISOString();
+
+  try {
+    const res = await fetch('/api/fixtures', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ home_team: home, away_team: away, match_time: utcIso, live_link: live || null, logo_url: logo || null })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Create failed');
+    clearFixtureForm();
+    await loadFixtures();
+  } catch (err) {
+    console.error('Create fixture failed:', err);
+    alert('Could not create fixture. Make sure you are authenticated as admin.');
+  }
+}
+
+async function submitUpdateFixture() {
+  if (!adminAuthenticated || !editingFixtureId) { alert('No fixture selected.'); return; }
+  const home = fixtureHome.value.trim();
+  const away = fixtureAway.value.trim();
+  const timeLocal = fixtureTime.value;
+  const live = fixtureLiveLink.value.trim();
+  const logo = fixtureLogo.value.trim();
+
+  if (!home || !away || !timeLocal) { alert('Home, away and time are required.'); return; }
+  if (live && !validateUrl(live)) { alert('Live link must be a valid URL.'); return; }
+  if (logo && !validateUrl(logo)) { alert('Logo must be a valid URL.'); return; }
+
+  const utcIso = new Date(timeLocal).toISOString();
+
+  try {
+    const res = await fetch(`/api/fixtures/${encodeURIComponent(editingFixtureId)}`, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ home_team: home, away_team: away, match_time: utcIso, live_link: live || null, logo_url: logo || null })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Update failed');
+    clearFixtureForm();
+    await loadFixtures();
+  } catch (err) {
+    console.error('Update fixture failed:', err);
+    alert('Could not update fixture.');
+  }
+}
+
+
 async function startEditPost(id, slug) {
   try {
     const res = await fetch(`/api/posts/${encodeURIComponent(slug)}`);
@@ -430,6 +661,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         await loadSignupAttempts();
       }
+      if (target === 'fixtures-tab') {
+        if (!adminAuthenticated) {
+          fixturesStatus.textContent = 'Unlock the dashboard to manage fixtures.';
+          fixturesList.innerHTML = '<p>Unlock the dashboard to manage fixtures.</p>';
+          return;
+        }
+        await loadFixtures();
+      }
     });
 
   if (financialFilter) {
@@ -541,6 +780,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     resetEditorState();
   });
 
+  fixtureHome?.addEventListener('input', schedulePreviewUpdate);
+  fixtureAway?.addEventListener('input', schedulePreviewUpdate);
+  fixtureLogo?.addEventListener('input', () => {
+    const url = fixtureLogo.value.trim() || '/images/default-logo.png';
+    updateFixturePreviews(url, url);
+  });
+
   cancelEditButton.addEventListener('click', () => {
     resetEditorState();
   });
@@ -614,5 +860,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       showStatus(postStatus, errorMessage, false);
     }
+  });
+  // Fixtures buttons
+  createFixtureBtn?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await submitCreateFixture();
+  });
+
+  updateFixtureBtn?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await submitUpdateFixture();
+  });
+
+  cancelFixtureBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    clearFixtureForm();
   });
 });
