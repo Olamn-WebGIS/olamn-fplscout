@@ -235,7 +235,7 @@
 </main>
 
 <!-- ── Premium Pricing Section ─────────────────────────── -->
-<section style="background: linear-gradient(135deg, #0070f3 0%, #0052cc 100%); padding: 4rem 2rem; color: white;">
+<section id="premium-cta-section" style="background: linear-gradient(135deg, #0070f3 0%, #0052cc 100%); padding: 4rem 2rem; color: white;">
   <div style="max-width: 1200px; margin: 0 auto;">
     <div style="text-align: center; margin-bottom: 3rem;">
       <h2 style="font-size: clamp(1.8rem, 5vw, 2.5rem); margin-bottom: 1rem; color: white;">⭐ Unlock Premium Features</h2>
@@ -274,11 +274,7 @@
             </li>
             <li style="display: flex; align-items: center; gap: 10px; margin-top: 1rem;">
               <span style="font-size: 1.5rem;">🚫</span>
-              <span>Ad-free browsing on premium</span>
-            </li>
-            <li style="display: flex; align-items: center; gap: 10px; margin-top: 1rem;">
-              <span style="font-size: 1.5rem;">🚫</span>
-              <span>Ad-free browsing across the site</span>
+              <span>Ads-free browsing across the site</span>
             </li>
           </ul>
         </div>
@@ -744,6 +740,11 @@ function closePlayerStats() {
 }
 /* ── Manager sync ──────────────────────────────────────────────── */
 async function syncManager() {
+  const syncBtn = document.getElementById('sync-btn');
+  if (syncBtn && syncBtn.dataset.adRedirect && !isPremiumUser(currentUser)) {
+    window.open(syncBtn.dataset.adRedirect, '_blank', 'noopener');
+  }
+
   const id = document.getElementById('manager-id-input').value.trim();
   if (!id || isNaN(id)) { document.getElementById('sync-msg').innerHTML = '<p class="error-msg">Enter a valid manager ID.</p>'; return; }
   document.getElementById('sync-btn').textContent = '…';

@@ -29,12 +29,24 @@ function applyPremiumUI() {
         homeAdSection.style.display = premium ? 'none' : '';
     }
 
+    const premiumCtaSection = document.getElementById('premium-cta-section');
+    if (premiumCtaSection) {
+        premiumCtaSection.style.display = premium ? 'none' : '';
+    }
+
     const syncBtn = document.getElementById('sync-btn');
     if (syncBtn) {
-        syncBtn.removeAttribute('href');
         syncBtn.type = 'button';
         syncBtn.textContent = 'Sync';
         syncBtn.setAttribute('aria-label', 'Sync your FPL manager');
+
+        if (!premium) {
+            syncBtn.dataset.adRedirect = 'https://sidewalkboiling.com/g7x7a1uur?key=f8ec59492459515d2b651cdb08903baa';
+            syncBtn.title = 'Free users: tap to open partner offer';
+        } else {
+            delete syncBtn.dataset.adRedirect;
+            syncBtn.removeAttribute('title');
+        }
     }
 }
 
