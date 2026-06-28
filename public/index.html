@@ -145,7 +145,7 @@
         <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1rem;">Enter your FPL manager ID to personalise team predictions, transfer advice, and chip timing.</p>
         <div class="controls-row" style="margin-bottom:6px;">
           <input type="number" id="manager-id-input" placeholder="e.g. 2623965" style="flex:1;" />
-          <a href="https://sidewalkboiling.com/g7x7a1uur?key=f8ec59492459515d2b651cdb08903baa" target="_blank" rel="noopener noreferrer" class="btn btn-primary" id="sync-btn" style="text-decoration:none;justify-content:center;">Sync</a>
+          <button type="button" id="sync-btn" class="btn btn-primary" style="justify-content:center;">Sync</button>
         </div>
         <div id="sync-msg"></div>
         <a class="hint-link" href="/how-to-findids.html">
@@ -239,7 +239,7 @@
   <div style="max-width: 1200px; margin: 0 auto;">
     <div style="text-align: center; margin-bottom: 3rem;">
       <h2 style="font-size: clamp(1.8rem, 5vw, 2.5rem); margin-bottom: 1rem; color: white;">⭐ Unlock Premium Features</h2>
-      <p style="font-size: clamp(0.95rem, 2vw, 1.1rem); color: rgba(255,255,255,0.9); max-width: 600px; margin: 0 auto;">Get exclusive access to advanced tools and features to dominate your FPL mini-leagues.</p>
+      <p style="font-size: clamp(0.95rem, 2vw, 1.1rem); color: rgba(255,255,255,0.9); max-width: 600px; margin: 0 auto;">Get exclusive access to advanced tools and features to dominate your FPL mini-leagues — including an ad-free experience for premium members.</p>
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center;">
@@ -272,6 +272,14 @@
               <span style="font-size: 1.5rem;">⚙️</span>
               <span>Priority Support</span>
             </li>
+            <li style="display: flex; align-items: center; gap: 10px; margin-top: 1rem;">
+              <span style="font-size: 1.5rem;">🚫</span>
+              <span>Ad-free browsing on premium</span>
+            </li>
+            <li style="display: flex; align-items: center; gap: 10px; margin-top: 1rem;">
+              <span style="font-size: 1.5rem;">🚫</span>
+              <span>Ad-free browsing across the site</span>
+            </li>
           </ul>
         </div>
       </div>
@@ -282,7 +290,7 @@
           <span id="price-ngn">₦3,000</span><span style="font-size: 1.2rem;color: #666;">/month</span>
         </div>
         <div style="font-size: 0.95rem; color: #666; margin-bottom: 1.5rem;">
-          or approximately <span id="price-converted">$20 USD</span>
+          or approximately <span id="price-converted">$3.00 USD</span>
           <br>
           <span style="font-size: 0.85rem; color: #999;">Based on your region</span>
         </div>
@@ -406,8 +414,8 @@
   </div>
 </section>
 
-<section class="home-ad-section" style="margin:2.5rem 0 3rem; padding:1rem; background:#fff; border:1px solid rgba(15,23,42,0.08); border-radius:16px; box-shadow:0 12px 32px rgba(15,23,42,0.04);">
-  <div class="ad-label" style="margin-bottom:1rem; padding:0.85rem 1rem; border-radius:12px; background:#f3f4f6; color:#111; font-size:0.95rem; font-weight:700; border:1px solid rgba(15,23,42,0.08);">
+<section id="home-ad-section" class="home-ad-section" style="margin:2.5rem 0 3rem; padding:1rem; background:#fff; border:1px solid rgba(15,23,42,0.08); border-radius:16px; box-shadow:0 12px 32px rgba(15,23,42,0.04);">
+  <div style="margin-bottom:1rem; color:#555; font-size:0.95rem; font-weight:600;">
     Advertisement
   </div>
   <div id="container-a971d37adb76d2f7565f5acc30b1239e"></div>

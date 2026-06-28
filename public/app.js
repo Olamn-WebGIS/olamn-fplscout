@@ -5,6 +5,39 @@ const appState = {};
 let currentUser = JSON.parse(localStorage.getItem('fpl_user_session') || 'null');
 let intendedPremiumPage = null; // Track which premium page user is trying to access
 
+function isPremiumUser(user) {
+    if (!user) return false;
+    if (user.isPremium === true || user.is_premium === true) return true;
+    const status = user.subscription_status ? String(user.subscription_status).toLowerCase().trim() : '';
+    if (['premium member', 'premium', 'premium subscription'].includes(status)) return true;
+
+    if (user.premium_expiry) {
+        const expiryDate = new Date(user.premium_expiry);
+        if (!Number.isNaN(expiryDate.getTime()) && expiryDate > new Date()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function applyPremiumUI() {
+    const premium = isPremiumUser(currentUser);
+
+    const homeAdSection = document.getElementById('home-ad-section');
+    if (homeAdSection) {
+        homeAdSection.style.display = premium ? 'none' : '';
+    }
+
+    const syncBtn = document.getElementById('sync-btn');
+    if (syncBtn) {
+        syncBtn.removeAttribute('href');
+        syncBtn.type = 'button';
+        syncBtn.textContent = 'Sync';
+        syncBtn.setAttribute('aria-label', 'Sync your FPL manager');
+    }
+}
+
 function getReferralCookie() {
   const cookiePairs = document.cookie.split(';').map(c => c.trim());
   for (const pair of cookiePairs) {
@@ -199,6 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupModalInterface();    
     setupAccountNav();
     updateAffiliateHomeLink();
+    applyPremiumUI();
     
     // Explicit visibility verification loop tracker
     function verifyAccountLinkVisibility() {
@@ -245,13 +279,13 @@ function setupPremiumLocks() {
             return;
         }
 
-        if (currentUser && currentUser.isPremium !== true) {
+        if (currentUser && !isPremiumUser(currentUser)) {
             alert("Redirecting you to the subscription payment page...");
             window.location.href = "/subscribe.html"; 
             return;
         }
 
-        if (currentUser && currentUser.isPremium === true) {
+        if (currentUser && isPremiumUser(currentUser)) {
             if (targetHref && targetHref.startsWith('/')) {
                 window.location.href = targetHref;
             } else {
@@ -329,10 +363,7 @@ function setupModalInterface() {
                     alert("Account created successfully!");
                     currentUser = data.user;
                     localStorage.setItem('fpl_user_session', JSON.stringify(data.user));
-
-                    const accountNavItem = document.getElementById('account-nav-item');
-                    if (accountNavItem) accountNavItem.classList.remove('account-hidden');
-
+                    applyPremiumUI();
                     updateAffiliateHomeLink();
 
                     const pendingAffiliate = localStorage.getItem('affiliate_join_pending') === 'true';
@@ -386,6 +417,7 @@ function setupModalInterface() {
                     alert("Welcome back! Login successful.");
                     currentUser = data.user;
                     localStorage.setItem('fpl_user_session', JSON.stringify(data.user));
+                    applyPremiumUI();
 
                     const accountNavItem = document.getElementById('account-nav-item');
                     if (accountNavItem) accountNavItem.classList.remove('account-hidden');
@@ -404,7 +436,7 @@ function setupModalInterface() {
 
                     if (authModal) authModal.classList.add('modal-hidden');
                     // If user is premium and came from a premium page click, go to that page
-                    if (currentUser && currentUser.isPremium === true) {
+                    if (currentUser && isPremiumUser(currentUser)) {
                         if (intendedPremiumPage && intendedPremiumPage.startsWith('/')) {
                             window.location.href = intendedPremiumPage;
                         } else {

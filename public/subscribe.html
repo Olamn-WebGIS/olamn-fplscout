@@ -105,7 +105,7 @@
 <body>
     <div class="card">
         <h2>⭐ Unlock Premium Access</h2>
-        <p>Get instant entry to the locked League Spy tools, and advanced analytics data tracking features.</p>
+        <p>Get instant entry to the locked League Spy tools, advanced analytics data tracking features, and a fully ad-free premium experience.</p>
         
         <div class="price-display">
             <span id="price-ngn-sub">₦3,000</span><span style="font-size: 1rem; color: #666;">/month</span>
@@ -121,6 +121,7 @@
                 <li>✅ Real-time Player Stats & Predictions</li>
                 <li>✅ Real-time Rival Alerts - Transfers, captains & chips</li>
                 <li>✅ Priority Support</li>
+                <li>✅ Ad-free browsing across the site</li>
             </ul>
         </div>
 
@@ -302,13 +303,26 @@
             window.location.href = '/';
         }
 
+        function isPremiumUser(user) {
+            if (!user) return false;
+            if (user.isPremium === true || user.is_premium === true) return true;
+            const status = user.subscription_status ? String(user.subscription_status).toLowerCase().trim() : '';
+            if (['premium member', 'premium', 'premium subscription'].includes(status)) return true;
+            if (user.premium_expiry) {
+                const expiryDate = new Date(user.premium_expiry);
+                return !Number.isNaN(expiryDate.getTime()) && expiryDate > new Date();
+            }
+            return false;
+        }
+
         // Show message if user is already premium
-        if (currentUser && currentUser.isPremium) {
+        if (isPremiumUser(currentUser)) {
             document.querySelector('.card h2').textContent = '✅ You Have Premium Access';
-            document.querySelector('.card p').textContent = 'Enjoy your premium features!';
+            document.querySelector('.card p').textContent = 'You already have ad-free access and premium tools.';
             document.getElementById('subscribe-btn').style.display = 'none';
             const newBtn = document.createElement('button');
-            newBtn.textContent = 'Go to Spy Tools →';
+            newBtn.className = 'btn btn-primary';
+            newBtn.textContent = 'Go to League Spy →';
             newBtn.onclick = () => window.location.href = '/spy';
             document.querySelector('.card').appendChild(newBtn);
         }
