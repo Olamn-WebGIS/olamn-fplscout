@@ -209,24 +209,43 @@ router.post('/', requireAdminSession, async (req, res) => {
 
     let insertResult;
     try {
-      insertResult = await db.from('fixtures').insert([payload]).select().single();
-    } catch (insErr) {
-      const msg = insErr && insErr.message ? insErr.message : String(insErr);
-      console.warn('Insert failed, attempting fallback if schema is missing columns:', msg);
-      // If the error indicates the new logo columns don't exist yet, retry without them
-      if (/home_logo_url|away_logo_url/.test(msg)) {
-        const fallbackPayload = Object.assign({}, payload);
-        delete fallbackPayload.home_logo_url;
-        delete fallbackPayload.away_logo_url;
+      // Try inserting, and iteratively remove columns mentioned in schema errors and retry.
+      let attemptPayload = Object.assign({}, payload);
+      while (true) {
         try {
-          insertResult = await db.from('fixtures').insert([fallbackPayload]).select().single();
-        } catch (insErr2) {
-          const msg2 = insErr2 && insErr2.message ? insErr2.message : String(insErr2);
-          return res.status(500).json({ success: false, message: msg2 });
+          insertResult = await db.from('fixtures').insert([attemptPayload]).select().single();
+          break; // success
+        } catch (insErr) {
+          const msg = insErr && insErr.message ? insErr.message : String(insErr);
+          console.warn('Insert attempt failed:', msg);
+          // Identify problematic column names and remove them if present, else rethrow
+          if (/home_logo_url/.test(msg) && Object.prototype.hasOwnProperty.call(attemptPayload, 'home_logo_url')) {
+            delete attemptPayload.home_logo_url;
+            continue;
+          }
+          if (/away_logo_url/.test(msg) && Object.prototype.hasOwnProperty.call(attemptPayload, 'away_logo_url')) {
+            delete attemptPayload.away_logo_url;
+            continue;
+          }
+          if (/logo_url/.test(msg) && Object.prototype.hasOwnProperty.call(attemptPayload, 'logo_url')) {
+            delete attemptPayload.logo_url;
+            continue;
+          }
+          if (/title/.test(msg) && Object.prototype.hasOwnProperty.call(attemptPayload, 'title')) {
+            delete attemptPayload.title;
+            continue;
+          }
+          if (/description/.test(msg) && Object.prototype.hasOwnProperty.call(attemptPayload, 'description')) {
+            delete attemptPayload.description;
+            continue;
+          }
+          // If we reach here, error isn't a known missing-column problem — return it
+          throw insErr;
         }
-      } else {
-        return res.status(500).json({ success: false, message: msg });
       }
+    } catch (finalErr) {
+      const msg = finalErr && finalErr.message ? finalErr.message : String(finalErr);
+      return res.status(500).json({ success: false, message: msg });
     }
     const { data, error } = insertResult || {};
     if (error) return res.status(500).json({ success: false, message: error.message });
@@ -267,7 +286,39 @@ router.put('/:id', requireAdminSession, async (req, res) => {
       if (typeof description !== 'undefined') updates.description = description;
     }
 
-    const { data, error } = await db.from('fixtures').update(updates).eq('id', id).select().single();
+    let updateResult;
+    try {
+      let attemptUpdates = Object.assign({}, updates);
+      while (true) {
+        try {
+          updateResult = await db.from('fixtures').update(attemptUpdates).eq('id', id).select().single();
+          break;
+        } catch (upErr) {
+          const msg = upErr && upErr.message ? upErr.message : String(upErr);
+          console.warn('Update attempt failed:', msg);
+          if (/home_logo_url/.test(msg) && Object.prototype.hasOwnProperty.call(attemptUpdates, 'home_logo_url')) {
+            delete attemptUpdates.home_logo_url; continue;
+          }
+          if (/away_logo_url/.test(msg) && Object.prototype.hasOwnProperty.call(attemptUpdates, 'away_logo_url')) {
+            delete attemptUpdates.away_logo_url; continue;
+          }
+          if (/logo_url/.test(msg) && Object.prototype.hasOwnProperty.call(attemptUpdates, 'logo_url')) {
+            delete attemptUpdates.logo_url; continue;
+          }
+          if (/title/.test(msg) && Object.prototype.hasOwnProperty.call(attemptUpdates, 'title')) {
+            delete attemptUpdates.title; continue;
+          }
+          if (/description/.test(msg) && Object.prototype.hasOwnProperty.call(attemptUpdates, 'description')) {
+            delete attemptUpdates.description; continue;
+          }
+          throw upErr;
+        }
+      }
+    } catch (finalUpErr) {
+      const msg = finalUpErr && finalUpErr.message ? finalUpErr.message : String(finalUpErr);
+      return res.status(500).json({ success: false, message: msg });
+    }
+    const { data, error } = updateResult || {};
     if (error) return res.status(500).json({ success: false, message: error.message });
     return res.json({ success: true, fixture: data });
   } catch (err) {

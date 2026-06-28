@@ -20,10 +20,18 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER update_fixtures_updated_at
-BEFORE UPDATE ON public.fixtures
-FOR EACH ROW
-EXECUTE PROCEDURE public.update_updated_at_column();
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'update_fixtures_updated_at'
+  ) THEN
+    CREATE TRIGGER update_fixtures_updated_at
+    BEFORE UPDATE ON public.fixtures
+    FOR EACH ROW
+    EXECUTE PROCEDURE public.update_updated_at_column();
+  END IF;
+END
+$$;
 
 -- Index on match_time for ordering queries
 CREATE INDEX IF NOT EXISTS idx_fixtures_match_time ON public.fixtures (match_time);
