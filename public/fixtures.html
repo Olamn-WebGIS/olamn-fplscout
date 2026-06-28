@@ -2,18 +2,39 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Live Fixtures</title>
+  <title>Live Fixtures — FPL Scout</title>
+  <link rel="canonical" href="https://fplscout.name.ng/fixtures" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Live Fixtures — FPL Scout" />
+  <meta property="og:description" content="See live fixtures with team logos, match times, and live links." />
+  <meta property="og:url" content="https://fplscout.name.ng/fixtures" />
+  <meta property="og:image" content="https://fplscout.name.ng/images/logo.png" />
   <link rel="stylesheet" href="/style.css">
   <style>
-    .fixture { display:flex; align-items:center; gap:1rem; padding:0.5rem 0; border-bottom:1px solid #eee }
-    .fixture img { width:56px; height:56px; object-fit:contain }
+    .fixture-list { display: grid; gap: 0.85rem; }
+    .fixture-card { display:flex; align-items:center; gap:1rem; padding:0.75rem; border-radius:12px; }
+    .fixture-card .meta { flex:1 }
+    .fixture-card img { width:56px; height:56px; object-fit:contain; border-radius:8px; }
+    .fixture-card .teams { font-weight:700; color:var(--text-primary); }
+    .fixture-card .time { font-size:0.92rem; color:var(--text-secondary); margin-top:4px }
   </style>
 </head>
 <body>
-  <main>
-    <h1>Live Fixtures</h1>
-    <div id="fixtures-root">Loading fixtures...</div>
+  <div id="nav-placeholder"></div>
+
+  <main class="page-wrap" style="min-height: calc(100vh - 240px);">
+    <div style="max-width: var(--max-w); margin: 0 auto; padding: 2rem 1rem;">
+      <section style="margin-bottom: 1.5rem;">
+        <div class="section-eyebrow" style="color: var(--green); margin-bottom: 0.5rem;">Live Fixtures</div>
+        <h1 style="font-size: clamp(2rem, 4vw, 3rem); margin: 0;">Live Fixtures</h1>
+        <p style="color: var(--text-secondary); max-width: 680px; margin-top: 0.75rem;">Track upcoming matches with team logos, kickoff times, and direct live links in one place.</p>
+      </section>
+      <div id="fixtures-root" style="min-height: 360px;">Loading fixtures...</div>
+    </div>
   </main>
+
+  <div id="footer-placeholder"></div>
   <script src="/fixtures.js"></script>
+  <script src="/layout.js"></script>
 </body>
 </html>

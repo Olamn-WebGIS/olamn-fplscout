@@ -36,7 +36,6 @@ const fixtureHome = document.getElementById('fixture-home');
 const fixtureAway = document.getElementById('fixture-away');
 const fixtureTime = document.getElementById('fixture-time');
 const fixtureLiveLink = document.getElementById('fixture-live-link');
-const fixtureLogo = document.getElementById('fixture-logo');
 const fixturePreviewSection = document.getElementById('fixture-preview-section');
 const fixtureHomePreview = document.getElementById('fixture-home-preview');
 const fixtureAwayPreview = document.getElementById('fixture-away-preview');
@@ -45,6 +44,8 @@ const updateFixtureBtn = document.getElementById('update-fixture');
 const cancelFixtureBtn = document.getElementById('cancel-fixture');
 let editingFixtureId = null;
 let previewTimeout = null;
+let previewHomeLogoUrl = null;
+let previewAwayLogoUrl = null;
 
 let adminPassword = null;
 let adminAuthenticated = false;
@@ -351,6 +352,8 @@ async function loadFixtures() {
 function updateFixturePreviews(homeUrl, awayUrl) {
   if (!fixturePreviewSection) return;
   fixturePreviewSection.style.display = 'flex';
+  previewHomeLogoUrl = homeUrl || null;
+  previewAwayLogoUrl = awayUrl || null;
   fixtureHomePreview.src = homeUrl || '/images/default-logo.png';
   fixtureAwayPreview.src = awayUrl || '/images/default-logo.png';
 }
@@ -358,6 +361,8 @@ function updateFixturePreviews(homeUrl, awayUrl) {
 function clearFixturePreviews() {
   if (!fixturePreviewSection) return;
   fixturePreviewSection.style.display = 'none';
+  previewHomeLogoUrl = null;
+  previewAwayLogoUrl = null;
   fixtureHomePreview.src = '/images/default-logo.png';
   fixtureAwayPreview.src = '/images/default-logo.png';
 }
@@ -429,7 +434,6 @@ function renderFixturesList(fixtures) {
         // Convert UTC ISO string to local datetime-local value
         fixtureTime.value = f.match_time ? new Date(f.match_time).toISOString().slice(0,16) : '';
         fixtureLiveLink.value = f.live_link || '';
-        fixtureLogo.value = f.logo_url || '';
         editingFixtureId = f.id;
         createFixtureBtn.classList.add('hidden');
         updateFixtureBtn.classList.remove('hidden');
@@ -464,7 +468,6 @@ function clearFixtureForm() {
   fixtureAway.value = '';
   fixtureTime.value = '';
   fixtureLiveLink.value = '';
-  fixtureLogo.value = '';
   editingFixtureId = null;
   createFixtureBtn.classList.remove('hidden');
   updateFixtureBtn.classList.add('hidden');
@@ -478,21 +481,28 @@ async function submitCreateFixture() {
   const away = fixtureAway.value.trim();
   const timeLocal = fixtureTime.value;
   const live = fixtureLiveLink.value.trim();
-  const logo = fixtureLogo.value.trim();
 
   if (!home || !away || !timeLocal) { alert('Home, away and time are required.'); return; }
   if (live && !validateUrl(live)) { alert('Live link must be a valid URL.'); return; }
-  if (logo && !validateUrl(logo)) { alert('Logo must be a valid URL.'); return; }
 
   // Convert local datetime-local value to ISO UTC string
   const utcIso = new Date(timeLocal).toISOString();
 
   try {
+    const bodyPayload = {
+      home_team: home,
+      away_team: away,
+      match_time: utcIso,
+      live_link: live || null,
+      home_logo_url: previewHomeLogoUrl || null,
+      away_logo_url: previewAwayLogoUrl || null
+    };
+
     const res = await fetch('/api/fixtures', {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ home_team: home, away_team: away, match_time: utcIso, live_link: live || null, logo_url: logo || null })
+      body: JSON.stringify(bodyPayload)
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Create failed');
@@ -510,20 +520,27 @@ async function submitUpdateFixture() {
   const away = fixtureAway.value.trim();
   const timeLocal = fixtureTime.value;
   const live = fixtureLiveLink.value.trim();
-  const logo = fixtureLogo.value.trim();
 
   if (!home || !away || !timeLocal) { alert('Home, away and time are required.'); return; }
   if (live && !validateUrl(live)) { alert('Live link must be a valid URL.'); return; }
-  if (logo && !validateUrl(logo)) { alert('Logo must be a valid URL.'); return; }
 
   const utcIso = new Date(timeLocal).toISOString();
 
   try {
+    const bodyPayload = {
+      home_team: home,
+      away_team: away,
+      match_time: utcIso,
+      live_link: live || null,
+      home_logo_url: previewHomeLogoUrl || null,
+      away_logo_url: previewAwayLogoUrl || null
+    };
+
     const res = await fetch(`/api/fixtures/${encodeURIComponent(editingFixtureId)}`, {
       method: 'PUT',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ home_team: home, away_team: away, match_time: utcIso, live_link: live || null, logo_url: logo || null })
+      body: JSON.stringify(bodyPayload)
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Update failed');
@@ -782,10 +799,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   fixtureHome?.addEventListener('input', schedulePreviewUpdate);
   fixtureAway?.addEventListener('input', schedulePreviewUpdate);
-  fixtureLogo?.addEventListener('input', () => {
-    const url = fixtureLogo.value.trim() || '/images/default-logo.png';
-    updateFixturePreviews(url, url);
-  });
 
   cancelEditButton.addEventListener('click', () => {
     resetEditorState();

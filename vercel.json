@@ -12,7 +12,7 @@
     { "source": "/recommendations", "destination": "public/recommendations.html" },
     { "source": "/spy", "destination": "public/spy.html" },
     { "source": "/subscribe", "destination": "public/subscribe.html" },
-    
+    { "source": "/fixtures", "destination": "public/fixtures.html" },
     
     { "source": "/account", "destination": "public/account.html" },
     { "source": "/affiliate", "destination": "public/affiliate.html" },
