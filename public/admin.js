@@ -431,6 +431,8 @@ function renderFixturesList(fixtures) {
         const f = data.fixture;
         fixtureHome.value = f.home_team || '';
         fixtureAway.value = f.away_team || '';
+        document.getElementById('fixture-title').value = f.title || '';
+        document.getElementById('fixture-description').value = f.description || '';
         // Convert UTC ISO string to local datetime-local value
         fixtureTime.value = f.match_time ? new Date(f.match_time).toISOString().slice(0,16) : '';
         fixtureLiveLink.value = f.live_link || '';
@@ -468,6 +470,8 @@ function clearFixtureForm() {
   fixtureAway.value = '';
   fixtureTime.value = '';
   fixtureLiveLink.value = '';
+  document.getElementById('fixture-title').value = '';
+  document.getElementById('fixture-description').value = '';
   editingFixtureId = null;
   createFixtureBtn.classList.remove('hidden');
   updateFixtureBtn.classList.add('hidden');
@@ -481,8 +485,6 @@ async function submitCreateFixture() {
   const away = fixtureAway.value.trim();
   const timeLocal = fixtureTime.value;
   const live = fixtureLiveLink.value.trim();
-  const title = (document.getElementById('fixture-title') || {}).value?.trim() || '';
-  const description = (document.getElementById('fixture-description') || {}).value?.trim() || '';
   const title = (document.getElementById('fixture-title') || {}).value?.trim() || '';
   const description = (document.getElementById('fixture-description') || {}).value?.trim() || '';
 
@@ -501,6 +503,10 @@ async function submitCreateFixture() {
       home_logo_url: previewHomeLogoUrl || null,
       away_logo_url: previewAwayLogoUrl || null
     };
+    const title = (document.getElementById('fixture-title') || {}).value?.trim() || '';
+    const description = (document.getElementById('fixture-description') || {}).value?.trim() || '';
+    if (title) bodyPayload.title = title;
+    if (description) bodyPayload.description = description;
     if (title) bodyPayload.title = title;
     if (description) bodyPayload.description = description;
     if (title) bodyPayload.title = title;
