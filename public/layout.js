@@ -538,6 +538,13 @@
     document.querySelectorAll('.nav-links a').forEach(a => {
       const href = (a.getAttribute('href') || '').replace(/\/$/, '') || '/';
       if (href === path) a.classList.add('active');
+      a.addEventListener('click', () => {
+        if (nl.classList.contains('open')) {
+          nl.classList.remove('open');
+          ham.setAttribute('aria-expanded', 'false');
+          if (nbi) nbi.classList.remove('menu-open');
+        }
+      });
     });
 
     // Hamburger Mobile UI Layout Animation Controller

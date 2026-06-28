@@ -25,14 +25,20 @@ async function loadPublicFixtures() {
     root.innerHTML = `<div class="fixture-list">` + fixtures.map(f => `
       <div class="card fixture-card hero">
         ${f.title ? `<div class="fixture-competition">${escapeHtml(f.title)}</div>` : ''}
+        ${f.description ? `<div class="fixture-description">${escapeHtml(f.description)}</div>` : ''}
         <div class="fixture-teams">
-          <div class="team-logo"><img src="${f.home_logo_url || f.logo_url || '/images/default-logo.png'}" alt="${f.home_team}" /></div>
-          <div class="teams">${escapeHtml(f.home_team)} <span class="vs">vs</span> ${escapeHtml(f.away_team)}</div>
-          <div class="team-logo"><img src="${f.away_logo_url || '/images/default-logo.png'}" alt="${f.away_team}" /></div>
+          <div class="team-block">
+            <img class="team-logo" src="${f.home_logo_url || f.logo_url || '/images/default-logo.png'}" alt="${f.home_team}" />
+            <span class="team-name">${escapeHtml(f.home_team)}</span>
+          </div>
+          <span class="vs">vs</span>
+          <div class="team-block">
+            <img class="team-logo" src="${f.away_logo_url || '/images/default-logo.png'}" alt="${f.away_team}" />
+            <span class="team-name">${escapeHtml(f.away_team)}</span>
+          </div>
         </div>
-        ${f.description ? `<div class="desc" style="color:var(--text-secondary);margin-top:8px">${escapeHtml(f.description)}</div>` : ''}
         <div class="time">${new Date(f.match_time).toLocaleString()}</div>
-        <div style="margin-top:10px">${f.live_link ? `<a class="btn btn-primary" href="${escapeAttr(f.live_link)}" target="_blank" rel="noopener">Watch</a>` : ''}</div>
+        <div class="fixture-action">${f.live_link ? `<a class="btn btn-primary" href="${escapeAttr(f.live_link)}" target="_blank" rel="noopener">Watch</a>` : ''}</div>
       </div>
     `).join('') + `</div>`;
   } catch (err) {
