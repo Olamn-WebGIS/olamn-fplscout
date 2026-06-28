@@ -295,6 +295,7 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 .fixture-card.hero .time { font-size: 0.95rem; color: var(--text-secondary); margin-top: 0.05rem; }
 .fixture-card.hero .fixture-action { margin-top: 10px; display:flex; justify-content:center; width:100%; }
 .fixture-card.hero .fixture-action .btn { min-width: 160px; padding: 0.85rem 1.35rem; display:inline-flex; justify-content:center; align-items:center; }
+.fixture-card.hero .fixture-watch-note { max-width: 680px; margin: 0 auto; font-size: 0.95rem; color: var(--text-secondary); line-height: 1.5; padding: 0.9rem 1rem 0 1rem; }
 
 @media (max-width: 768px) {
   .fixture-card.hero { padding: 1.5rem 1rem; }

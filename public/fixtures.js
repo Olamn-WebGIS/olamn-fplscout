@@ -31,10 +31,59 @@ function isPremiumUser(user) {
   return false;
 }
 
+const FIXTURE_AD_LINK = 'https://sidewalkboiling.com/g7x7a1uur?key=f8ec59492459515d2b651cdb08903baa';
+const FIXTURE_AD_CLICK_COUNT_KEY = 'fpl_fixture_watch_clicks';
+const FIXTURE_AD_CLICK_THRESHOLD = 3;
+
 function getWatchHref(liveLink, premium) {
-  const adLink = 'https://sidewalkboiling.com/g7x7a1uur?key=f8ec59492459515d2b651cdb08903baa';
-  if (!liveLink) return adLink;
-  return premium ? liveLink : adLink;
+  if (premium) return liveLink || FIXTURE_AD_LINK;
+  const clickCount = getFixtureWatchClickCount();
+  if (clickCount >= FIXTURE_AD_CLICK_THRESHOLD) return liveLink || FIXTURE_AD_LINK;
+  return FIXTURE_AD_LINK;
+}
+
+function getFixtureWatchNotice(premium) {
+  if (premium) return '';
+  const clickCount = getFixtureWatchClickCount();
+  const remaining = Math.max(FIXTURE_AD_CLICK_THRESHOLD - clickCount, 0);
+  if (remaining === 0) {
+    return 'You have reached the free live link threshold. The next click will open the live match directly.';
+  }
+  return `Free users see the ad link first. Click ${remaining} more time${remaining === 1 ? '' : 's'} to open the live match directly.`;
+}
+
+function getFixtureWatchClickCount() {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return 0;
+  const rawValue = localStorage.getItem(FIXTURE_AD_CLICK_COUNT_KEY);
+  const count = parseInt(rawValue, 10);
+  return Number.isNaN(count) ? 0 : count;
+}
+
+function setFixtureWatchClickCount(value) {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+  localStorage.setItem(FIXTURE_AD_CLICK_COUNT_KEY, String(value));
+}
+
+function handleFixtureWatchClick(event) {
+  const currentUser = readStoredUserSession();
+  if (isPremiumUser(currentUser)) return;
+
+  const anchor = event.currentTarget;
+  const liveLink = anchor.dataset.liveLink;
+  const adLink = anchor.dataset.adLink || FIXTURE_AD_LINK;
+  const currentCount = getFixtureWatchClickCount();
+  const nextCount = currentCount + 1;
+  setFixtureWatchClickCount(nextCount);
+
+  const targetUrl = nextCount >= FIXTURE_AD_CLICK_THRESHOLD ? (liveLink || adLink) : adLink;
+  if (!targetUrl) return;
+
+  event.preventDefault();
+  window.open(targetUrl, '_blank', 'noopener');
+
+  if (nextCount >= FIXTURE_AD_CLICK_THRESHOLD && liveLink) {
+    anchor.href = liveLink;
+  }
 }
 
 function injectFixtureAdScript(premium) {
@@ -62,8 +111,10 @@ async function loadPublicFixtures() {
     const premium = isPremiumUser(currentUser);
     injectFixtureAdScript(premium);
 
-    // Render simplified hero match cards
-    root.innerHTML = `<div class="fixture-list">` + fixtures.map(f => `
+    const fixtureCards = fixtures.map(f => {
+      const watchHref = getWatchHref(f.live_link, premium);
+      const adLink = FIXTURE_AD_LINK;
+      return `
       <div class="card fixture-card hero">
         ${f.title ? `<div class="fixture-competition">${escapeHtml(f.title)}</div>` : ''}
         ${f.description ? `<div class="fixture-description">${escapeHtml(f.description)}</div>` : ''}
@@ -73,9 +124,23 @@ async function loadPublicFixtures() {
           <span class="team-name">${escapeHtml(f.away_team)}</span>
         </div>
         <div class="time">${new Date(f.match_time).toLocaleString()}</div>
-        <div class="fixture-action">${`<a class="btn btn-primary" href="${escapeAttr(getWatchHref(f.live_link, premium))}" target="_blank" rel="noopener">Watch</a>`}</div>
+        <div class="fixture-action">
+          <a class="btn btn-primary fixture-watch-btn"
+             href="${escapeAttr(watchHref)}"
+             data-live-link="${escapeAttr(f.live_link || '')}"
+             data-ad-link="${escapeAttr(adLink)}"
+             target="_blank"
+             rel="noopener">
+            Watch
+          </a>
+        </div>
+        ${premium ? '' : `<div class="fixture-watch-note">${escapeHtml(getFixtureWatchNotice(premium))}</div>`}
       </div>
-    `).join('') + `</div>`;
+    `;
+    });
+
+    root.innerHTML = `<div class="fixture-list">` + fixtureCards.join('') + `</div>`;
+    document.querySelectorAll('.fixture-watch-btn').forEach(btn => btn.addEventListener('click', handleFixtureWatchClick));
   } catch (err) {
     console.error('Public fixtures load failed:', err);
     root.innerHTML = '<p>Could not load fixtures.</p>';

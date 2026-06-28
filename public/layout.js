@@ -41,6 +41,14 @@
     }
   }
 
+  function revealAccountLinkIfLoggedIn() {
+    const currentUser = readStoredUserSession();
+    const accountNavItem = document.getElementById('account-nav-item');
+    if (currentUser && accountNavItem) {
+      accountNavItem.classList.remove('account-hidden');
+    }
+  }
+
   function isPremiumUser(user) {
     if (!user) return false;
     if (user.isPremium === true || user.is_premium === true) return true;
@@ -532,6 +540,8 @@
     if (!document.querySelector('link[href*="font-awesome"][rel="stylesheet"]') && !document.querySelector('link[href*="fontawesome"][rel="stylesheet"]')) {
       document.head.insertAdjacentHTML('beforeend', FONT_AWESOME_LINK);
     }
+
+    revealAccountLinkIfLoggedIn();
 
     // Active Tab Navigation Link Highlighting Style Engine
     const path = location.pathname.replace(/\/$/, '') || '/';
