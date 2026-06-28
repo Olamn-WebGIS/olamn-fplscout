@@ -10,6 +10,29 @@ function escapeAttr(s) {
   return String(s).replace(/"/g, '&quot;');
 }
 
+function initialsFromTeam(team) {
+  if (!team) return 'VS';
+  return String(team)
+    .split(/\s+/)
+    .map(word => word.charAt(0))
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function renderTeamLogo(team, logoUrl) {
+  const initials = initialsFromTeam(team);
+  if (logoUrl) {
+    return `
+      <div class="team-logo-wrapper">
+        <img class="team-logo" src="${escapeAttr(logoUrl)}" alt="${escapeAttr(team)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" />
+        <span class="team-logo-placeholder" style="display:none">${escapeHtml(initials)}</span>
+      </div>`;
+  }
+
+  return `<div class="team-logo-wrapper"><span class="team-logo-placeholder">${escapeHtml(initials)}</span></div>`;
+}
+
 async function loadPublicFixtures() {
   const root = document.getElementById('fixtures-root');
   try {
@@ -28,12 +51,12 @@ async function loadPublicFixtures() {
         ${f.description ? `<div class="fixture-description">${escapeHtml(f.description)}</div>` : ''}
         <div class="fixture-teams">
           <div class="team-block">
-            <img class="team-logo" src="${f.home_logo_url || f.logo_url || '/images/default-logo.png'}" alt="${f.home_team}" />
+            ${renderTeamLogo(f.home_team, f.home_logo_url || f.logo_url)}
             <span class="team-name">${escapeHtml(f.home_team)}</span>
           </div>
           <span class="vs">vs</span>
           <div class="team-block">
-            <img class="team-logo" src="${f.away_logo_url || '/images/default-logo.png'}" alt="${f.away_team}" />
+            ${renderTeamLogo(f.away_team, f.away_logo_url)}
             <span class="team-name">${escapeHtml(f.away_team)}</span>
           </div>
         </div>
