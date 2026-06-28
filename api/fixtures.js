@@ -185,7 +185,7 @@ router.get('/:id', async (req, res) => {
 // Create fixture
 router.post('/', requireAdminSession, async (req, res) => {
   try {
-    const { home_team, away_team, match_time, live_link, logo_url, home_logo_url, away_logo_url } = req.body;
+    const { home_team, away_team, match_time, live_link, logo_url, home_logo_url, away_logo_url, title, description } = req.body;
     if (!home_team || !away_team || !match_time) return res.status(400).json({ success: false, message: 'Missing required fields' });
 
     // Fetch logos from Sportmonks (only once during create). Use provided logos if supplied.
@@ -202,10 +202,33 @@ router.post('/', requireAdminSession, async (req, res) => {
       live_link: live_link || null,
       logo_url: logo_url || null,
       home_logo_url: homeLogo || DEFAULT_LOGO,
-      away_logo_url: awayLogo || DEFAULT_LOGO
+      away_logo_url: awayLogo || DEFAULT_LOGO,
+      title: title || null,
+      description: description || null
     };
 
-    const { data, error } = await db.from('fixtures').insert([payload]).select().single();
+    let insertResult;
+    try {
+      insertResult = await db.from('fixtures').insert([payload]).select().single();
+    } catch (insErr) {
+      const msg = insErr && insErr.message ? insErr.message : String(insErr);
+      console.warn('Insert failed, attempting fallback if schema is missing columns:', msg);
+      // If the error indicates the new logo columns don't exist yet, retry without them
+      if (/home_logo_url|away_logo_url/.test(msg)) {
+        const fallbackPayload = Object.assign({}, payload);
+        delete fallbackPayload.home_logo_url;
+        delete fallbackPayload.away_logo_url;
+        try {
+          insertResult = await db.from('fixtures').insert([fallbackPayload]).select().single();
+        } catch (insErr2) {
+          const msg2 = insErr2 && insErr2.message ? insErr2.message : String(insErr2);
+          return res.status(500).json({ success: false, message: msg2 });
+        }
+      } else {
+        return res.status(500).json({ success: false, message: msg });
+      }
+    }
+    const { data, error } = insertResult || {};
     if (error) return res.status(500).json({ success: false, message: error.message });
     return res.json({ success: true, fixture: data });
   } catch (err) {
@@ -218,7 +241,7 @@ router.post('/', requireAdminSession, async (req, res) => {
 router.put('/:id', requireAdminSession, async (req, res) => {
   try {
     const id = req.params.id;
-    const { home_team, away_team, match_time, live_link, logo_url, home_logo_url, away_logo_url } = req.body;
+    const { home_team, away_team, match_time, live_link, logo_url, home_logo_url, away_logo_url, title, description } = req.body;
     const updates = {};
     if (home_team) updates.home_team = home_team;
     if (away_team) updates.away_team = away_team;
@@ -235,9 +258,13 @@ router.put('/:id', requireAdminSession, async (req, res) => {
       const [hLogo, aLogo] = await Promise.all(logoPromises);
       if (hLogo) updates.home_logo_url = hLogo;
       if (aLogo) updates.away_logo_url = aLogo;
+      if (typeof title !== 'undefined') updates.title = title;
+      if (typeof description !== 'undefined') updates.description = description;
     } else {
       if (typeof home_logo_url !== 'undefined') updates.home_logo_url = home_logo_url;
       if (typeof away_logo_url !== 'undefined') updates.away_logo_url = away_logo_url;
+      if (typeof title !== 'undefined') updates.title = title;
+      if (typeof description !== 'undefined') updates.description = description;
     }
 
     const { data, error } = await db.from('fixtures').update(updates).eq('id', id).select().single();

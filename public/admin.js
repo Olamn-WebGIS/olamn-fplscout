@@ -481,6 +481,10 @@ async function submitCreateFixture() {
   const away = fixtureAway.value.trim();
   const timeLocal = fixtureTime.value;
   const live = fixtureLiveLink.value.trim();
+  const title = (document.getElementById('fixture-title') || {}).value?.trim() || '';
+  const description = (document.getElementById('fixture-description') || {}).value?.trim() || '';
+  const title = (document.getElementById('fixture-title') || {}).value?.trim() || '';
+  const description = (document.getElementById('fixture-description') || {}).value?.trim() || '';
 
   if (!home || !away || !timeLocal) { alert('Home, away and time are required.'); return; }
   if (live && !validateUrl(live)) { alert('Live link must be a valid URL.'); return; }
@@ -497,6 +501,10 @@ async function submitCreateFixture() {
       home_logo_url: previewHomeLogoUrl || null,
       away_logo_url: previewAwayLogoUrl || null
     };
+    if (title) bodyPayload.title = title;
+    if (description) bodyPayload.description = description;
+    if (title) bodyPayload.title = title;
+    if (description) bodyPayload.description = description;
 
     const res = await fetch('/api/fixtures', {
       method: 'POST',
