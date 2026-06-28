@@ -21,19 +21,18 @@ async function loadPublicFixtures() {
       root.innerHTML = '<p>No fixtures at the moment.</p>';
       return;
     }
+    // Render hero-style centered match cards
     root.innerHTML = `<div class="fixture-list">` + fixtures.map(f => `
-      <div class="card fixture-card">
-        <img src="${f.home_logo_url || f.logo_url || '/images/default-logo.png'}" alt="${f.home_team}" />
-        <div class="meta">
-            <div class="teams">${escapeHtml(f.home_team)} <span style="opacity:0.65;font-weight:500">vs</span> ${escapeHtml(f.away_team)}</div>
-            ${f.title ? `<div class="title" style="font-weight:700;margin-top:6px">${escapeHtml(f.title)}</div>` : ''}
-            ${f.description ? `<div class="desc" style="color:var(--text-secondary);margin-top:6px">${escapeHtml(f.description)}</div>` : ''}
-            <div class="time" style="margin-top:8px">${new Date(f.match_time).toLocaleString()}</div>
-          </div>
-        <img src="${f.away_logo_url || '/images/default-logo.png'}" alt="${f.away_team}" />
-        <div style="margin-left:12px">
-          ${f.live_link ? `<a class="btn btn-primary" href="${escapeAttr(f.live_link)}" target="_blank" rel="noopener">Watch</a>` : ''}
+      <div class="card fixture-card hero">
+        ${f.title ? `<div class="fixture-competition">${escapeHtml(f.title)}</div>` : ''}
+        <div class="fixture-teams">
+          <div class="team-logo"><img src="${f.home_logo_url || f.logo_url || '/images/default-logo.png'}" alt="${f.home_team}" /></div>
+          <div class="teams">${escapeHtml(f.home_team)} <span class="vs">vs</span> ${escapeHtml(f.away_team)}</div>
+          <div class="team-logo"><img src="${f.away_logo_url || '/images/default-logo.png'}" alt="${f.away_team}" /></div>
         </div>
+        ${f.description ? `<div class="desc" style="color:var(--text-secondary);margin-top:8px">${escapeHtml(f.description)}</div>` : ''}
+        <div class="time">${new Date(f.match_time).toLocaleString()}</div>
+        <div style="margin-top:10px">${f.live_link ? `<a class="btn btn-primary" href="${escapeAttr(f.live_link)}" target="_blank" rel="noopener">Watch</a>` : ''}</div>
       </div>
     `).join('') + `</div>`;
   } catch (err) {
