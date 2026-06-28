@@ -149,7 +149,7 @@
               <li><a href="/blog">Blog</a></li>
               <li><a href="/recommendations" class="spy-lock">Recommendations</a></li>
               <li><a href="/spy" class="spy-lock">League Spy</a></li>
-              <li><a href="/admin.html#fixtures-tab">Live Fixtures</a></li>
+              <li><a href="/fixtures.html">Live Fixtures</a></li>
             </ul>
           </div>
           <div>
