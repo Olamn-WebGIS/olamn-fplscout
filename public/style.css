@@ -292,12 +292,14 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 .fixture-card.hero .fixture-teams { display:flex; align-items:center; justify-content:center; gap:0.75rem; flex-wrap:wrap; }
 .fixture-card.hero .fixture-team { display:flex; align-items:center; gap:0.65rem; min-width: 0; }
 .fixture-card.hero .fixture-team.home-team { flex-direction: row !important; }
-.fixture-card.hero .fixture-team.away-team { flex-direction: row !important; gap: 12px !important; }
+.fixture-card.hero .fixture-team.away-team { flex-direction: row !important; gap: 14px !important; }
+.fixture-card.hero .fixture-team.away-team .team-name { order: 0 !important; }
+.fixture-card.hero .fixture-team.away-team .fixture-team-logo-wrapper { order: 1 !important; }
 .fixture-card.hero .fixture-team-logo-wrapper {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
+  width: 72px;
+  height: 72px;
+  min-width: 72px;
+  min-height: 72px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -312,8 +314,8 @@ h4 { font-size: 0.95rem; font-weight: 600; }
   object-fit: contain;
 }
 .admin-fixture-logo {
-  width: 44px;
-  height: 44px;
+  width: 72px;
+  height: 72px;
   object-fit: contain;
   border-radius: 50%;
 }
@@ -327,14 +329,14 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 @media (max-width: 768px) {
   .fixture-card.hero { padding: 1.5rem 1rem; }
   .fixture-card.hero .team-name { font-size: clamp(1.8rem, 8vw, 2.7rem); }
-  .fixture-card.hero .fixture-team-logo-wrapper { width: 32px; height: 32px; }
+  .fixture-card.hero .fixture-team-logo-wrapper { width: 44px; height: 44px; }
 }
 
 @media (max-width: 480px) {
   .fixture-card.hero { padding: 1rem 0.85rem; }
   .fixture-card.hero .fixture-teams { gap: 0.5rem; }
   .fixture-card.hero .team-name { font-size: clamp(1.4rem, 10vw, 2rem); }
-  .fixture-card.hero .fixture-team-logo-wrapper { width: 28px; height: 28px; }
+  .fixture-card.hero .fixture-team-logo-wrapper { width: 40px; height: 40px; }
   .fixture-card.hero .fixture-action .btn { width: 100%; max-width: 260px; }
 }
 
