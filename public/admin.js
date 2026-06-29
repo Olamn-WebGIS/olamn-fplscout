@@ -368,12 +368,12 @@ function renderFixturesList(fixtures) {
   fixturesList.innerHTML = uniqueFixtures.map(f => `
     <div class="admin-post-item" data-id="${f.id}">
       <div style="display:flex;align-items:center;gap:0.75rem">
-        <img src="${f.home_logo_url || f.logo_url || '/images/default-logo.png'}" alt="${f.home_team}" style="width:48px;height:48px;object-fit:contain" />
+        <img class="admin-fixture-logo" src="${f.home_logo_url || f.logo_url || '/images/default-logo.png'}" alt="${f.home_team}" />
         <div style="flex:1">
           <h3 style="margin:0">${f.home_team} <small style="opacity:0.6">vs</small> ${f.away_team}</h3>
           <div style="font-size:0.9rem;color:#444">${new Date(f.match_time).toLocaleString()}</div>
         </div>
-        <img src="${f.away_logo_url || '/images/default-logo.png'}" alt="${f.away_team}" style="width:48px;height:48px;object-fit:contain" />
+        <img class="admin-fixture-logo" src="${f.away_logo_url || '/images/default-logo.png'}" alt="${f.away_team}" />
       </div>
       <p>Live Link: <a href="${f.live_link || '#'}" target="_blank">${f.live_link || '—'}</a></p>
       <div class="admin-post-actions">

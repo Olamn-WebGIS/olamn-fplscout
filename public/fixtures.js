@@ -138,8 +138,8 @@ async function loadPublicFixtures() {
           </div>
           <span class="vs">vs</span>
           <div class="fixture-team away-team">
-            <span class="team-name">${escapeHtml(f.away_team)}</span>
             ${renderFixtureTeamLogo(f.away_logo_url || f.away_logo_filename || '', f.away_team)}
+            <span class="team-name">${escapeHtml(f.away_team)}</span>
           </div>
         </div>
         <div class="time">${new Date(f.match_time).toLocaleString()}</div>
