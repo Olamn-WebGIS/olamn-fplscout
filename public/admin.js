@@ -36,16 +36,13 @@ const fixtureHome = document.getElementById('fixture-home');
 const fixtureAway = document.getElementById('fixture-away');
 const fixtureTime = document.getElementById('fixture-time');
 const fixtureLiveLink = document.getElementById('fixture-live-link');
-const fixturePreviewSection = document.getElementById('fixture-preview-section');
-const fixtureHomePreview = document.getElementById('fixture-home-preview');
-const fixtureAwayPreview = document.getElementById('fixture-away-preview');
+const fixtureHomeLogo = document.getElementById('fixture-home-logo');
+const fixtureAwayLogo = document.getElementById('fixture-away-logo');
 const createFixtureBtn = document.getElementById('create-fixture');
 const updateFixtureBtn = document.getElementById('update-fixture');
 const cancelFixtureBtn = document.getElementById('cancel-fixture');
+const replaceFixturesBtn = document.getElementById('replace-fixtures');
 let editingFixtureId = null;
-let previewTimeout = null;
-let previewHomeLogoUrl = null;
-let previewAwayLogoUrl = null;
 
 let adminPassword = null;
 let adminAuthenticated = false;
@@ -349,52 +346,6 @@ async function loadFixtures() {
   }
 }
 
-function updateFixturePreviews(homeUrl, awayUrl) {
-  if (!fixturePreviewSection) return;
-  fixturePreviewSection.style.display = 'flex';
-  previewHomeLogoUrl = homeUrl || null;
-  previewAwayLogoUrl = awayUrl || null;
-  fixtureHomePreview.src = homeUrl || '/images/default-logo.png';
-  fixtureAwayPreview.src = awayUrl || '/images/default-logo.png';
-}
-
-function clearFixturePreviews() {
-  if (!fixturePreviewSection) return;
-  fixturePreviewSection.style.display = 'none';
-  previewHomeLogoUrl = null;
-  previewAwayLogoUrl = null;
-  fixtureHomePreview.src = '/images/default-logo.png';
-  fixtureAwayPreview.src = '/images/default-logo.png';
-}
-
-async function fetchTeamPreview(teamName) {
-  if (!teamName || !teamName.trim()) return '/images/default-logo.png';
-  try {
-    const res = await fetch(`/api/fixtures/team-logo?teamName=${encodeURIComponent(teamName.trim())}`, {
-      credentials: 'same-origin'
-    });
-    const data = await res.json();
-    if (res.ok && data.success && data.url) return data.url;
-  } catch (err) {
-    console.error('Preview fetch failed:', err);
-  }
-  return '/images/default-logo.png';
-}
-
-function schedulePreviewUpdate() {
-  if (previewTimeout) clearTimeout(previewTimeout);
-  previewTimeout = setTimeout(async () => {
-    const homeTeam = fixtureHome.value.trim();
-    const awayTeam = fixtureAway.value.trim();
-    if (!homeTeam && !awayTeam) {
-      clearFixturePreviews();
-      return;
-    }
-    const [homeUrl, awayUrl] = await Promise.all([fetchTeamPreview(homeTeam), fetchTeamPreview(awayTeam)]);
-    updateFixturePreviews(homeUrl, awayUrl);
-  }, 400);
-}
-
 function dedupeFixtures(fixtures) {
   if (!Array.isArray(fixtures)) return [];
   const seen = new Set();
@@ -445,6 +396,8 @@ function renderFixturesList(fixtures) {
         fixtureAway.value = f.away_team || '';
         document.getElementById('fixture-title').value = f.title || '';
         document.getElementById('fixture-description').value = f.description || '';
+        fixtureHomeLogo.value = f.home_logo_url || '';
+        fixtureAwayLogo.value = f.away_logo_url || '';
         // Convert UTC ISO string to local datetime-local value
         fixtureTime.value = f.match_time ? new Date(f.match_time).toISOString().slice(0,16) : '';
         fixtureLiveLink.value = f.live_link || '';
@@ -482,13 +435,61 @@ function clearFixtureForm() {
   fixtureAway.value = '';
   fixtureTime.value = '';
   fixtureLiveLink.value = '';
+  fixtureHomeLogo.value = '';
+  fixtureAwayLogo.value = '';
   document.getElementById('fixture-title').value = '';
   document.getElementById('fixture-description').value = '';
   editingFixtureId = null;
   createFixtureBtn.classList.remove('hidden');
   updateFixtureBtn.classList.add('hidden');
   cancelFixtureBtn.classList.add('hidden');
-  clearFixturePreviews();
+}
+
+async function submitReplaceFixtures() {
+  if (!adminAuthenticated) { alert('Unlock the dashboard first.'); return; }
+  if (!replaceFixturesBtn) return;
+
+  const promptText = prompt('Paste a JSON array of fixtures to replace the existing list. Example: [{"home_team":"Arsenal","away_team":"Chelsea","match_time":"2026-06-30T20:00:00.000Z","live_link":"https://example.com","home_logo_url":"arsenal.png","away_logo_url":"chelsea.png","title":"Friendly","description":"Test match"}]');
+  if (!promptText) return;
+
+  let parsedFixtures;
+  try {
+    parsedFixtures = JSON.parse(promptText);
+  } catch (err) {
+    alert('Invalid JSON. Please paste a valid array of fixtures.');
+    return;
+  }
+
+  if (!Array.isArray(parsedFixtures)) {
+    alert('The value must be a JSON array of fixtures.');
+    return;
+  }
+
+  const confirmed = confirm('This will delete all existing fixtures and replace them with the fixtures you pasted. Continue?');
+  if (!confirmed) return;
+
+  replaceFixturesBtn.disabled = true;
+  const originalText = replaceFixturesBtn.textContent;
+  replaceFixturesBtn.textContent = 'Replacing...';
+
+  try {
+    const res = await fetch('/api/fixtures/replace-all', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fixtures: parsedFixtures })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Replace failed');
+    await loadFixtures();
+    fixturesStatus.textContent = `Replaced fixtures with ${data.fixtures?.length || 0} item(s).`;
+  } catch (err) {
+    console.error('Replace fixtures failed:', err);
+    alert('Could not replace fixtures.');
+  } finally {
+    replaceFixturesBtn.disabled = false;
+    replaceFixturesBtn.textContent = originalText;
+  }
 }
 
 async function submitCreateFixture() {
@@ -499,6 +500,8 @@ async function submitCreateFixture() {
   const away = fixtureAway.value.trim();
   const timeLocal = fixtureTime.value;
   const live = fixtureLiveLink.value.trim();
+  const homeLogo = fixtureHomeLogo?.value?.trim() || '';
+  const awayLogo = fixtureAwayLogo?.value?.trim() || '';
   const title = (document.getElementById('fixture-title') || {}).value?.trim() || '';
   const description = (document.getElementById('fixture-description') || {}).value?.trim() || '';
 
@@ -517,8 +520,8 @@ async function submitCreateFixture() {
       away_team: away,
       match_time: utcIso,
       live_link: live || null,
-      home_logo_url: previewHomeLogoUrl || null,
-      away_logo_url: previewAwayLogoUrl || null
+      home_logo_url: homeLogo || null,
+      away_logo_url: awayLogo || null
     };
     if (title) bodyPayload.title = title;
     if (description) bodyPayload.description = description;
@@ -548,6 +551,8 @@ async function submitUpdateFixture() {
   const away = fixtureAway.value.trim();
   const timeLocal = fixtureTime.value;
   const live = fixtureLiveLink.value.trim();
+  const homeLogo = fixtureHomeLogo?.value?.trim() || '';
+  const awayLogo = fixtureAwayLogo?.value?.trim() || '';
 
   if (!home || !away || !timeLocal) { alert('Home, away and time are required.'); return; }
   if (live && !validateUrl(live)) { alert('Live link must be a valid URL.'); return; }
@@ -560,8 +565,8 @@ async function submitUpdateFixture() {
       away_team: away,
       match_time: utcIso,
       live_link: live || null,
-      home_logo_url: previewHomeLogoUrl || null,
-      away_logo_url: previewAwayLogoUrl || null
+      home_logo_url: homeLogo || null,
+      away_logo_url: awayLogo || null
     };
 
     const res = await fetch(`/api/fixtures/${encodeURIComponent(editingFixtureId)}`, {
@@ -633,6 +638,9 @@ function resetEditorState() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   initializeQuill();
+  if (replaceFixturesBtn) {
+    replaceFixturesBtn.addEventListener('click', submitReplaceFixtures);
+  }
   if (signupStatusFilter) {
     signupStatusFilter.addEventListener('change', renderSignupAttempts);
   }
@@ -824,9 +832,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     withdrawalRequestsNote.textContent = 'Unlock the dashboard and open this tab to load withdrawal requests.';
     resetEditorState();
   });
-
-  fixtureHome?.addEventListener('input', schedulePreviewUpdate);
-  fixtureAway?.addEventListener('input', schedulePreviewUpdate);
 
   cancelEditButton.addEventListener('click', () => {
     resetEditorState();

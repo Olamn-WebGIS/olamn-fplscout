@@ -31,6 +31,19 @@ function isPremiumUser(user) {
   return false;
 }
 
+function getLocalTeamLogoUrl(logoValue) {
+  if (!logoValue) return '/images/default-logo.png';
+  const normalized = String(logoValue).trim();
+  if (!normalized) return '/images/default-logo.png';
+  if (/^https?:\/\//i.test(normalized) || normalized.startsWith('/')) return normalized;
+  return `/images/teams/${encodeURIComponent(normalized)}`;
+}
+
+function renderFixtureTeamLogo(logoValue, altText) {
+  const imageUrl = getLocalTeamLogoUrl(logoValue);
+  return `<img class="fixture-team-logo" src="${escapeAttr(imageUrl)}" alt="${escapeAttr(altText)}" onerror="this.onerror=null;this.src='/images/default-logo.png';" />`;
+}
+
 const FIXTURE_AD_LINK = 'https://sidewalkboiling.com/g7x7a1uur?key=f8ec59492459515d2b651cdb08903baa';
 const FIXTURE_AD_CLICK_COUNT_KEY = 'fpl_fixture_watch_clicks';
 const FIXTURE_AD_CLICK_THRESHOLD = 3;
@@ -119,9 +132,15 @@ async function loadPublicFixtures() {
         ${f.title ? `<div class="fixture-competition">${escapeHtml(f.title)}</div>` : ''}
         ${f.description ? `<div class="fixture-description">${escapeHtml(f.description)}</div>` : ''}
         <div class="fixture-teams">
-          <span class="team-name">${escapeHtml(f.home_team)}</span>
+          <div class="fixture-team home-team">
+            ${renderFixtureTeamLogo(f.home_logo_url || f.home_logo_filename || f.logo_url, f.home_team)}
+            <span class="team-name">${escapeHtml(f.home_team)}</span>
+          </div>
           <span class="vs">vs</span>
-          <span class="team-name">${escapeHtml(f.away_team)}</span>
+          <div class="fixture-team away-team">
+            <span class="team-name">${escapeHtml(f.away_team)}</span>
+            ${renderFixtureTeamLogo(f.away_logo_url || f.away_logo_filename || '', f.away_team)}
+          </div>
         </div>
         <div class="time">${new Date(f.match_time).toLocaleString()}</div>
         <div class="fixture-action">

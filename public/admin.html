@@ -268,20 +268,19 @@
         <textarea id="fixture-description" rows="3" placeholder="Short description or context for the match..."></textarea>
       </div>
 
-+      <div class="admin-field" id="fixture-preview-section" style="display:none; gap:1rem; align-items:center;">
-+        <div>
-+          <label>Home logo preview</label>
-+          <img id="fixture-home-preview" src="/images/default-logo.png" alt="Home logo preview" style="width:64px;height:64px;object-fit:contain;border:1px solid #ddd;padding:4px;" />
-+        </div>
-+        <div>
-+          <label>Away logo preview</label>
-+          <img id="fixture-away-preview" src="/images/default-logo.png" alt="Away logo preview" style="width:64px;height:64px;object-fit:contain;border:1px solid #ddd;padding:4px;" />
-+        </div>
-+      </div>
+      <div class="admin-field">
+        <label for="fixture-home-logo">Home logo filename (e.g. arsenal.png)</label>
+        <input id="fixture-home-logo" type="text" placeholder="arsenal.png" />
+      </div>
+      <div class="admin-field">
+        <label for="fixture-away-logo">Away logo filename (e.g. chelsea.png)</label>
+        <input id="fixture-away-logo" type="text" placeholder="chelsea.png" />
+      </div>
       <div class="admin-actions">
         <button id="create-fixture" class="btn-primary">Create Fixture</button>
         <button id="update-fixture" class="btn-primary hidden">Update Fixture</button>
         <button id="cancel-fixture" class="btn-secondary hidden">Cancel</button>
+        <button id="replace-fixtures" class="btn-secondary">Replace all fixtures</button>
       </div>
       <div style="margin-top:1rem;">
         <h3>Existing Fixtures</h3>
