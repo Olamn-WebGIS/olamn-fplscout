@@ -296,10 +296,10 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 .fixture-card.hero .fixture-team.away-team .team-name { order: 0 !important; }
 .fixture-card.hero .fixture-team.away-team .fixture-team-logo-wrapper { order: 1 !important; }
 .fixture-card.hero .fixture-team-logo-wrapper {
-  width: 80px;
-  height: 80px;
-  min-width: 80px;
-  min-height: 80px;
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  min-height: 64px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -326,15 +326,15 @@ h4 { font-size: 0.95rem; font-weight: 600; }
   display: block;
 }
 .admin-fixture-logo {
-  width: 72px;
-  height: 72px;
+  width: 56px;
+  height: 56px;
   object-fit: cover;
   border-radius: 50% !important;
   display: block;
   box-sizing: border-box;
   overflow: hidden;
 }
-.fixture-card.hero .team-name { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(2.2rem, 6vw, 4rem); font-weight: 900; color: var(--text-primary); white-space: nowrap; }
+.fixture-card.hero .team-name { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(1.9rem, 5vw, 3rem); font-weight: 900; color: var(--text-primary); white-space: nowrap; }
 .fixture-card.hero .vs { font-family: 'Barlow Condensed', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--text-secondary); opacity: 0.85; margin: 0 0.4rem; }
 .fixture-card.hero .time { font-size: 0.95rem; color: var(--text-secondary); margin-top: 0.05rem; }
 .fixture-card.hero .fixture-action { margin-top: 10px; display:flex; justify-content:center; width:100%; }
@@ -343,17 +343,17 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 
 @media (max-width: 768px) {
   .fixture-card.hero { padding: 1.5rem 1rem; }
-  .fixture-card.hero .team-name { font-size: clamp(1.7rem, 8vw, 2.4rem); line-height: 1; }
-  .fixture-card.hero .fixture-team-logo-wrapper { width: 46px; height: 46px; }
+  .fixture-card.hero .team-name { font-size: clamp(1.6rem, 8vw, 2.2rem); line-height: 1; }
+  .fixture-card.hero .fixture-team-logo-wrapper { width: 40px; height: 40px; }
   .fixture-card.hero .fixture-team { gap: 0.5rem; }
 }
 
 @media (max-width: 480px) {
   .fixture-card.hero { padding: 1rem 0.85rem; }
   .fixture-card.hero .fixture-teams { gap: 0.5rem; }
-  .fixture-card.hero .team-name { font-size: clamp(1.25rem, 9vw, 1.8rem); line-height: 1.1; white-space: normal; }
-  .fixture-card.hero .fixture-team { gap: 0.4rem; }
-  .fixture-card.hero .fixture-team-logo-wrapper { width: 38px; height: 38px; }
+  .fixture-card.hero .team-name { font-size: clamp(1.15rem, 9vw, 1.6rem); line-height: 1.1; white-space: normal; }
+  .fixture-card.hero .fixture-team { gap: 0.35rem; }
+  .fixture-card.hero .fixture-team-logo-wrapper { width: 34px; height: 34px; }
   .fixture-card.hero .fixture-action .btn { width: 100%; max-width: 260px; }
 }
 
