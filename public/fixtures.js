@@ -41,7 +41,7 @@ function getLocalTeamLogoUrl(logoValue) {
 
 function renderFixtureTeamLogo(logoValue, altText) {
   const imageUrl = getLocalTeamLogoUrl(logoValue);
-  return `<img class="fixture-team-logo" src="${escapeAttr(imageUrl)}" alt="${escapeAttr(altText)}" onerror="this.onerror=null;this.src='/images/default-logo.png';" />`;
+  return `<span class="fixture-team-logo-wrapper"><img class="fixture-team-logo" src="${escapeAttr(imageUrl)}" alt="${escapeAttr(altText)}" onerror="this.onerror=null;this.src='/images/default-logo.png';" /></span>`;
 }
 
 const FIXTURE_AD_LINK = 'https://sidewalkboiling.com/g7x7a1uur?key=f8ec59492459515d2b651cdb08903baa';
