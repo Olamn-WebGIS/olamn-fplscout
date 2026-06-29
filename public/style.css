@@ -343,15 +343,17 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 
 @media (max-width: 768px) {
   .fixture-card.hero { padding: 1.5rem 1rem; }
-  .fixture-card.hero .team-name { font-size: clamp(1.8rem, 8vw, 2.7rem); }
-  .fixture-card.hero .fixture-team-logo-wrapper { width: 52px; height: 52px; }
+  .fixture-card.hero .team-name { font-size: clamp(1.7rem, 8vw, 2.4rem); line-height: 1; }
+  .fixture-card.hero .fixture-team-logo-wrapper { width: 46px; height: 46px; }
+  .fixture-card.hero .fixture-team { gap: 0.5rem; }
 }
 
 @media (max-width: 480px) {
   .fixture-card.hero { padding: 1rem 0.85rem; }
   .fixture-card.hero .fixture-teams { gap: 0.5rem; }
-  .fixture-card.hero .team-name { font-size: clamp(1.4rem, 10vw, 2rem); }
-  .fixture-card.hero .fixture-team-logo-wrapper { width: 48px; height: 48px; }
+  .fixture-card.hero .team-name { font-size: clamp(1.25rem, 9vw, 1.8rem); line-height: 1.1; white-space: normal; }
+  .fixture-card.hero .fixture-team { gap: 0.4rem; }
+  .fixture-card.hero .fixture-team-logo-wrapper { width: 38px; height: 38px; }
   .fixture-card.hero .fixture-action .btn { width: 100%; max-width: 260px; }
 }
 
