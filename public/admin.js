@@ -395,14 +395,26 @@ function schedulePreviewUpdate() {
   }, 400);
 }
 
+function dedupeFixtures(fixtures) {
+  if (!Array.isArray(fixtures)) return [];
+  const seen = new Set();
+  return fixtures.filter((fixture) => {
+    const id = fixture?.id ?? `${fixture?.home_team || ''}|${fixture?.away_team || ''}|${fixture?.match_time || ''}|${fixture?.live_link || ''}`;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
 function renderFixturesList(fixtures) {
   if (!fixturesList) return;
-  if (!fixtures || fixtures.length === 0) {
+  const uniqueFixtures = dedupeFixtures(fixtures);
+  if (!uniqueFixtures || uniqueFixtures.length === 0) {
     fixturesList.innerHTML = '<p>No fixtures added yet.</p>';
     return;
   }
 
-  fixturesList.innerHTML = fixtures.map(f => `
+  fixturesList.innerHTML = uniqueFixtures.map(f => `
     <div class="admin-post-item" data-id="${f.id}">
       <div style="display:flex;align-items:center;gap:0.75rem">
         <img src="${f.home_logo_url || f.logo_url || '/images/default-logo.png'}" alt="${f.home_team}" style="width:48px;height:48px;object-fit:contain" />
@@ -481,6 +493,8 @@ function clearFixtureForm() {
 
 async function submitCreateFixture() {
   if (!adminAuthenticated) { alert('Unlock the dashboard first.'); return; }
+  if (!createFixtureBtn) return;
+
   const home = fixtureHome.value.trim();
   const away = fixtureAway.value.trim();
   const timeLocal = fixtureTime.value;
@@ -491,7 +505,10 @@ async function submitCreateFixture() {
   if (!home || !away || !timeLocal) { alert('Home, away and time are required.'); return; }
   if (live && !validateUrl(live)) { alert('Live link must be a valid URL.'); return; }
 
-  // Convert local datetime-local value to ISO UTC string
+  createFixtureBtn.disabled = true;
+  const originalText = createFixtureBtn.textContent;
+  createFixtureBtn.textContent = 'Creating...';
+
   const utcIso = new Date(timeLocal).toISOString();
 
   try {
@@ -503,12 +520,6 @@ async function submitCreateFixture() {
       home_logo_url: previewHomeLogoUrl || null,
       away_logo_url: previewAwayLogoUrl || null
     };
-    const title = (document.getElementById('fixture-title') || {}).value?.trim() || '';
-    const description = (document.getElementById('fixture-description') || {}).value?.trim() || '';
-    if (title) bodyPayload.title = title;
-    if (description) bodyPayload.description = description;
-    if (title) bodyPayload.title = title;
-    if (description) bodyPayload.description = description;
     if (title) bodyPayload.title = title;
     if (description) bodyPayload.description = description;
 
@@ -525,6 +536,9 @@ async function submitCreateFixture() {
   } catch (err) {
     console.error('Create fixture failed:', err);
     alert('Could not create fixture. Make sure you are authenticated as admin.');
+  } finally {
+    createFixtureBtn.disabled = false;
+    createFixtureBtn.textContent = originalText;
   }
 }
 
