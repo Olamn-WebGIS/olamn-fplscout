@@ -4,8 +4,5 @@ Allow: /
 # Sitemap
 Sitemap: https://fplscout.name.ng/sitemap.xml
 
-# Disallow admin or private pages
+# Disallow only private or functional pages
 Disallow: /account.html
-Disallow: /privacy-policy.html
-Disallow: /terms-of-service.html
-Disallow: /refund-policy.html
