@@ -41,40 +41,39 @@
   <meta name="apple-mobile-web-app-title" content="FPL Scout" />
 </head>
 <body>
-<header id="nav-placeholder"></header>
+<div id="nav-placeholder"></div>
 <!-- Nav injected by layout.js -->
 
 <!-- ── Hero ──────────────────────────────────────────────────── -->
-<section class="hero" aria-label="FPL Scout hero section">
-  <p class="hero-eyebrow">Live FPL Season 2025/26</p>
-  <h1 id="hero-heading" class="display">The <em>Intelligence Edge</em><br>Every FPL Manager Needs</h1>
+<section class="hero">
+  <div class="hero-eyebrow">Live FPL Season 2025/26</div>
+  <h1 class="display">The <em>Intelligence Edge</em><br>Every FPL Manager Needs</h1>
   <p>Real-time player stats, predictive scoring, differential picks, and deep league spy tools — all in one place.</p>
   <div class="hero-cta">
     <a href="/recommendations" class="btn btn-green btn-lg spy-lock">Get Recommendations</a>
     <a href="#" class="btn btn-outline btn-lg spy-lock" style="color:var(--text-primary);border-color:var(--text-primary);">League Spy ↗</a>
   </div>
 </section>
-  <section class="hero-features" aria-labelledby="hero-stats-heading">
+  <section class="hero-features" aria-label="Live FPL statistics">
   <div class="hero-stats">
-    <h2 id="hero-stats-heading" class="sr-only">Live FPL statistics</h2>
-    <ul class="hero-stat-list" role="list">
-      <li class="hero-stat">
-        <div class="number" id="stat-players">—</div>
-        <div class="name">Players tracked</div>
-      </li>
-      <li class="hero-stat">
-        <div class="number" id="stat-gw">—</div>
-        <div class="name">Current gameweek</div>
-      </li>
-      <li class="hero-stat">
-        <div class="number" id="stat-avg">—</div>
-        <div class="name">Avg GW score</div>
-      </li>
-      <li class="hero-stat">
-        <div class="number" id="stat-top">—</div>
-        <div class="name">Top GW score</div>
-      </li>
-    </ul>
+    <dl class="hero-stat-list">
+      <div class="hero-stat">
+        <dt class="number" id="stat-players">—</dt>
+        <dd class="name">Players tracked</dd>
+      </div>
+      <div class="hero-stat">
+        <dt class="number" id="stat-gw">—</dt>
+        <dd class="name">Current gameweek</dd>
+      </div>
+      <div class="hero-stat">
+        <dt class="number" id="stat-avg">—</dt>
+        <dd class="name">Avg GW score</dd>
+      </div>
+      <div class="hero-stat">
+        <dt class="number" id="stat-top">—</dt>
+        <dd class="name">Top GW score</dd>
+      </div>
+    </dl>
   </div>
 </section>
 
@@ -83,8 +82,8 @@
   <div class="two-col">
 
     <!-- ── Left: Player Stats ────────────────────────────────── -->
-    <section class="player-stats-section">
-      <section class="card player-stats-card">
+    <div>
+      <div class="card">
         <div class="card-header-row">
           <h2 class="card-title">Player Stats</h2>
           <div class="controls-row">
@@ -119,7 +118,8 @@
             <option value="100">100 per page</option>
           </select>
         </div>
-      </section>
+      </article>
+
       <div class="table-wrap">
         <table id="players-table" aria-label="FPL player statistics">
           <thead>
@@ -140,7 +140,6 @@
           </tbody>
         </table>
       </div>
-    </section>
 
         <nav class="controls-row pagination-row" aria-label="Player table pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:0.82rem; color:var(--text-muted); gap:12px;">
   <div style="display:flex; align-items:center; gap:10px;">
@@ -432,7 +431,6 @@
   <div id="container-a971d37adb76d2f7565f5acc30b1239e"></div>
 </section>
 
-<footer id="footer-placeholder"></footer>
 <!-- Footer injected by layout.js -->
 
 <section class="affiliate-home-highlight card">
