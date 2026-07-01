@@ -810,11 +810,12 @@ table {
   background: #f8fbff;
 }
 .home-latest-blog-inner {
-  max-width: 1120px;
+  max-width: var(--max-w);
   margin: 0 auto;
+  padding: 0 0.5rem;
 }
 .home-latest-blog-header {
-  max-width: 680px;
+  max-width: 720px;
   margin: 0 auto 1.75rem;
   text-align: center;
 }
@@ -900,6 +901,10 @@ table {
   background: #ffffff;
   color: #334155;
   text-align: center;
+}
+
+.home-latest-blog .home-latest-blog-grid {
+  align-items: stretch;
 }
 
 @media (max-width: 680px) {
