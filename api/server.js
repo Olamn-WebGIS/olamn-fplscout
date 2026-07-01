@@ -259,6 +259,13 @@ function requireAdminSession(req, res, next) {
   next();
 }
 
+function normalizeImageUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (/^(https?:\/\/)/i.test(trimmed)) return trimmed;
+  return `${BASE_URL.replace(/\/$/, '')}/${trimmed.replace(/^\/+/, '')}`;
+}
+
 function renderBlogPage(res, metadata) {
   const template = fs.readFileSync(path.join(__dirname, '..', 'public', 'blog.html'), 'utf8');
   const html = template
@@ -857,7 +864,7 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
       title: `${post.title} | FPL Scout Blog`,
       description: post.summary,
       url: `${BASE_URL}/blog/${post.slug}`,
-      image: `${BASE_URL}/images/blog-share.png`,
+      image: normalizeImageUrl(post.image_url) || `${BASE_URL}/images/blog-share.png`,
       publishedAt: post.published_at ? new Date(post.published_at).toISOString() : '',
       jsonld: JSON.stringify({
         '@context': 'https://schema.org',
