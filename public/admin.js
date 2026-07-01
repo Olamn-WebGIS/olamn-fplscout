@@ -842,6 +842,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const slug = document.getElementById('post-slug').value.trim();
     const summary = document.getElementById('post-summary').value.trim();
     const content = quill ? quill.root.innerHTML.trim() : '';
+    const reelLink = document.getElementById('post-reel') ? document.getElementById('post-reel').value.trim() : '';
+    const imageAlt = document.getElementById('post-image-alt') ? document.getElementById('post-image-alt').value.trim() : '';
+    const imageInput = document.getElementById('post-image');
+    let uploadedImageUrl = null;
 
     if (!adminAuthenticated) {
       showStatus(postStatus, 'Please unlock the dashboard first.', false);
@@ -865,11 +869,55 @@ document.addEventListener('DOMContentLoaded', async () => {
     const url = editingPostId ? `/api/admin/posts/${editingPostId}` : '/api/admin/posts';
     const method = editingPostId ? 'PUT' : 'POST';
 
+    // If an image file was selected, compress and upload it to server which will forward to Supabase
+    try {
+      if (imageInput && imageInput.files && imageInput.files[0]) {
+        const file = imageInput.files[0];
+        // Use browser-image-compression if available to reduce upload size
+        let compressedFile = file;
+        try {
+          if (window.imageCompression) {
+            compressedFile = await imageCompression(file, { maxSizeMB: 0.6, maxWidthOrHeight: 1600, useWebWorker: true });
+          }
+        } catch (err) {
+          console.warn('Image compression failed, uploading original file.', err);
+          compressedFile = file;
+        }
+
+        // convert to base64
+        const dataUrl = await imageCompression.getDataUrlFromFile(compressedFile);
+        const base64 = dataUrl.split(',')[1];
+
+        const uploadRes = await fetch('/api/admin/upload-image', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: compressedFile.name || file.name, contentType: compressedFile.type || file.type, base64 })
+        });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok || !uploadData.success) {
+          console.error('Image upload failed', uploadData);
+          showStatus(postStatus, 'Image upload failed. Post not published.', false);
+          return;
+        }
+        uploadedImageUrl = uploadData.url;
+      }
+    } catch (err) {
+      console.error('Image processing/upload error:', err);
+      showStatus(postStatus, 'Image upload failed. Post not published.', false);
+      return;
+    }
+
+    const bodyPayload = { title, slug, summary, content };
+    if (uploadedImageUrl) bodyPayload.image_url = uploadedImageUrl;
+    if (reelLink) bodyPayload.reel_link = reelLink;
+    if (imageAlt) bodyPayload.image_alt = imageAlt;
+
     const response = await fetch(url, {
       method,
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, slug, summary, content })
+      body: JSON.stringify(bodyPayload)
     });
 
     const data = await response.json();

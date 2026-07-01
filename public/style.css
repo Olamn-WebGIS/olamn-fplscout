@@ -800,6 +800,16 @@ table {
   font-size: 0.82rem !important;
 }
 
+/* Blog image responsiveness */
+.blog-featured-list { display:block; max-width:100%; height:auto; border-radius:12px; box-shadow:0 8px 24px rgba(13,27,42,0.06); }
+.blog-post img { max-width:100%; height:auto; border-radius:10px; display:block; margin:0 auto; }
+.blog-list-item img { max-width:100%; height:auto; border-radius:8px; }
+
+@media (max-width: 480px) {
+  .blog-featured-list { border-radius:8px; }
+  .blog-post img { margin: 0.5rem 0; }
+}
+
 #team-modal #activity-tab .activity-grid { gap: 0.6rem !important; }
 
 /* Compact individual activity cards injected via JS */

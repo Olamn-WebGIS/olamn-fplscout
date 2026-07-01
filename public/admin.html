@@ -121,6 +121,18 @@
         <label for="post-content-editor">Content</label>
         <div id="post-content-editor"></div>
       </div>
+      <div class="admin-field">
+        <label for="post-image">Featured Image</label>
+        <input id="post-image" type="file" accept="image/*" />
+      </div>
+      <div class="admin-field">
+        <label for="post-image-alt">Image Alt Text</label>
+        <input id="post-image-alt" type="text" placeholder="Describe the image for accessibility" />
+      </div>
+      <div class="admin-field">
+        <label for="post-reel">Facebook Reel URL</label>
+        <input id="post-reel" type="text" placeholder="https://www.facebook.com/reel/...." />
+      </div>
       <div class="admin-actions">
         <button id="publish-post" class="btn-primary">Publish Post</button>
         <button id="cancel-edit" class="btn-secondary hidden">Cancel Edit</button>
@@ -290,6 +302,7 @@
   </div>
 
   <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+  <script src="https://unpkg.com/browser-image-compression@1.0.15/dist/browser-image-compression.js"></script>
   <script src="/admin.js"></script>
 </body>
 </html>

@@ -84,8 +84,43 @@ async function requirePremiumUser(req, res, next) {
 app.use(compression());
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
-app.use(express.json());
+// Allow larger payloads for image upload base64 payloads
+app.use(express.json({ limit: '12mb' }));
 app.use(express.static(path.join(process.cwd(), 'public')));
+
+// ── Admin image upload (receives base64 payload) ────────────
+// Expects JSON: { fileName, contentType, base64 }
+app.post('/api/admin/upload-image', requireAdminSession, async (req, res) => {
+  try {
+    if (!supabaseAdmin) return res.status(500).json({ success: false, message: 'Supabase admin client not configured.' });
+    const { fileName, contentType, base64 } = req.body;
+    if (!fileName || !base64) return res.status(400).json({ success: false, message: 'Missing fileName or base64 payload.' });
+
+    // sanitize file name and prefix with timestamp
+    const safeName = `${Date.now()}-${path.basename(fileName).replace(/[^a-zA-Z0-9._-]/g, '')}`;
+    const bucket = 'blog-images';
+    const filePath = safeName;
+
+    const buffer = Buffer.from(base64, 'base64');
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from(bucket)
+      .upload(filePath, buffer, { contentType, upsert: false });
+
+    if (uploadError) {
+      console.error('Supabase storage upload error:', uploadError);
+      return res.status(500).json({ success: false, message: 'Image upload failed.', details: uploadError.message });
+    }
+
+    const { data: publicData } = supabaseAdmin.storage.from(bucket).getPublicUrl(filePath);
+    const publicUrl = publicData && publicData.publicUrl ? publicData.publicUrl : publicData?.publicUrl || publicData?.url || null;
+
+    return res.json({ success: true, url: publicUrl, path: filePath });
+  } catch (err) {
+    console.error('Upload image endpoint error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
 
 function parseCookies(req) {
   const cookies = {};
@@ -914,7 +949,7 @@ app.get('/api/posts', async (req, res) => {
   try {
     const { data: posts, error } = await supabase
       .from('posts')
-      .select('id, title, slug, summary, author, published_at, likes')
+      .select('id, title, slug, summary, author, published_at, likes, image_url, reel_link, image_alt')
       .order('published_at', { ascending: false });
 
     if (error) throw error;
@@ -929,7 +964,7 @@ app.get('/api/posts/:slug', async (req, res) => {
   try {
     const { data: post, error } = await supabase
       .from('posts')
-      .select('id, title, slug, summary, content, author, published_at, likes')
+      .select('id, title, slug, summary, content, author, published_at, likes, image_url, reel_link, image_alt')
       .eq('slug', req.params.slug)
       .single();
 
@@ -1038,7 +1073,7 @@ app.post('/api/subscribe-newsletter', async (req, res) => {
 
 app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
   try {
-    const { title, slug, summary, content, adminPassword } = req.body;
+    const { title, slug, summary, content, adminPassword, image_url, reel_link, image_alt } = req.body;
     const secret = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS;
 
     if (adminPassword && adminPassword !== secret) {
@@ -1082,9 +1117,14 @@ app.post('/api/admin/posts', requireAdminSession, async (req, res) => {
       return res.status(409).json({ success: false, message: 'Slug already exists. Please choose a unique slug.' });
     }
 
+    const insertPayload = { title, slug, summary, content: sanitizedContent, author: 'FPL Scout' };
+    if (image_url) insertPayload.image_url = image_url;
+    if (reel_link) insertPayload.reel_link = reel_link;
+    if (image_alt) insertPayload.image_alt = image_alt;
+
     const { data: insertedPost, error: insertError } = await dbClient
       .from('posts')
-      .insert([{ title, slug, summary, content: sanitizedContent, author: 'FPL Scout' }])
+      .insert([insertPayload])
       .select()
       .single();
 

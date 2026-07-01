@@ -28,6 +28,26 @@ function createPostCard(post) {
   const title = document.createElement('h2');
   title.textContent = post.title;
 
+  // featured image (list view)
+  if (post.image_url) {
+    const imgWrap = document.createElement('div');
+    imgWrap.style.textAlign = 'center';
+    const a = document.createElement('a');
+    a.href = post.reel_link || '#';
+    a.target = '_blank';
+    a.rel = 'noopener';
+    const img = document.createElement('img');
+    img.src = post.image_url;
+    img.alt = post.image_alt || post.title || 'Featured image';
+    img.loading = 'lazy';
+    img.style.maxWidth = '100%';
+    img.style.height = 'auto';
+    img.className = 'blog-featured-list';
+    a.appendChild(img);
+    imgWrap.appendChild(a);
+    card.appendChild(imgWrap);
+  }
+
   const meta = document.createElement('div');
   meta.className = 'blog-meta';
   meta.innerHTML = `<span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span>`;
@@ -76,6 +96,7 @@ function renderPost(post) {
       <h1>${post.title}</h1>
       <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span></div>
       <p style="font-size:1rem;color:#555;">${post.summary}</p>
+      ${post.image_url ? `<div style="text-align:center;margin:1rem 0;"><a href="${post.reel_link || '#'}" target="_blank" rel="noopener"><img src="${post.image_url}" alt="${(post.image_alt||post.title||'Featured image').replace(/"/g,'') }" loading="lazy" style="max-width:100%;height:auto;" /></a></div>` : ''}
       <div>${post.content}</div>
       <div class="blog-actions blog-actions-minimal">
         <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">🔗<span>Share</span></button>
