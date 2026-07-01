@@ -759,7 +759,7 @@ app.get(['/blog', '/blog/'], async (req, res) => {
   try {
     const { data: posts, error } = await supabase
       .from('posts')
-      .select('title, summary, slug, author, published_at, likes')
+      .select('title, summary, slug, author, published_at, likes, image_url, reel_link, image_alt')
       .order('published_at', { ascending: false });
 
     if (error) throw error;
@@ -768,6 +768,7 @@ app.get(['/blog', '/blog/'], async (req, res) => {
       <h1>Latest FPL Scout Articles</h1>
       ${posts.map(post => `
         <article class="blog-list-item">
+          ${post.image_url ? `<div style="margin-bottom:1rem;text-align:center;"><a href="${post.reel_link || '#'}" target="_blank" rel="noopener"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g,'')}" style="max-width:100%;height:auto;border-radius:14px;" loading="lazy" /></a></div>` : ''}
           <h2><a href="/blog/${post.slug}">${post.title}</a></h2>
           <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span><span>${post.likes || 0} likes</span></div>
           <p>${post.summary}</p>
@@ -812,7 +813,7 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
   try {
     const { data: post, error } = await supabase
       .from('posts')
-      .select('title, summary, slug, author, published_at, content, likes')
+      .select('title, summary, slug, author, published_at, content, likes, image_url, reel_link, image_alt')
       .eq('slug', req.params.slug)
       .single();
 
@@ -822,6 +823,7 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
 
     const staticContent = `
       <div class="blog-post" id="blog-article">
+        ${post.image_url ? `<div style="text-align:center;margin-bottom:1.5rem;"><a href="${post.reel_link || '#'}" target="_blank" rel="noopener"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g,'')}" loading="lazy" style="max-width:100%;height:auto;border-radius:14px;" /></a></div>` : ''}
         <h1>${post.title}</h1>
         <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span></div>
         <p style="font-size:1rem;color:#555;">${post.summary}</p>
