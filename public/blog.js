@@ -35,9 +35,15 @@ function createPostCard(post) {
   const title = document.createElement('h2');
   title.textContent = post.title;
 
-  // featured image (list view)
+  const meta = document.createElement('div');
+  meta.className = 'blog-meta';
+  meta.innerHTML = `<span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span>`;
+
+  const summary = document.createElement('p');
+  summary.textContent = post.summary;
+
+  const imgWrap = document.createElement('div');
   if (post.image_url) {
-    const imgWrap = document.createElement('div');
     imgWrap.style.textAlign = 'center';
     const a = document.createElement('a');
     a.href = normalizeUrl(post.reel_link) || '#';
@@ -52,15 +58,7 @@ function createPostCard(post) {
     img.className = 'blog-featured-list';
     a.appendChild(img);
     imgWrap.appendChild(a);
-    card.appendChild(imgWrap);
   }
-
-  const meta = document.createElement('div');
-  meta.className = 'blog-meta';
-  meta.innerHTML = `<span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span>`;
-
-  const summary = document.createElement('p');
-  summary.textContent = post.summary;
 
   const actions = document.createElement('div');
   actions.className = 'blog-actions';
@@ -81,6 +79,9 @@ function createPostCard(post) {
   card.appendChild(title);
   card.appendChild(meta);
   card.appendChild(summary);
+  if (post.image_url) {
+    card.appendChild(imgWrap);
+  }
   card.appendChild(actions);
 
   return card;

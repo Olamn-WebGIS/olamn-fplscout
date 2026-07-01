@@ -768,10 +768,10 @@ app.get(['/blog', '/blog/'], async (req, res) => {
       <h1>Latest FPL Scout Articles</h1>
       ${posts.map(post => `
         <article class="blog-list-item">
-          ${post.image_url ? `<div style="margin-bottom:1rem;text-align:center;"><a href="${post.reel_link || '#'}" target="_blank" rel="noopener"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g,'')}" style="max-width:100%;height:auto;border-radius:14px;" loading="lazy" /></a></div>` : ''}
           <h2><a href="/blog/${post.slug}">${post.title}</a></h2>
           <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span><span>${post.likes || 0} likes</span></div>
           <p>${post.summary}</p>
+          ${post.image_url ? `<div style="margin-bottom:1rem;text-align:center;"><a href="${post.reel_link || '#'}" target="_blank" rel="noopener"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g,'')}" style="max-width:100%;height:auto;border-radius:14px;" loading="lazy" /></a></div>` : ''}
           <div class="blog-actions">
             <a href="/blog/${post.slug}" class="blog-read-link">Read full article</a>
             <button class="btn-icon btn-share-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">Share 🔗</button>
