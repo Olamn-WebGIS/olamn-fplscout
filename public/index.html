@@ -12,21 +12,21 @@
   </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FPL Scout | Fantasy Premier League Analytics, Transfers & Mini-League Spy</title>
-  <meta name="description" content="FPL Scout delivers live FPL analytics, transfer advice, mini-league spy tools, and player predictions to help managers dominate Fantasy Premier League." />
+  <title>FPL Scout — Advanced Fantasy Premier League Analytics</title>
+  <meta name="description" content="Boost your FPL rank with our advanced scouting tools and weekly captain picks. Sign up for free today!" />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://fplscout.name.ng/" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="FPL Scout | Fantasy Premier League Analytics, Transfers & Mini-League Spy" />
-  <meta property="og:description" content="FPL Scout delivers live FPL analytics, transfer advice, mini-league spy tools, and player predictions to help managers dominate Fantasy Premier League." />
-  <meta property="og:image" content="https://fplscout.name.ng/images/logo.png" />
-  <meta property="og:url" content="https://fplscout.name.ng/" />
+  <meta property="og:title" content="FPL Scout — Advanced Fantasy Premier League Analytics" />
+  <meta property="og:description" content="Boost your FPL rank with our advanced scouting tools and weekly captain picks. Sign up for free today!" />
+  <meta property="og:image" content="/images/logo.png" />
+  <meta property="og:url" content="/" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="FPL Scout | Fantasy Premier League Analytics, Transfers & Mini-League Spy" />
-  <meta name="twitter:description" content="FPL Scout delivers live FPL analytics, transfer advice, mini-league spy tools, and player predictions to help managers dominate Fantasy Premier League." />
-  <meta name="twitter:image" content="https://fplscout.name.ng/images/logo.png" />
+  <meta name="twitter:title" content="FPL Scout — Advanced Fantasy Premier League Analytics" />
+  <meta name="twitter:description" content="Boost your FPL rank with our advanced scouting tools and weekly captain picks. Sign up for free today!" />
+  <meta name="twitter:image" content="/images/logo.png" />
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"WebSite","name":"FPL Scout","url":"https://fplscout.name.ng/","description":"FPL Scout delivers live FPL analytics, transfer advice, mini-league spy tools, and player predictions to help managers dominate Fantasy Premier League.","publisher":{"@type":"Organization","name":"FPL Scout","logo":{"@type":"ImageObject","url":"https://fplscout.name.ng/images/logo.png"}}}
+  {"@context":"https://schema.org","@type":"WebSite","name":"FPL Scout","url":"/","description":"Boost your FPL rank with our advanced scouting tools and weekly captain picks. Sign up for free today!","publisher":{"@type":"Organization","name":"FPL Scout","logo":{"@type":"ImageObject","url":"/images/logo.png"}}}
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -41,40 +41,25 @@
   <meta name="apple-mobile-web-app-title" content="FPL Scout" />
 </head>
 <body>
-<header id="nav-placeholder"></header>
+<div id="nav-placeholder"></div>
 <!-- Nav injected by layout.js -->
 
 <!-- ── Hero ──────────────────────────────────────────────────── -->
-<section class="hero" aria-label="FPL Scout hero section">
-  <p class="hero-eyebrow">Live FPL Season 2025/26</p>
-  <h1 id="hero-heading" class="display">The <em>Intelligence Edge</em><br>Every FPL Manager Needs</h1>
+<section class="hero">
+  <div class="hero-eyebrow">Live FPL Season 2025/26</div>
+  <h1 class="display">The <em>Intelligence Edge</em><br>Every FPL Manager Needs</h1>
   <p>Real-time player stats, predictive scoring, differential picks, and deep league spy tools — all in one place.</p>
   <div class="hero-cta">
     <a href="/recommendations" class="btn btn-green btn-lg spy-lock">Get Recommendations</a>
     <a href="#" class="btn btn-outline btn-lg spy-lock" style="color:var(--text-primary);border-color:var(--text-primary);">League Spy ↗</a>
   </div>
-</section>
-  <section class="hero-features" aria-labelledby="hero-stats-heading">
+  </section>
+  <section class="hero-features">
   <div class="hero-stats">
-    <h2 id="hero-stats-heading" class="sr-only">Live FPL statistics</h2>
-    <ul class="hero-stat-list" role="list">
-      <li class="hero-stat">
-        <div class="number" id="stat-players">—</div>
-        <div class="name">Players tracked</div>
-      </li>
-      <li class="hero-stat">
-        <div class="number" id="stat-gw">—</div>
-        <div class="name">Current gameweek</div>
-      </li>
-      <li class="hero-stat">
-        <div class="number" id="stat-avg">—</div>
-        <div class="name">Avg GW score</div>
-      </li>
-      <li class="hero-stat">
-        <div class="number" id="stat-top">—</div>
-        <div class="name">Top GW score</div>
-      </li>
-    </ul>
+    <div class="hero-stat"><div class="number" id="stat-players">—</div><div class="name">Players tracked</div></div>
+    <div class="hero-stat"><div class="number" id="stat-gw">—</div><div class="name">Current gameweek</div></div>
+    <div class="hero-stat"><div class="number" id="stat-avg">—</div><div class="name">Avg GW score</div></div>
+    <div class="hero-stat"><div class="number" id="stat-top">—</div><div class="name">Top GW score</div></div>
   </div>
 </section>
 
@@ -83,13 +68,13 @@
   <div class="two-col">
 
     <!-- ── Left: Player Stats ────────────────────────────────── -->
-    <section class="player-stats-section">
-      <section class="card player-stats-card">
+    <div>
+      <div class="card">
         <div class="card-header-row">
           <h2 class="card-title">Player Stats</h2>
           <div class="controls-row">
             <div class="input-with-icon" style="position:relative;">
-              <svg aria-hidden="true" focusable="false" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-muted);pointer-events:none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-muted);pointer-events:none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               <input type="search" id="player-search" placeholder="Search name..." style="padding-left:2.2rem;width:180px;" />
             </div>
             <!-- Desktop filter tabs -->
@@ -119,30 +104,30 @@
             <option value="100">100 per page</option>
           </select>
         </div>
-      </section>
-      <div class="table-wrap">
-        <table id="players-table" aria-label="FPL player statistics">
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Pos</th>
-              <th>Team</th>
-              <th>Price</th>
-              <th>Form</th>
-              <th>Sel%</th>
-              <th>GW</th>
-              <th>Pts</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="players-tbody">
-            <tr><td colspan="9"><div class="loading-block"><div class="spinner"></div><span>Loading live player data…</span></div></td></tr>
-          </tbody>
-        </table>
       </div>
-    </section>
 
-        <nav class="controls-row pagination-row" aria-label="Player table pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:0.82rem; color:var(--text-muted); gap:12px;">
+        <div class="table-wrap">
+          <table id="players-table" aria-label="FPL player statistics">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Pos</th>
+                <th>Team</th>
+                <th>Price</th>
+                <th>Form</th>
+                <th>Sel%</th>
+                <th>GW</th>
+                <th>Pts</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="players-tbody">
+              <tr><td colspan="9"><div class="loading-block"><div class="spinner"></div><span>Loading live player data…</span></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="controls-row pagination-row" style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; font-size:0.82rem; color:var(--text-muted); gap:12px;">
   <div style="display:flex; align-items:center; gap:10px;">
     <span id="page-info">Showing 1-20 of X players</span>
   </div>
@@ -151,7 +136,7 @@
     <span id="current-page-badge" class="page-badge">1</span>
     <button class="btn btn-sm" id="next-page-btn">→</button>
   </div>
-</nav>
+</div>
 
     <!-- ── Right: Sync Sidebar ───────────────────────────────── -->
     <aside>
@@ -175,7 +160,7 @@
         </div>
       </div>
 
-      <article class="card" id="squad-card" style="display:none;">
+      <div class="card" id="squad-card" style="display:none;">
         <h3 class="card-title">Transfer Analysis & Starting XI</h3>
         
         <!-- Squad Validation Status -->
@@ -239,7 +224,7 @@
       </div>
 
       <!-- Quick league spy link -->
-      <article class="card" style="background:var(--navy);color:#fff;text-align:center;">
+      <div class="card" style="background:var(--navy);color:#fff;text-align:center;">
         <div style="font-size:2rem;margin-bottom:8px;">🕵️</div>
         <h3 style="color:#fff;margin-bottom:6px;">League Spy</h3>
         <p style="font-size:0.82rem;color:rgba(255,255,255,0.65);margin-bottom:1rem;">Track rivals, see who's captaining whom, spot differentials.</p>
@@ -401,22 +386,22 @@
     
     <!-- Feature cards -->
     <div class="features-grid">
-      <article class="card" style="text-align:center;">
+      <div class="card" style="text-align:center;">
         <div class="feature-icon green" style="margin:0 auto 0.75rem;">📈</div>
         <h3>Predictive Algorithm</h3>
         <p style="font-size:0.83rem;color:var(--text-secondary);margin-top:6px;line-height:1.5;">We calculate upcoming gameweek points by dynamically weighting recent form, xG and xA, and historical match data against specific opponents.</p>
       </div>
-      <article class="card" style="text-align:center;">
+      <div class="card" style="text-align:center;">
         <div class="feature-icon blue" style="margin:0 auto 0.75rem;">🧮</div>
         <h3>Advanced FDR Matrix</h3>
         <p style="font-size:0.83rem;color:var(--text-secondary);margin-top:6px;line-height:1.5;">Standard fixture difficulty ratings change slowly. Our model adjusts instantly based on a team's defensive or offensive spikes, highlighting true clean sheet and goal probabilities.</p>
       </div>
-      <article class="card" style="text-align:center;">
+      <div class="card" style="text-align:center;">
         <div class="feature-icon purple" style="margin:0 auto 0.75rem;">🕵️</div>
         <h3>Rival Intelligence</h3>
         <p style="font-size:0.83rem;color:var(--text-secondary);margin-top:6px;line-height:1.5;">See what top managers are doing, spot hidden differentials, and target transfer moves that give you the edge in mini-leagues.</p>
       </div>
-      <article class="card" style="text-align:center;">
+      <div class="card" style="text-align:center;">
         <div class="feature-icon orange" style="margin:0 auto 0.75rem;">⚡</div>
         <h3>Actionable Transfer Alerts</h3>
         <p style="font-size:0.83rem;color:var(--text-secondary);margin-top:6px;line-height:1.5;">Get fast, practical transfer recommendations based on team form, injury trends, and upcoming fixture swings so you can act with confidence.</p>
@@ -432,7 +417,6 @@
   <div id="container-a971d37adb76d2f7565f5acc30b1239e"></div>
 </section>
 
-<footer id="footer-placeholder"></footer>
 <!-- Footer injected by layout.js -->
 
 <section class="affiliate-home-highlight card">
