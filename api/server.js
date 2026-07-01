@@ -821,13 +821,21 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
       return res.status(404).send('Blog post not found.');
     }
 
+    function normalizeUrlForRendering(url) {
+      if (!url) return '';
+      const trimmed = url.trim();
+      if (/^(https?:\/\/|mailto:|tel:)/i.test(trimmed)) return trimmed;
+      return `https://${trimmed}`;
+    }
+
+    const normalizedReelLink = normalizeUrlForRendering(post.reel_link);
     const staticContent = `
       <div class="blog-post" id="blog-article">
-        ${post.image_url ? `<div style="text-align:center;margin-bottom:1.5rem;"><a href="${post.reel_link || '#'}" target="_blank" rel="noopener"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g,'')}" loading="lazy" style="max-width:100%;height:auto;border-radius:14px;" /></a></div>` : ''}
         <h1>${post.title}</h1>
         <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span></div>
         <p style="font-size:1rem;color:#555;">${post.summary}</p>
         <div>${post.content.replace(/\n/g, '<br>')}</div>
+        ${post.image_url ? `<div style="text-align:center;margin:1.5rem 0;"><a href="${normalizedReelLink || '#'}" target="_blank" rel="noopener noreferrer"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g,'')}" loading="lazy" style="max-width:100%;height:auto;border-radius:14px;" /></a></div>` : ''}
         <div class="blog-actions blog-actions-minimal">
           <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">🔗<span>Share</span></button>
           <button class="btn-icon" id="like-button" onclick="toggleLike('${post.slug}')">❤️<span id="like-count">${typeof post.likes === 'number' ? post.likes : 0}</span></button>

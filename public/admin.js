@@ -57,6 +57,13 @@ function showStatus(element, message, success = true) {
   element.style.color = success ? '#0070f3' : '#c02323';
 }
 
+function normalizeUrl(url) {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (/^(https?:\/\/|mailto:|tel:)/i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 function initializeQuill() {
   try {
     quill = new Quill('#post-content-editor', {
@@ -910,7 +917,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const bodyPayload = { title, slug, summary, content };
     if (uploadedImageUrl) bodyPayload.image_url = uploadedImageUrl;
-    if (reelLink) bodyPayload.reel_link = reelLink;
+    const normalizedReelLink = normalizeUrl(reelLink);
+    if (normalizedReelLink) bodyPayload.reel_link = normalizedReelLink;
     if (imageAlt) bodyPayload.image_alt = imageAlt;
 
     const response = await fetch(url, {

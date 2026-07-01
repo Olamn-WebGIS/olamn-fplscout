@@ -9,6 +9,13 @@ const pathParts = window.location.pathname.split('/').filter(Boolean);
 const slug = pathParts.length === 2 ? pathParts[1] : null;
 const isPostPage = slug !== null;
 
+function normalizeUrl(url) {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (/^(https?:\/\/|mailto:|tel:)/i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 async function fetchPosts() {
   const res = await fetch('/api/posts');
   if (!res.ok) throw new Error('Unable to load posts');
@@ -33,9 +40,9 @@ function createPostCard(post) {
     const imgWrap = document.createElement('div');
     imgWrap.style.textAlign = 'center';
     const a = document.createElement('a');
-    a.href = post.reel_link || '#';
+    a.href = normalizeUrl(post.reel_link) || '#';
     a.target = '_blank';
-    a.rel = 'noopener';
+    a.rel = 'noopener noreferrer';
     const img = document.createElement('img');
     img.src = post.image_url;
     img.alt = post.image_alt || post.title || 'Featured image';
@@ -96,8 +103,8 @@ function renderPost(post) {
       <h1>${post.title}</h1>
       <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span></div>
       <p style="font-size:1rem;color:#555;">${post.summary}</p>
-      ${post.image_url ? `<div style="text-align:center;margin:1rem 0;"><a href="${post.reel_link || '#'}" target="_blank" rel="noopener"><img src="${post.image_url}" alt="${(post.image_alt||post.title||'Featured image').replace(/"/g,'') }" loading="lazy" style="max-width:100%;height:auto;" /></a></div>` : ''}
       <div>${post.content}</div>
+      ${post.image_url ? `<div style="text-align:center;margin:1rem 0;"><a href="${normalizeUrl(post.reel_link) || '#'}" target="_blank" rel="noopener noreferrer"><img src="${post.image_url}" alt="${(post.image_alt||post.title||'Featured image').replace(/"/g,'') }" loading="lazy" style="max-width:100%;height:auto;" /></a></div>` : ''}
       <div class="blog-actions blog-actions-minimal">
         <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">🔗<span>Share</span></button>
         <button class="btn-icon" id="like-button" onclick="toggleLike('${post.slug}')">❤️<span id="like-count">${post.likes || 0}</span></button>
