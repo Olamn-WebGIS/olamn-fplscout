@@ -72,7 +72,7 @@ function createPostCard(post) {
   shareButton.type = 'button';
   shareButton.className = 'btn-icon btn-share-icon';
   shareButton.textContent = 'Share 🔗';
-  shareButton.addEventListener('click', () => sharePost(post.title, post.summary, `/blog/${post.slug}`));
+  shareButton.addEventListener('click', () => sharePost(post.title, post.summary, `/blog/${post.slug}`, post.image_url));
 
   actions.appendChild(readLink);
   actions.appendChild(shareButton);
@@ -107,7 +107,7 @@ function renderPost(post) {
       <div>${post.content}</div>
       ${post.image_url ? `<div style="text-align:center;margin:1rem 0;"><a href="${normalizeUrl(post.reel_link) || '#'}" target="_blank" rel="noopener noreferrer"><img src="${post.image_url}" alt="${(post.image_alt||post.title||'Featured image').replace(/"/g,'') }" loading="lazy" style="max-width:100%;height:auto;" /></a></div>` : ''}
       <div class="blog-actions blog-actions-minimal">
-        <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">🔗<span>Share</span></button>
+        <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}','${encodeURIComponent(post.image_url || '')}')">🔗<span>Share</span></button>
         <button class="btn-icon" id="like-button" onclick="toggleLike('${post.slug}')">❤️<span id="like-count">${post.likes || 0}</span></button>
       </div>
       <div class="blog-article-footer">Favour Olamilekan Adeoye, Founder of FPL Scout</div>
@@ -185,7 +185,7 @@ function safeDecode(value) {
   }
 }
 
-function sharePost(title, summary, href) {
+async function sharePost(title, summary, href, imageUrl) {
   const shareData = {
     title: safeDecode(title),
     text: safeDecode(summary),
@@ -193,6 +193,22 @@ function sharePost(title, summary, href) {
   };
 
   if (navigator.share) {
+    if (imageUrl && navigator.canShare) {
+      try {
+        const response = await fetch(imageUrl);
+        if (response.ok) {
+          const blob = await response.blob();
+          const extension = blob.type.split('/')[1] || 'jpg';
+          const file = new File([blob], `blog-image.${extension}`, { type: blob.type });
+          if (navigator.canShare({ files: [file] })) {
+            shareData.files = [file];
+          }
+        }
+      } catch (error) {
+        console.warn('Could not include image in share:', error);
+      }
+    }
+
     navigator.share(shareData).catch(() => {});
   } else {
     navigator.clipboard.writeText(`${shareData.title} - ${shareData.url}`);
