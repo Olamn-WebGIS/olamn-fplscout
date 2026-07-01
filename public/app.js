@@ -87,6 +87,68 @@ function captureReferralFromUrl() {
   }
 }
 
+function createHomeBlogCard(post) {
+  const article = document.createElement('article');
+  article.className = 'home-blog-card';
+
+  const link = document.createElement('a');
+  link.className = 'home-blog-card-link';
+  link.href = `/blog/${encodeURIComponent(post.slug)}`;
+
+  if (post.image_url) {
+    const img = document.createElement('img');
+    img.src = post.image_url;
+    img.alt = post.image_alt || post.title || 'Blog article image';
+    img.loading = 'lazy';
+    link.appendChild(img);
+  }
+
+  const content = document.createElement('div');
+  content.className = 'home-blog-card-content';
+
+  const time = document.createElement('time');
+  time.textContent = new Date(post.published_at).toLocaleDateString();
+  content.appendChild(time);
+
+  const title = document.createElement('h3');
+  title.textContent = post.title;
+  content.appendChild(title);
+
+  const summary = document.createElement('p');
+  summary.textContent = post.summary || '';
+  content.appendChild(summary);
+
+  const readMore = document.createElement('span');
+  readMore.className = 'read-more';
+  readMore.textContent = 'Read article →';
+  content.appendChild(readMore);
+
+  link.appendChild(content);
+  article.appendChild(link);
+  return article;
+}
+
+async function loadHomeLatestBlogPosts() {
+  const grid = document.getElementById('home-latest-blog-grid');
+  if (!grid) return;
+
+  try {
+    const response = await fetch('/api/posts');
+    if (!response.ok) throw new Error('Unable to load latest posts');
+    const posts = await response.json();
+    if (!Array.isArray(posts) || posts.length === 0) {
+      grid.innerHTML = '<div class="home-latest-blog-empty">No blog posts are available yet.</div>';
+      return;
+    }
+
+    grid.innerHTML = '';
+    posts.slice(0, 3).forEach(post => grid.appendChild(createHomeBlogCard(post)));
+  } catch (error) {
+    console.error('Failed to load homepage blog teasers:', error);
+    grid.innerHTML = '<div class="home-latest-blog-empty">Unable to load latest posts right now.</div>';
+  }
+}
+
 function reconcileLocalSubscriptionExpiry() {
     if (!currentUser || !currentUser.premium_expiry) return;
     const expiryDate = new Date(currentUser.premium_expiry);
@@ -245,6 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupAccountNav();
     updateAffiliateHomeLink();
     applyPremiumUI();
+    loadHomeLatestBlogPosts();
     
     // Explicit visibility verification loop tracker
     function verifyAccountLinkVisibility() {
