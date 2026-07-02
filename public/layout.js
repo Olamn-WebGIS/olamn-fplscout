@@ -66,16 +66,26 @@
     if (typeof window === 'undefined' || typeof document === 'undefined') return false;
 
     const currentPath = window.location.pathname || '/';
-    if (
-      currentPath === '/' ||
-      currentPath.startsWith('/affiliate') ||
-      currentPath.startsWith('/recommendations') ||
-      currentPath.startsWith('/spy')
-    ) {
-      return false;
-    }
+    if (currentPath.startsWith('/recommendations') || currentPath.startsWith('/spy')) return false;
 
     return !isPremiumUser(readStoredUserSession());
+  }
+
+  function isAdScriptAllowedOnPage(src) {
+    const currentPath = window.location.pathname || '/';
+    const homeOrAffiliate = currentPath === '/' || currentPath.startsWith('/affiliate');
+
+    if (!homeOrAffiliate) return true;
+    if (src.includes('sidewalkboiling.com/c1/2e/18/c12e186c286b55079d6be2abac279806.js')) return false;
+    if (src.includes('sidewalkboiling.com/a971d37adb76d2f7565f5acc30b1239e/invoke.js')) return false;
+    return true;
+  }
+
+  function updateAdPlaceholderVisibility(show) {
+    if (typeof document === 'undefined') return;
+    const adSection = document.getElementById('home-ad-section');
+    if (!adSection) return;
+    adSection.style.display = show ? '' : 'none';
   }
 
   function removeInjectedAdScripts() {
@@ -83,6 +93,7 @@
 
     document.querySelectorAll('script[data-ad-script], script[data-ad-script-inline]').forEach(script => script.remove());
     delete window.__adScriptsInjected;
+    updateAdPlaceholderVisibility(false);
   }
 
   function injectAdScripts() {
@@ -102,7 +113,14 @@
       { src: 'https://sidewalkboiling.com/a971d37adb76d2f7565f5acc30b1239e/invoke.js', attrs: { async: true, 'data-ad-script': 'true', 'data-cfasync': 'false' } }
     ];
 
-    adScripts.forEach(({ src, attrs }) => {
+    const allowedScripts = adScripts.filter(({ src }) => isAdScriptAllowedOnPage(src));
+    if (allowedScripts.length === 0) {
+      updateAdPlaceholderVisibility(false);
+      return;
+    }
+
+    updateAdPlaceholderVisibility(true);
+    allowedScripts.forEach(({ src, attrs }) => {
       const script = document.createElement('script');
       Object.entries(attrs).forEach(([key, value]) => {
         if (typeof value === 'boolean') {
