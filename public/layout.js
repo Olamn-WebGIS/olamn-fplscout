@@ -66,7 +66,14 @@
     if (typeof window === 'undefined' || typeof document === 'undefined') return false;
 
     const currentPath = window.location.pathname || '/';
-    if (currentPath.startsWith('/recommendations') || currentPath.startsWith('/spy')) return false;
+    if (
+      currentPath === '/' ||
+      currentPath.startsWith('/affiliate') ||
+      currentPath.startsWith('/recommendations') ||
+      currentPath.startsWith('/spy')
+    ) {
+      return false;
+    }
 
     return !isPremiumUser(readStoredUserSession());
   }
