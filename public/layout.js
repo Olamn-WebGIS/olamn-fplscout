@@ -110,7 +110,6 @@
     window.__adScriptsInjected = true;
 
     const adScripts = [
-      { src: 'https://sidewalkboiling.com/c1/2e/18/c12e186c286b55079d6be2abac279806.js', attrs: { async: true, 'data-ad-script': 'true' } },
       { src: 'https://5gvci.com/act/files/tag.min.js?z=11206227', attrs: { async: true, 'data-ad-script': 'true', 'data-cfasync': 'false' } },
       { src: 'https://sidewalkboiling.com/a971d37adb76d2f7565f5acc30b1239e/invoke.js', attrs: { async: true, 'data-ad-script': 'true', 'data-cfasync': 'false' } }
     ];
