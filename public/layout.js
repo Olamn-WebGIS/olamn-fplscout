@@ -79,7 +79,6 @@
     if (isHome) return true;
     if (!isAffiliate) return true;
 
-    if (src.includes('sidewalkboiling.com/c1/2e/18/c12e186c286b55079d6be2abac279806.js')) return false;
     if (src.includes('sidewalkboiling.com/a971d37adb76d2f7565f5acc30b1239e/invoke.js')) return false;
     return true;
   }
