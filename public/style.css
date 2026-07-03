@@ -1426,6 +1426,51 @@ footer ul li a:hover { opacity: 1; }
 .sync-box .btn-primary:hover {
   background: #1565c0;
 }
+#squad-card {
+  background: var(--navy);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #fff;
+}
+#squad-card .card-title,
+#squad-card h4.card-title {
+  color: #fff !important;
+}
+#squad-card p,
+#squad-card .loading-block,
+#squad-card .row span:first-child,
+#squad-card .row span:last-child,
+#squad-card .card-title + p,
+#squad-card .row div {
+  color: rgba(255,255,255,0.92) !important;
+}
+#squad-card .loading-block span,
+#squad-card .loading-block .spinner {
+  color: rgba(255,255,255,0.82) !important;
+}
+#squad-card [style*="var(--text-muted)"] {
+  color: rgba(255,255,255,0.7) !important;
+}
+#squad-card [style*="var(--text-primary)"] {
+  color: #fff !important;
+}
+#squad-card [style*="color:var(--text-muted)"] {
+  color: rgba(255,255,255,0.72) !important;
+}
+#squad-card [style*="color:var(--text-primary)"] {
+  color: #fff !important;
+}
+#squad-card #starting-xi-display,
+#squad-card #bench-display {
+  background: rgba(14, 27, 45, 0.95);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 22px;
+  padding: 1.25rem;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+}
+#squad-card #starting-xi-display .player-card,
+#squad-card #bench-display .player-card {
+  background: rgba(255,255,255,0.08) !important;
+}
 .hint-link { font-size: 0.8rem; color: var(--blue-light); margin-top: 8px; display: flex; align-items: center; gap: 4px; }
 .sync-box .hint-link { color: var(--blue-light); }
 .sync-box .hint-link:hover { color: #fff; text-decoration: underline; }

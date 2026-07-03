@@ -918,7 +918,7 @@ function renderTransferAnalysis(analysis) {
   }
   
   // Build formation HTML
-  let formationHtml = `<div style="max-width:600px;margin:0 auto;padding:1.5rem;background:#f8faff;border-radius:12px;border:2px dashed #dfe7f1;">`;
+  let formationHtml = `<div style="max-width:600px;margin:0 auto;padding:1.5rem;background:rgba(13,27,42,0.95);border-radius:18px;border:1px solid rgba(255,255,255,0.08);">`;
   
   // Goalkeeper row
   formationHtml += `<div style="display:flex;justify-content:center;gap:12px;margin-bottom:2rem;">
@@ -946,12 +946,12 @@ function renderTransferAnalysis(analysis) {
   
   // Bench horizontal line
   const benchHtml = bench.length > 0 ? `<div style="display:flex;gap:10px;overflow-x:auto;padding:10px 0;">
-    ${bench.map(p => `<div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:10px;background:rgba(0,0,0,0.03);border-radius:8px;min-width:100px;text-align:center;">
-      <div style="font-weight:700;font-size:0.8rem;color:var(--text-primary);">${p.name.split(' ').pop()}</div>
-      <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px;">${p.position} • ${p.team}</div>
-      <div style="font-size:0.7rem;font-weight:600;color:var(--text-muted);margin-top:4px;">£${p.price}m</div>
+    ${bench.map(p => `<div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:10px;background:rgba(255,255,255,0.06);border-radius:8px;min-width:100px;text-align:center;">
+      <div style="font-weight:700;font-size:0.8rem;color:#fff;">${p.name.split(' ').pop()}</div>
+      <div style="font-size:0.7rem;color:rgba(255,255,255,0.75);margin-top:3px;">${p.position} • ${p.team}</div>
+      <div style="font-size:0.7rem;font-weight:600;color:var(--blue-light);margin-top:4px;">£${p.price}m</div>
     </div>`).join('')}
-  </div>` : '<p style="text-align:center;color:var(--text-muted);font-size:0.85rem;">No bench players</p>';
+  </div>` : '<p style="text-align:center;color:rgba(255,255,255,0.75);font-size:0.85rem;">No bench players</p>';
   
   document.getElementById('bench-display').innerHTML = benchHtml;
 }
