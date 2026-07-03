@@ -815,8 +815,9 @@ table {
 
 .home-latest-blog {
   padding: 3rem 1rem;
-  margin: 3rem 0 4rem;
+  margin: 4.5rem 0 4rem;
   background: var(--navy-light);
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
 .home-latest-blog-inner {
   max-width: var(--max-w);
