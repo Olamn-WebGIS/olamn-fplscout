@@ -863,9 +863,10 @@ table {
 }
 .home-blog-card img {
   width: 100%;
-  height: 190px;
+  height: 220px;
   object-fit: cover;
   display: block;
+  background: #f8fbff;
 }
 .home-blog-card-content {
   padding: 1.25rem;
