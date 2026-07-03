@@ -34,7 +34,7 @@
         <div class="fixture-team"><span class="team-name">${f.away_team || ''}</span><img class="fixture-team-logo" data-src="${awayLogo}" alt="${f.away_team || ''}"></div>
       </div>
       <div class="time">${new Date(f.match_time).toLocaleString()}</div>
-      <div class="fixture-action"><a class="btn btn-primary" href="${f.live_link || '#'}" target="_blank" rel="noopener">Watch</a></div>
+      <div class="fixture-action"><a class="btn btn-green" href="${f.live_link || '#'}" target="_blank" rel="noopener">Watch</a></div>
     `;
     return div;
   }
