@@ -12,15 +12,26 @@
     }
   }
 
+  function resolveLogoUrl(value) {
+    if (!value) return '/images/default-logo.png';
+    const v = String(value).trim();
+    if (!v) return '/images/default-logo.png';
+    if (/^https?:\/\//i.test(v) || v.startsWith('/')) return v;
+    return `/images/teams/${encodeURIComponent(v)}`;
+  }
+
   function makeFixtureCard(f) {
+    const homeLogo = resolveLogoUrl(f.home_logo_url || f.home_logo_filename || f.logo_url || '');
+    const awayLogo = resolveLogoUrl(f.away_logo_url || f.away_logo_filename || '');
+
     const div = document.createElement('div');
     div.className = 'fixture-card';
     div.innerHTML = `
       ${f.title ? `<div class="fixture-competition">${f.title}</div>` : ''}
       <div class="fixture-teams">
-        <div class="fixture-team"><img class="fixture-team-logo" data-src="${f.home_logo_url || f.home_logo_filename || ''}" alt="${f.home_team || ''}"><span class="team-name">${f.home_team || ''}</span></div>
+        <div class="fixture-team"><img class="fixture-team-logo" data-src="${homeLogo}" alt="${f.home_team || ''}"><span class="team-name">${f.home_team || ''}</span></div>
         <div class="vs" style="font-weight:700;">vs</div>
-        <div class="fixture-team"><span class="team-name">${f.away_team || ''}</span><img class="fixture-team-logo" data-src="${f.away_logo_url || f.away_logo_filename || ''}" alt="${f.away_team || ''}"></div>
+        <div class="fixture-team"><span class="team-name">${f.away_team || ''}</span><img class="fixture-team-logo" data-src="${awayLogo}" alt="${f.away_team || ''}"></div>
       </div>
       <div class="time">${new Date(f.match_time).toLocaleString()}</div>
       <div class="fixture-action"><a class="btn btn-primary" href="${f.live_link || '#'}" target="_blank" rel="noopener">Watch</a></div>
