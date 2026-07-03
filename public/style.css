@@ -689,6 +689,14 @@ h4 { font-size: 0.95rem; font-weight: 600; }
   border: 1.5px solid var(--blue-light);
 }
 .btn-outline:hover { background: var(--blue-light); color: #fff; }
+.hero .btn-outline {
+  color: #ffffff;
+  border-color: rgba(255,255,255,0.85);
+}
+.hero .btn-outline:hover {
+  background: rgba(255,255,255,0.12);
+  color: #ffffff;
+}
 .btn-ghost {
   background: transparent; color: var(--text-secondary);
   border: 1px solid #e2e8f0;
@@ -1141,7 +1149,7 @@ tbody tr.highlight td { background: rgba(0,200,83,0.05); }
 
 /* ── Hero ───────────────────────────────────────────────────── */
 .hero {
-  background: #ffffff;
+  background: var(--navy);
   padding: 3rem 1.5rem 2rem;
   text-align: center;
 }
@@ -1153,9 +1161,9 @@ tbody tr.highlight td { background: rgba(0,200,83,0.05); }
   text-transform: uppercase;
 }
 .hero-eyebrow::before { content:''; width:7px;height:7px;border-radius:50%;background:currentColor;animation:blink 1.4s infinite; }
-.hero h1 { margin-bottom: 0.75rem; max-width: 700px; margin-inline: auto; color: var(--text-primary); }
+.hero h1 { margin-bottom: 0.75rem; max-width: 700px; margin-inline: auto; color: #fff; }
 .hero h1 em { color: var(--green); font-style: normal; }
-.hero p { color: var(--text-secondary); max-width: 560px; margin: 0 auto 1.25rem; font-size: 1.05rem; }
+.hero p { color: rgba(255,255,255,0.85); max-width: 560px; margin: 0 auto 1.25rem; font-size: 1.05rem; }
 .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
 .hero-stats {
   display: flex;
