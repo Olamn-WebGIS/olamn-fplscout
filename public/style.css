@@ -383,7 +383,7 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 }
 
 .affiliate-home-highlight {
-  background: linear-gradient(135deg, #081e3d 0%, #0f3674 100%);
+  background: var(--navy);
   color: #fff;
   padding: 2rem 1.5rem;
   margin: 2rem 1.5rem;
@@ -426,8 +426,8 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 }
 
 .step-card {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-md);
   padding: 1.25rem;
 }
@@ -807,6 +807,7 @@ table {
 
 .home-latest-blog {
   padding: 3rem 1rem;
+  margin: 3rem 0 4rem;
   background: #f8fbff;
 }
 .home-latest-blog-inner {
@@ -834,15 +835,15 @@ table {
   margin-top: 1rem;
   padding: 0.75rem 1.2rem;
   border-radius: 999px;
-  background: #0f5ef0;
-  color: #fff;
+  background: var(--green);
+  color: #000;
   text-decoration: none;
   font-weight: 700;
   border: 1px solid transparent;
   transition: background 0.2s ease, transform 0.2s ease;
 }
 .home-latest-blog-cta:hover {
-  background: #0b4cd0;
+  background: var(--green-dark);
   transform: translateY(-1px);
 }
 .home-blog-card {
@@ -867,7 +868,7 @@ table {
   object-fit: contain;
   object-position: center;
   display: block;
-  background: #f8fbff;
+  background: var(--navy-light);
 }
 .home-blog-card-content {
   padding: 1.25rem;
@@ -1891,6 +1892,25 @@ main { max-width: 100%; overflow-x: hidden; }
   grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
 }
+.features-section .card {
+  background: var(--navy);
+  color: #ffffff;
+  box-shadow: 0 16px 40px rgba(13, 27, 42, 0.18);
+}
+.features-section .card h3,
+.features-section .card p {
+  color: #ffffff;
+}
+.features-section .card p {
+  color: #fcfdff;
+}
+.features-section .feature-icon {
+  background: rgba(255,255,255,0.08);
+}
+.features-section .feature-icon.green  { color: var(--green); }
+.features-section .feature-icon.blue   { color: var(--blue-light); }
+.features-section .feature-icon.purple { color: #9b5cfc; }
+.features-section .feature-icon.orange { color: #fb8c00; }
 
 /* Button size constraints */
 .btn { max-width: none; }
