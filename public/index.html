@@ -483,6 +483,19 @@
   (function () {
     const stored = localStorage.getItem('fpl_user_session');
     const currentUser = stored ? JSON.parse(stored) : null;
+
+    function isPremiumUser(user) {
+      if (!user) return false;
+      if (user.isPremium === true || user.is_premium === true) return true;
+      const status = user.subscription_status ? String(user.subscription_status).toLowerCase().trim() : '';
+      if (['premium member', 'premium', 'premium subscription'].includes(status)) return true;
+      if (user.premium_expiry) {
+        const expiryDate = new Date(user.premium_expiry);
+        return !Number.isNaN(expiryDate.getTime()) && expiryDate > new Date();
+      }
+      return false;
+    }
+
     if (!isPremiumUser(currentUser)) {
       const adScript = document.createElement('script');
       adScript.async = true;
