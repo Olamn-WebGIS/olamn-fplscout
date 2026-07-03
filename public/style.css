@@ -716,7 +716,15 @@ input[type="text"], input[type="number"], input[type="search"], select {
   width: 100%; padding: 0.6rem 0.9rem;
   border: 1.5px solid rgba(255,255,255,0.12); border-radius: var(--radius-sm);
   font-size: 0.9rem; color: #f8fafc;
-  background: var(--navy-light); transition: border-color 0.15s, box-shadow 0.15s;
+  background: #15223a; transition: border-color 0.15s, box-shadow 0.15s;
+}
+select,
+select option {
+  background: #15223a;
+  color: #f8fafc;
+}
+select option {
+  padding: 0.4rem 0.8rem;
 }
 input:focus, select:focus {
   border-color: var(--green);
@@ -1301,7 +1309,11 @@ tbody tr.highlight td { background: rgba(0,200,83,0.12); }
   white-space: nowrap;
   transition: all 0.15s;
 }
-.tab-btn.active { color: var(--blue-light); border-bottom-color: var(--blue-light); }
+.tab-btn.active {
+  color: #ffffff;
+  background: var(--navy);
+  border-bottom-color: var(--navy);
+}
 .tab-btn:hover:not(.active) { color: var(--text-primary); }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }

@@ -34,6 +34,15 @@
   <link rel="stylesheet" href="/style.css" />
   <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
   <link rel="apple-touch-icon" href="/images/favicon.svg" />
+  <style>
+    .card, #gw-banner { background: var(--navy) !important; color: #ffffff !important; }
+    #gw-banner { border-color: rgba(255,255,255,0.12) !important; }
+    .card-title, .section-eyebrow, .tab-btn.active, .tab-btn:hover, .stat-pill { color: #ffffff !important; }
+    .card p, .card span, .card small, .card div, .card label { color: rgba(255,255,255,0.92) !important; }
+    .card a, .card button { color: inherit !important; }
+    .card .filter-tab, .tab-bar .tab-btn { color: rgba(255,255,255,0.85) !important; }
+    .card input, .card select, .card textarea { background: rgba(255,255,255,0.05) !important; color: #ffffff !important; border-color: rgba(255,255,255,0.12) !important; }
+  </style>
 </head>
 <body>
   <div id="nav-placeholder"></div>
@@ -49,7 +58,7 @@
 
   <div class="page-wrap">
     <!-- GW banner -->
-    <div id="gw-banner" style="background:var(--bg-card);border-radius:var(--radius-md);padding:1rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;box-shadow:var(--shadow-sm);">
+    <div id="gw-banner" style="background:var(--navy);border-radius:var(--radius-md);padding:1rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;box-shadow:var(--shadow-sm);border:1px solid rgba(255,255,255,0.12);">
       <div><div class="section-eyebrow">Current Gameweek</div><div style="font-size:1.5rem;font-weight:800;font-family:'Barlow Condensed',sans-serif;" id="cur-gw-label">—</div></div>
       <div style="height:40px;width:1px;background:#e2e8f0;"></div>
       <div><div class="section-eyebrow">Deadline</div><div style="font-size:0.9rem;font-weight:600;" id="cur-deadline">—</div></div>
@@ -80,7 +89,7 @@
               <h3 class="card-title" style="margin-bottom:0;">Top Captain Options</h3>
               <span class="stat-pill pill-green">GW <span id="cap-gw">—</span></span>
             </div>
-            <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:1.25rem;">Ranked by predicted points, fixture difficulty, and recent form. Captain multiplier considered.</p>
+            <p style="font-size:0.82rem;color:rgba(255,255,255,0.75);margin-bottom:1.25rem;">Ranked by predicted points, fixture difficulty, and recent form. Captain multiplier considered.</p>
             <div id="captain-cards" class="loading-block"><div class="spinner"></div><span>Analysing fixtures…</span></div>
           </div>
         </div>
@@ -91,7 +100,7 @@
             <div class="section-head">
               <h3 class="card-title" style="margin-bottom:0;">Recommended Transfers In</h3>
             </div>
-            <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:1.25rem;">Players with favourable upcoming fixtures, rising form, and strong underlying stats.</p>
+            <p style="font-size:0.82rem;color:rgba(255,255,255,0.75);margin-bottom:1.25rem;">Players with favourable upcoming fixtures, rising form, and strong underlying stats.</p>
             <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">
               <div class="filter-tabs" id="trans-pos-filter" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
                 <button class="filter-tab active" data-pos="0">ALL</button>
@@ -119,7 +128,7 @@
             <div class="section-head">
               <h3 class="card-title" style="margin-bottom:0;">Differential Picks</h3>
             </div>
-            <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:1.25rem;">High-ceiling players owned by under 15% of managers. Beat the field with these selections.</p>
+            <p style="font-size:0.82rem;color:rgba(255,255,255,0.75);margin-bottom:1.25rem;">High-ceiling players owned by under 15% of managers. Beat the field with these selections.</p>
             <div id="diff-list" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
           </div>
         </div>
@@ -128,7 +137,7 @@
         <div class="tab-panel" id="tab-chips">
           <div class="card">
             <h3 class="card-title">Chip Timing Guide</h3>
-            <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:1.5rem;">Based on upcoming fixture swings and double gameweeks. Save chips for peak moments.</p>
+            <p style="font-size:0.82rem;color:rgba(255,255,255,0.75);margin-bottom:1.5rem;">Based on upcoming fixture swings and double gameweeks. Save chips for peak moments.</p>
             <div id="chips-guide"></div>
           </div>
         </div>
@@ -139,7 +148,7 @@
         <!-- Top form players -->
         <div class="card" style="margin-bottom:1.25rem;">
           <h3 class="card-title">🔥 In-Form Players</h3>
-          <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem;">Highest form rating this week.</p>
+          <p style="font-size:0.8rem;color:rgba(255,255,255,0.75);margin-bottom:1rem;">Highest form rating this week.</p>
           <div id="form-list" class="loading-block"><div class="spinner"></div></div>
         </div>
 
@@ -209,18 +218,18 @@ async function boot() {
 
 function playerCard(p, teams, showOwn = true, extra = '') {
   const team = teams.find(t => t.id === p.team);
-  return `<div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--radius-sm);background:#f8faff;border:1px solid #e8eef8;margin-bottom:8px;">
+  return `<div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);margin-bottom:8px;color:#ffffff;">
     <div class="player-avatar">
       <img src="${photoUrl(p.code)}" alt="${p.web_name}" loading="lazy"
         onerror="this.parentElement.textContent='${p.web_name.slice(0,2).toUpperCase()}'" />
     </div>
     <div style="flex:1;">
       <div style="font-weight:700;font-size:0.9rem;">${p.web_name}</div>
-      <div style="font-size:0.75rem;color:var(--text-muted);">${team?team.name:''} · £${(p.now_cost/10).toFixed(1)}m</div>
+      <div style="font-size:0.75rem;color:rgba(255,255,255,0.75);">${team?team.name:''} · £${(p.now_cost/10).toFixed(1)}m</div>
     </div>
     <div style="text-align:right;">
       ${posBadge(p.element_type)}
-      ${showOwn ? `<div style="font-size:0.72rem;color:var(--text-muted);margin-top:3px;">${p.selected_by_percent}% own</div>` : ''}
+      ${showOwn ? `<div style="font-size:0.72rem;color:rgba(255,255,255,0.75);margin-top:3px;">${p.selected_by_percent}% own</div>` : ''}
       ${extra}
     </div>
   </div>`;
@@ -236,7 +245,7 @@ function renderCaptainPicks() {
   document.getElementById('captain-cards').innerHTML = sorted.map((p, i) => {
     const score = (Number(p.form) * 1.8 + p.ep_next * 1.5).toFixed(1);
     const medals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
-    return `<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--radius-md);background:${i===0?'rgba(0,200,83,0.06)':'#f8faff'};border:${i===0?'1.5px solid rgba(0,200,83,0.2)':'1px solid #e8eef8'};margin-bottom:10px;">
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--radius-md);background:${i===0?'rgba(0,200,83,0.12)':'rgba(255,255,255,0.05)'};border:${i===0?'1.5px solid rgba(0,200,83,0.25)':'1px solid rgba(255,255,255,0.12)'};margin-bottom:10px;color:#ffffff;">
       <div style="font-size:1.6rem;flex-shrink:0;">${medals[i]}</div>
       <div class="player-avatar">
         <img src="${photoUrl(p.code)}" alt="${p.web_name}" loading="lazy"
@@ -244,7 +253,7 @@ function renderCaptainPicks() {
       </div>
       <div style="flex:1;">
         <div style="font-weight:700;">${p.web_name}</div>
-        <div style="font-size:0.78rem;color:var(--text-muted);">${(bsData.teams.find(t=>t.id===p.team)||{}).name||''} · £${(p.now_cost/10).toFixed(1)}m</div>
+        <div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">${(bsData.teams.find(t=>t.id===p.team)||{}).name||''} · £${(p.now_cost/10).toFixed(1)}m</div>
         <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;">
           ${posBadge(p.element_type)}
           <span class="stat-pill pill-blue">Form: ${p.form}</span>
@@ -252,9 +261,9 @@ function renderCaptainPicks() {
         </div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:800;color:var(--green-dark);">${score}</div>
-        <div style="font-size:0.7rem;color:var(--text-muted);">pred. score</div>
-        <div style="font-size:0.72rem;margin-top:3px;color:var(--text-muted);">${p.selected_by_percent}% own</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:800;color:#7ef3b9;">${score}</div>
+        <div style="font-size:0.7rem;color:rgba(255,255,255,0.75);">pred. score</div>
+        <div style="font-size:0.72rem;margin-top:3px;color:rgba(255,255,255,0.75);">${p.selected_by_percent}% own</div>
       </div>
     </div>`;
   }).join('');
@@ -273,7 +282,7 @@ function renderTransfers(pos) {
 
   document.getElementById('transfers-list').innerHTML = list.map(p =>
     playerCard(p, bsData.teams, true,
-      `<div style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;color:var(--blue-light);">${Number(p.ep_next).toFixed(1)}</div><div style="font-size:0.7rem;color:var(--text-muted);">ep next</div>`)
+      `<div style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;color:#96caff;">${Number(p.ep_next).toFixed(1)}</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.75);">ep next</div>`)
   ).join('');
 }
 
@@ -285,7 +294,7 @@ function renderDifferentials() {
 
   document.getElementById('diff-list').innerHTML = diffs.map(p => {
     const own = parseFloat(p.selected_by_percent);
-    return `<div class="diff-row">
+    return `<div class="diff-row" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-md);padding:10px;margin-bottom:12px;color:#ffffff;">
       <div class="player-cell">
         <div class="player-avatar" style="width:32px;height:32px;font-size:0.65rem;">
           <img src="${photoUrl(p.code)}" alt="${p.web_name}" loading="lazy"
@@ -293,13 +302,13 @@ function renderDifferentials() {
         </div>
         <div>
           <div style="font-weight:700;font-size:0.85rem;">${p.web_name}</div>
-          <div style="font-size:0.72rem;color:var(--text-muted);">${(bsData.teams.find(t=>t.id===p.team)||{}).short_name||''} · £${(p.now_cost/10).toFixed(1)}m</div>
+          <div style="font-size:0.72rem;color:rgba(255,255,255,0.75);">${(bsData.teams.find(t=>t.id===p.team)||{}).short_name||''} · £${(p.now_cost/10).toFixed(1)}m</div>
         </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
         ${posBadge(p.element_type)}
         <span class="stat-pill ${own < 5 ? 'pill-green' : 'pill-blue'}">${own}% own</span>
-        <span class="diff-pts-up">Form ${p.form}</span>
+        <span class="diff-pts-up" style="color:rgba(255,255,255,0.85);">Form ${p.form}</span>
       </div>
     </div>`;
   }).join('');
@@ -313,26 +322,12 @@ function renderChipGuide(cur) {
     { name:'Triple Captain', emoji:'🎖', desc:'Stack with your most reliable haul threat — Salah, Haaland, or Palmer — in a home double gameweek. The expected 3× return is huge if timed right.', timing: 'Save for DGW' },
   ];
   document.getElementById('chips-guide').innerHTML = chips.map(c =>
-    `<div style="display:flex;gap:12px;padding:14px;border-radius:var(--radius-md);background:#f8faff;border:1px solid #e8eef8;margin-bottom:10px;">
+    `<div style="display:flex;gap:12px;padding:14px;border-radius:var(--radius-md);background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);margin-bottom:10px;color:#ffffff;">
       <div style="font-size:2rem;flex-shrink:0;">${c.emoji}</div>
       <div>
         <div style="font-weight:700;margin-bottom:4px;">${c.name} <span class="stat-pill pill-${c.timing.includes('Save')?'yellow':'green'}" style="font-size:0.7rem;">${c.timing}</span></div>
-        <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">${c.desc}</div>
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.75);line-height:1.5;">${c.desc}</div>
       </div>
-    </div>`
-  ).join('');
-}
-
-function renderFormList() {
-  const top = [...bsData.elements].filter(p => p.status === 'a').sort((a,b) => Number(b.form) - Number(a.form)).slice(0, 5);
-  document.getElementById('form-list').innerHTML = top.map((p, i) =>
-    `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:0.83rem;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-weight:700;color:var(--text-muted);min-width:16px;">${i+1}</span>
-        <span style="font-weight:600;">${p.web_name}</span>
-        ${posBadge(p.element_type)}
-      </div>
-      <span class="stat-pill pill-green">${p.form}</span>
     </div>`
   ).join('');
 }
@@ -342,13 +337,13 @@ function renderPriceChanges() {
   const fallers = [...bsData.elements].filter(p => p.cost_change_event < 0).sort((a,b) => a.cost_change_event - b.cost_change_event).slice(0,5);
 
   const priceRow = (p, dir) =>
-    `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:0.83rem;">
-      <div><span style="font-weight:600;">${p.web_name}</span> <span style="font-size:0.72rem;color:var(--text-muted);">£${(p.now_cost/10).toFixed(1)}m</span></div>
+    `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.83rem;color:#ffffff;">
+      <div><span style="font-weight:600;">${p.web_name}</span> <span style="font-size:0.72rem;color:rgba(255,255,255,0.75);">£${(p.now_cost/10).toFixed(1)}m</span></div>
       <span class="stat-pill ${dir==='up'?'pill-green':'pill-red'}">${dir==='up'?'+':''}${(p.cost_change_event/10).toFixed(1)}m</span>
     </div>`;
 
-  document.getElementById('price-risers').innerHTML  = risers.length  ? risers.map(p  => priceRow(p,'up')).join('')   : '<p style="font-size:0.82rem;color:var(--text-muted);padding:8px 0;">No price rises this GW.</p>';
-  document.getElementById('price-fallers').innerHTML = fallers.length ? fallers.map(p => priceRow(p,'down')).join('') : '<p style="font-size:0.82rem;color:var(--text-muted);padding:8px 0;">No price falls this GW.</p>';
+  document.getElementById('price-risers').innerHTML  = risers.length  ? risers.map(p  => priceRow(p,'up')).join('')   : '<p style="font-size:0.82rem;color:rgba(255,255,255,0.75);padding:8px 0;">No price rises this GW.</p>';
+  document.getElementById('price-fallers').innerHTML = fallers.length ? fallers.map(p => priceRow(p,'down')).join('') : '<p style="font-size:0.82rem;color:rgba(255,255,255,0.75);padding:8px 0;">No price falls this GW.</p>';
 }
 
 /* ── Tab switching ────────────────────────────────────────────── */
