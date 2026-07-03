@@ -741,8 +741,8 @@ input:focus, select:focus {
 }
 .input-row { display: flex; gap: 8px; }
 .input-row input { flex: 1; }
-.success-msg { color: var(--green-dark); font-size: 0.82rem; font-weight: 600; margin-top: 6px; }
-.error-msg   { color: #e53935;           font-size: 0.82rem; font-weight: 600; margin-top: 6px; }
+.success-msg { color: var(--green); font-size: 0.82rem; font-weight: 600; margin-top: 6px; }
+.error-msg   { color: #ff5252;           font-size: 0.82rem; font-weight: 600; margin-top: 6px; }
 
 /* ── Position Badges ────────────────────────────────────────── */
 .badge {
@@ -1386,13 +1386,54 @@ footer ul li a:hover { opacity: 1; }
 }
 
 /* ── Sync sidebar box ───────────────────────────────────────── */
-.sync-box { margin-bottom: 1.25rem; }
+.sync-box {
+  margin-bottom: 1.25rem;
+  background: var(--navy);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #fff;
+}
+.sync-box p,
+.sync-box .synced-info .row span:first-child {
+  color: rgba(255,255,255,0.82);
+}
+.sync-box .hint-link,
+.sync-box a.hint-link {
+  color: var(--blue-light) !important;
+}
+.sync-box .card-title {
+  color: #fff;
+}
+.sync-box input,
+.sync-box .btn {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+.sync-box .success-msg {
+  color: var(--green) !important;
+}
+.sync-box .error-msg {
+  color: #ff5252 !important;
+}
+.sync-box input::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+.sync-box input {
+  border-color: rgba(255,255,255,0.18);
+}
+.sync-box .btn-primary {
+  background: #1976d2;
+}
+.sync-box .btn-primary:hover {
+  background: #1565c0;
+}
 .hint-link { font-size: 0.8rem; color: var(--blue-light); margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+.sync-box .hint-link { color: var(--blue-light); }
+.sync-box .hint-link:hover { color: #fff; text-decoration: underline; }
 .hint-link:hover { text-decoration: underline; }
-.synced-info { border-top: 1px solid #f1f5f9; margin-top: 1rem; padding-top: 1rem; }
+.synced-info { border-top: 1px solid rgba(255,255,255,0.12); margin-top: 1rem; padding-top: 1rem; }
 .synced-info .row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 3px 0; }
-.synced-info .row span:first-child { color: var(--text-muted); }
-.synced-info .row span:last-child  { font-weight: 600; }
+.synced-info .row span:first-child { color: rgba(255,255,255,0.72); }
+.synced-info .row span:last-child  { font-weight: 600; color: #fff; }
 
 /* ── Card header row – for consistent alignment ──────────────── */
 .card-header-row {
