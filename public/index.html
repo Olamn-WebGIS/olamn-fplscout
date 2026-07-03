@@ -81,7 +81,7 @@
 
     <!-- ── Left: Player Stats ────────────────────────────────── -->
     <div>
-      <div class="card">
+      <div class="card" style="background: var(--navy); color: #fff;">
         <div class="card-header-row">
           <h2 class="card-title">Player Stats</h2>
           <div class="controls-row">
@@ -395,7 +395,7 @@
     <div class="home-fixtures-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:0.75rem;">
       <div>
         <h2 style="margin:0;">Fixtures</h2>
-        <p style="margin:0;font-size:0.95rem;color:var(--text-secondary);">Quick glance at ongoing and upcoming matches — swipe to view.</p>
+        <p style="margin:0;font-size:0.95rem;color:rgba(255,255,255,0.92);">Quick glance at ongoing and upcoming matches — swipe to view.</p>
       </div>
     </div>
     <div id="fixtures-root" class="fixtures-root"></div>
@@ -766,34 +766,34 @@ async function showPlayerStats(playerId) {
   const appearances = (player.appearances ?? computedAppearances) || 0;
 
   const statsHtml = `
-<div style="display:grid;grid-template-columns:1fr;gap:10px;font-size:0.9rem;text-align:left;">
-  <div style="padding:8px;background:#f8faff;border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #4a90d9;">
-    <strong>Goals Scored:</strong>
-    <span>${player.goals_scored || 0}</span>
+<div style="display:grid;grid-template-columns:1fr;gap:10px;font-size:0.9rem;text-align:left;color:#f8fafc;">
+  <div style="padding:8px;background:rgba(255,255,255,0.08);border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #4a90d9;">
+    <strong style="color:#fff;">Goals Scored:</strong>
+    <span style="color:#fff;">${player.goals_scored || 0}</span>
   </div>
-  <div style="padding:8px;background:#f8faff;border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #4a90d9;">
-    <strong>Assists:</strong>
-    <span>${player.assists || 0}</span>
+  <div style="padding:8px;background:rgba(255,255,255,0.08);border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #4a90d9;">
+    <strong style="color:#fff;">Assists:</strong>
+    <span style="color:#fff;">${player.assists || 0}</span>
   </div>
-  <div style="padding:8px;background:#f8faff;border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #2e7d32;">
-    <strong>Clean Sheets:</strong>
-    <span>${player.clean_sheets || 0}</span>
+  <div style="padding:8px;background:rgba(255,255,255,0.08);border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #2e7d32;">
+    <strong style="color:#fff;">Clean Sheets:</strong>
+    <span style="color:#fff;">${player.clean_sheets || 0}</span>
   </div>
-  <div style="padding:8px;background:#f8faff;border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #ffd600;">
-    <strong>Yellow Cards:</strong>
-    <span>${player.yellow_cards || 0}</span>
+  <div style="padding:8px;background:rgba(255,255,255,0.08);border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #ffd600;">
+    <strong style="color:#fff;">Yellow Cards:</strong>
+    <span style="color:#fff;">${player.yellow_cards || 0}</span>
   </div>
-  <div style="padding:8px;background:#f8faff;border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #757575;">
-    <strong>Appearances:</strong>
-    <span>${appearances}</span>
+  <div style="padding:8px;background:rgba(255,255,255,0.08);border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #757575;">
+    <strong style="color:#fff;">Appearances:</strong>
+    <span style="color:#fff;">${appearances}</span>
   </div>
-  <div style="padding:8px;background:#f8faff;border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #00c853;">
-    <strong>Bonus Points:</strong>
-    <span>${player.bonus || 0}</span>
+  <div style="padding:8px;background:rgba(255,255,255,0.08);border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #00c853;">
+    <strong style="color:#fff;">Bonus Points:</strong>
+    <span style="color:#fff;">${player.bonus || 0}</span>
   </div>
-  <div style="padding:10px;background:linear-gradient(135deg, #4a90d915 0%, #4a90d905 100%);border-radius:6px;display:flex;justify-content:space-between;border-left:4px solid #4a90d9;font-weight:700;font-size:0.95rem;">
-    <strong>Total Points:</strong>
-    <span>${player.total_points || 0}</span>
+  <div style="padding:10px;background:rgba(255,255,255,0.12);border-radius:6px;display:flex;justify-content:space-between;border-left:4px solid #4a90d9;font-weight:700;font-size:0.95rem;">
+    <strong style="color:#fff;">Total Points:</strong>
+    <span style="color:#fff;">${player.total_points || 0}</span>
   </div>
 </div>
   `;
@@ -1100,13 +1100,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- ── Player Stats Modal ──────────────────────────────────────── -->
 <div id="player-stats-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;overflow-y:auto;padding:1rem;">
-  <div style="max-width:400px;margin:2rem auto;background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:2rem;margin-bottom:2rem;">
+  <div style="max-width:400px;margin:2rem auto;background:var(--navy-light);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:2rem;margin-bottom:2rem;color:#fff;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;gap:1rem;">
-      <h2 class="card-title" style="margin:0;font-size:1.1rem;" id="player-stats-name">Player Stats</h2>
-      <button onclick="closePlayerStats()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;flex-shrink:0;">✕</button>
+      <h2 class="card-title" style="margin:0;font-size:1.1rem;color:#fff;" id="player-stats-name">Player Stats</h2>
+      <button onclick="closePlayerStats()" style="background:none;border:none;font-size:1.5rem;color:#fff;cursor:pointer;flex-shrink:0;">✕</button>
     </div>
-    <div id="player-stats-content" style="font-size:0.95rem;line-height:2;">
-      <div style="padding:1rem;background:#f8faff;border-radius:8px;text-align:center;">
+    <div id="player-stats-content" style="font-size:0.95rem;line-height:2;color:#f3f4f6;">
+      <div style="padding:1rem;background:rgba(255,255,255,0.08);border-radius:8px;text-align:center;color:#fff;">
         <div class="spinner"></div>
         <span style="margin-left:0.5rem;">Loading stats…</span>
       </div>
