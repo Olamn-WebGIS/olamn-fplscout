@@ -81,5 +81,17 @@
   <script src="/blog.js"></script>
   <script src="/layout.js"></script>
   <script src="/app.js"></script>
+  <script>
+    (function () {
+      const stored = localStorage.getItem('fpl_user_session');
+      const currentUser = stored ? JSON.parse(stored) : null;
+      if (!isPremiumUser(currentUser)) {
+        const adScript = document.createElement('script');
+        adScript.async = true;
+        adScript.src = 'https://sidewalkboiling.com/56/e2/ab/56e2ab4abf6078cce6ce40441e6f6b7c.js';
+        document.body.appendChild(adScript);
+      }
+    })();
+  </script>
 </body>
 </html>
