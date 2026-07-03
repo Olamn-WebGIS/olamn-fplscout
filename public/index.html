@@ -389,6 +389,21 @@
 </section>
 
 <!-- ── Latest Blog Teasers Section ─────────────────────────── -->
+<!-- ── Live Fixtures Preview Section ─────────────────────────── -->
+<section id="home-fixtures-preview" class="home-fixtures-preview">
+  <div class="home-fixtures-inner">
+    <div class="home-fixtures-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:0.75rem;">
+      <div>
+        <h2 style="margin:0;">Live Fixtures</h2>
+        <p style="margin:0;font-size:0.95rem;color:var(--text-secondary);">Quick glance at ongoing and upcoming matches — swipe to view.</p>
+      </div>
+      <a href="/fixtures" class="home-latest-blog-cta" style="white-space:nowrap;">See all fixtures</a>
+    </div>
+    <div id="fixtures-root" class="fixtures-root"></div>
+  </div>
+</section>
+
+<!-- ── Latest Blog Teasers Section ─────────────────────────── -->
 <section id="home-latest-blog" class="home-latest-blog">
   <div class="home-latest-blog-inner">
     <div class="home-latest-blog-header">
@@ -479,6 +494,7 @@
 
 <script src="/utils.js"></script>
 <script src="/layout.js"></script>
+<script src="/home-fixtures.js" defer></script>
 <script>
   (function () {
     const stored = localStorage.getItem('fpl_user_session');
