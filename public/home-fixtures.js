@@ -82,23 +82,27 @@
     const liveLink = anchor.dataset.liveLink;
     const adLink = anchor.dataset.adLink || FIXTURE_AD_LINK;
     const currentCount = getFixtureWatchClickCount();
+    const nextCount = currentCount + 1;
+    setFixtureWatchClickCount(nextCount);
 
-    if (!adLink && !liveLink) return;
-
-    if (currentCount < FIXTURE_AD_CLICK_THRESHOLD) {
-      setFixtureWatchClickCount(currentCount + 1);
-      event.preventDefault();
-      window.open(adLink, '_blank', 'noopener');
-      return;
-    }
-
-    if (liveLink) {
-      anchor.href = liveLink;
-      return;
-    }
+    const targetUrl = nextCount >= FIXTURE_AD_CLICK_THRESHOLD ? (liveLink || adLink) : adLink;
+    if (!targetUrl) return;
 
     event.preventDefault();
-    window.open(adLink, '_blank', 'noopener');
+    window.open(targetUrl, '_blank', 'noopener');
+
+    if (nextCount >= FIXTURE_AD_CLICK_THRESHOLD && liveLink) {
+      anchor.href = liveLink;
+    }
+  }
+
+  function injectFixtureAdScript(premium) {
+    if (premium) return;
+    if (document.querySelector('script[data-sidewalk-boiling]')) return;
+    const script = document.createElement('script');
+    script.async = true;
+    script.setAttribute('data-sidewalk-boiling', 'true');
+    document.body.appendChild(script);
   }
 
   function makeFixtureCard(f) {
@@ -150,6 +154,7 @@
 
     const currentUser = readStoredUserSession();
     const premium = isPremiumUser(currentUser);
+    injectFixtureAdScript(premium);
 
     const scroller = document.createElement('div');
     scroller.className = 'fixture-scroller';
