@@ -359,6 +359,33 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 .fixture-card.hero .fixture-action .btn { min-width: 160px; padding: 0.85rem 1.35rem; display:inline-flex; justify-content:center; align-items:center; }
 .fixture-card.hero .fixture-watch-note { max-width: 680px; margin: 0 auto; font-size: 0.95rem; color: var(--text-secondary); line-height: 1.5; padding: 0.9rem 1rem 0 1rem; }
 
+/* Centered layout for home preview fixture cards (clickable) */
+.fixture-card.clickable-fixture { text-align: center; align-items: center; justify-content: center; }
+.fixture-card.clickable-fixture .fixture-teams { justify-content: center; }
+.fixture-card.clickable-fixture .fixture-team { display:flex; align-items:center; justify-content:center; gap:0.5rem; }
+.fixture-card.clickable-fixture .time { margin-top: 0.25rem; }
+.fixture-card.clickable-fixture .fixture-action { justify-content: center; margin-top: auto; }
+
+/* Clickable affordances */
+.fixture-card.clickable-fixture { cursor: pointer; transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease; }
+.fixture-card.clickable-fixture:hover { transform: translateY(-6px); box-shadow: 0 24px 48px rgba(2,6,23,0.45); background-color: rgba(255,255,255,0.02); }
+.fixture-card.clickable-fixture:focus { outline: 3px solid rgba(0,200,83,0.18); box-shadow: 0 12px 32px rgba(2,6,23,0.35); transform: translateY(-4px); }
+.fixture-card.clickable-fixture::after { content: ''; display: block; }
+
+/* Small visual hint badge on hover */
+.fixture-card.clickable-fixture .click-hint {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: rgba(0,0,0,0.35);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  opacity: 0; transition: opacity 140ms ease;
+}
+.fixture-card.clickable-fixture:hover .click-hint,
+.fixture-card.clickable-fixture:focus .click-hint { opacity: 1; }
 @media (max-width: 768px) {
   .fixture-card.hero { padding: 1.5rem 1rem; }
   .fixture-card.hero .fixture-teams { gap: 0.3rem; flex-wrap: nowrap; }

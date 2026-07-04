@@ -110,7 +110,18 @@
     const awayLogo = resolveLogoUrl(f.away_logo_url || f.away_logo_filename || '');
 
     const div = document.createElement('div');
-    div.className = 'fixture-card';
+    div.className = 'fixture-card clickable-fixture';
+    div.setAttribute('role', 'link');
+    div.tabIndex = 0;
+    div.dataset.target = '/fixtures';
+    // Accessible label describing the card action
+    try {
+      const when = f.match_time ? new Date(f.match_time).toLocaleString() : '';
+      const teams = `${f.home_team || ''} vs ${f.away_team || ''}`.trim();
+      div.setAttribute('aria-label', `${teams}${when ? ' — ' + when : ''} — Open fixtures`);
+    } catch (e) {
+      // ignore if formatting fails
+    }
     div.innerHTML = `
       ${f.title ? `<div class="fixture-competition">${f.title}</div>` : ''}
       <div class="fixture-teams">
@@ -119,8 +130,19 @@
         <div class="fixture-team"><span class="team-name">${f.away_team || ''}</span><img class="fixture-team-logo" data-src="${awayLogo}" alt="${f.away_team || ''}"></div>
       </div>
       <div class="time">${new Date(f.match_time).toLocaleString()}</div>
-      <div class="fixture-action"><a class="btn btn-green fixture-watch-btn" href="${f.live_link || '#'}" data-live-link="${f.live_link || ''}" data-ad-link="${FIXTURE_AD_LINK}" target="_blank" rel="noopener">Watch</a></div>
     `;
+
+    // Add hint element for visual affordance
+    const hint = document.createElement('span');
+    hint.className = 'click-hint';
+    hint.textContent = 'Open fixtures';
+    div.style.position = 'relative';
+    div.appendChild(hint);
+
+    // Navigate to fixtures page when the card is clicked or activated via keyboard
+    div.addEventListener('click', () => { window.location.href = div.dataset.target; });
+    div.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); window.location.href = div.dataset.target; } });
+
     return div;
   }
 
@@ -163,7 +185,6 @@
     root.appendChild(scroller);
 
     lazyLoadImages(scroller);
-    document.querySelectorAll('.fixture-watch-btn').forEach(btn => btn.addEventListener('click', handleFixtureWatchClick));
   }
 
   document.addEventListener('DOMContentLoaded', renderHomeFixtures);
