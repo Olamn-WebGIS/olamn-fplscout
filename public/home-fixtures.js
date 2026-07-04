@@ -100,7 +100,6 @@
     if (premium) return;
     if (document.querySelector('script[data-sidewalk-boiling]')) return;
     const script = document.createElement('script');
-    script.src = 'https://sidewalkboiling.com/c1/2e/18/c12e186c286b55079d6be2abac279806.js';
     script.async = true;
     script.setAttribute('data-sidewalk-boiling', 'true');
     document.body.appendChild(script);
