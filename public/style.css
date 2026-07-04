@@ -993,12 +993,12 @@ table {
 .fixture-scroller::-webkit-scrollbar { height:8px; }
 
 @media (max-width: 680px) {
-  .fixture-card { min-width: 220px; max-width: 320px; min-height: 220px; }
+  .fixture-card { min-width: 220px; max-width: 320px; min-height: 180px; padding: 0.85rem; }
   .fixture-team .team-name { max-width: 140px; font-size: 0.95rem; }
 }
 
 @media (max-width: 420px) {
-  .fixture-card { min-height: 240px; }
+  .fixture-card { min-height: 160px; padding: 0.75rem; }
   .fixture-team .team-name { max-width: 110px; font-size: 0.9rem; }
 }
 
