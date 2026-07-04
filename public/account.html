@@ -392,6 +392,13 @@
             color: #ffffff !important;
             border-color: #ff4757 !important;
         }
+        /* Make the main My Account heading white with only Account green */
+        .account-header h1 {
+            color: #ffffff !important;
+        }
+        .account-header h1 .heading-green {
+            color: var(--green) !important;
+        }
     </style>
 </head>
 <body>
@@ -399,7 +406,7 @@
 
     <div class="account-container">
         <div class="account-header">
-            <h1>My Account</h1>
+            <h1>My <span class="heading-green">Account</span></h1>
             <p>Manage your profile, subscription, and account settings</p>
         </div>
 

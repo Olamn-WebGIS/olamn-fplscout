@@ -772,7 +772,7 @@ app.get(['/blog', '/blog/'], async (req, res) => {
     if (error) throw error;
 
     const listHtml = posts && posts.length ? `
-      <h1>Latest FPL Scout Articles</h1>
+      <h1><span style="color:#ffffff;">Latest</span> <span style="color:var(--green);">FPL Scout Articles</span></h1>
       ${posts.map(post => {
         const normalizedPreviewLink = (() => {
           if (!post.reel_link) return '#';
@@ -794,7 +794,7 @@ app.get(['/blog', '/blog/'], async (req, res) => {
       `;
       }).join('')}
     ` : `
-      <h1>Latest FPL Scout Articles</h1>
+      <h1><span style="color:#ffffff;">Latest</span> <span style="color:var(--green);">FPL Scout Articles</span></h1>
       <p>Coming soon — check back later for FPL analysis, transfer advice, and matchweek predictions.</p>
     `;
 

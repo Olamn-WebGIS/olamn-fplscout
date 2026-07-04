@@ -88,7 +88,7 @@ function createPostCard(post) {
 }
 
 function renderList(posts) {
-  blogContainer.innerHTML = '<h1>Latest FPL Scout Articles</h1>';
+  blogContainer.innerHTML = '<h1><span class="heading-white">Latest</span> <span class="heading-green">FPL Scout Articles</span></h1>';
   if (!posts.length) {
     blogContainer.innerHTML += '<p>No posts are available yet.</p>';
     return;

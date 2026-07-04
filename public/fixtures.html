@@ -14,11 +14,23 @@
   <meta property="og:image" content="https://fplscout.name.ng/images/logo.png" />
   <link rel="stylesheet" href="/style.css">
   <style>
-    /* Fixtures page: force all text to white for better contrast */
-    body, body * { color: #f8fafc !important; }
-    /* Ensure form inputs and placeholders are also visible */
-    input, textarea, select, option { color: #f8fafc !important; }
-    ::placeholder { color: rgba(248,250,252,0.7) !important; }
+    /* Fixtures page: force page content to white for better contrast without affecting injected nav/footer */
+    .page-wrap, .page-wrap * { color: #f8fafc !important; }
+    .page-wrap input, .page-wrap textarea, .page-wrap select, .page-wrap option { color: #f8fafc !important; }
+    .page-wrap ::placeholder { color: rgba(248,250,252,0.7) !important; }
+    .page-wrap h1 { color: var(--green) !important; }
+    .page-wrap button,
+    .page-wrap .btn,
+    .page-wrap .btn-primary {
+      background: var(--green) !important;
+      color: #ffffff !important;
+      border-color: var(--green) !important;
+    }
+    .page-wrap .btn-outline {
+      color: #ffffff !important;
+      border-color: rgba(255,255,255,0.26) !important;
+      background: transparent !important;
+    }
   </style>
 </head>
 <body>
