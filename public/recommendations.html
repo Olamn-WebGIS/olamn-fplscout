@@ -45,6 +45,15 @@
     .card input, .card select, .card textarea { background: rgba(255,255,255,0.05) !important; color: #ffffff !important; border-color: rgba(255,255,255,0.12) !important; }
     .display { color: #ffffff !important; }
     .display em { color: var(--green) !important; }
+    @media (max-width: 768px) {
+      #gw-banner { grid-template-columns: 1fr 1fr !important; gap: 1rem !important; }
+      #gw-banner > div:nth-child(2), #gw-banner > div:nth-child(4), #gw-banner > div:nth-child(6) { display: none !important; }
+      #gw-banner > div:last-child { grid-column: 1 / -1; margin-top: 1rem; }
+    }
+    @media (max-width: 480px) {
+      #gw-banner { grid-template-columns: 1fr !important; padding: 1rem !important; }
+      #gw-banner > div:last-child { grid-column: 1; margin-top: 1rem; }
+    }
   </style>
 </head>
 <body>

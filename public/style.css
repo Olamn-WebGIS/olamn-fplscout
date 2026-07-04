@@ -896,6 +896,8 @@ table {
   object-position: center;
   display: block;
   background: var(--navy);
+  margin: 0;
+  padding: 0;
 }
 .home-blog-card-content {
   padding: 1.25rem;
@@ -1196,14 +1198,14 @@ tbody tr.highlight td { background: rgba(0,200,83,0.12); }
   display: flex;
   flex-wrap: nowrap;
   justify-content: center;
-  gap: 2rem;
-  padding-top: 1.5rem;
-  padding-bottom: 1.5rem;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
   max-width: 100%;
   margin-left: auto;
   margin-right: auto;
   overflow-x: auto;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 .hero-stat {
   display: flex;
@@ -1211,19 +1213,19 @@ tbody tr.highlight td { background: rgba(0,200,83,0.12); }
   align-items: center;
   justify-content: center;
   text-align: center;
-  min-width: 110px;
+  min-width: 70px;
 }
 .hero-stat .number {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 2.5rem;
+  font-size: 1.4rem;
   font-weight: 800;
   color: var(--green);
   line-height: 1;
 }
 .hero-stat .name {
-  font-size: 0.8rem;
+  font-size: 0.65rem;
   color: #ffffff;
-  margin-top: 6px;
+  margin-top: 2px;
   white-space: nowrap;
 }
 
@@ -2569,7 +2571,7 @@ main { max-width: 100%; overflow-x: hidden; }
   #captain-cards .player-meta-sub,
   #captain-cards p {
     font-size: 11px !important;
-    color: var(--text-secondary, #64748b) !important;
+    color: rgba(255,255,255,0.85) !important;
     margin: 0 !important;
   }
 
@@ -2592,6 +2594,7 @@ main { max-width: 100%; overflow-x: hidden; }
     border-radius: 4px !important;
     font-weight: 600 !important;
     white-space: nowrap !important;
+    color: #ffffff !important;
   }
 
   /* Keep your rank medals/badges perfectly level on the far left side track */
@@ -2612,6 +2615,7 @@ main { max-width: 100%; overflow-x: hidden; }
     border-radius: 50% !important;
     flex-shrink: 0 !important;
     object-fit: cover !important;
+    object-position: center top !important;
   }
 
   /* 4. KEEP PREDICTED SCORE DATA ALIGNED TO THE FAR RIGHT SIDE WALL */
