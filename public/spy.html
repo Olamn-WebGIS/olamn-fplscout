@@ -93,7 +93,7 @@
       gap: 6px;
     }
     .icon-btn {
-      background: #f1f5f9;
+      background: var(--green);
       border: none;
       width: 36px;
       height: 36px;
@@ -104,9 +104,10 @@
       justify-content: center;
       font-size: 1rem;
       transition: all 0.2s;
+      color: #fff;
     }
     .icon-btn:hover {
-      background: var(--blue-light);
+      background: var(--green-dark);
       color: #fff;
       transform: scale(1.05);
     }
@@ -116,7 +117,7 @@
       gap: 1rem;
       margin-top: 1rem;
       padding-top: 1rem;
-      border-top: 1px solid #e2e8f0;
+      border-top: 1px solid rgba(255,255,255,0.12);
     }
     .h2h-stat {
       display: flex;
@@ -148,18 +149,19 @@
       margin-top: 1rem;
     }
     .captain-item {
-      background: linear-gradient(135deg, #f8faff 0%, #eef3fc 100%);
-      border: 1.5px solid #dfe7f1;
+      background: var(--navy);
+      border: 1.5px solid rgba(255,255,255,0.12);
       border-radius: var(--radius-md);
       padding: 1rem;
       text-align: center;
       cursor: pointer;
       transition: all 0.2s;
+      color: #f8fafc;
     }
     .captain-item:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(25,118,210,0.2);
-      border-color: var(--blue-light);
+      border-color: var(--green);
     }
     .captain-name {
       font-size: 0.85rem;
@@ -183,6 +185,64 @@
     .tab-btn.active {
       border-bottom-color: var(--blue-light) !important;
       color: var(--text-primary) !important;
+      background: var(--navy) !important;
+      color: #f8fafc !important;
+    }
+    .player-card {
+      background: var(--navy) !important;
+      border: 1px solid rgba(255,255,255,0.12) !important;
+      color: #f8fafc !important;
+    }
+    .player-card div,
+    .player-card span,
+    .player-card strong {
+      color: #f8fafc !important;
+    }
+    .card,
+    .spy-rival-card {
+      background: var(--navy) !important;
+      color: #f8fafc !important;
+      border-color: rgba(255,255,255,0.08) !important;
+    }
+    .card .card-title,
+    .spy-rival-card .rival-name,
+    .spy-rival-card .rival-rank,
+    .spy-rival-card .rival-points,
+    .spy-rival-card .h2h-stat-label,
+    .spy-rival-card .h2h-stat-value,
+    .spy-rival-card .h2h-vs,
+    .spy-rival-card .loading-block,
+    .card-title,
+    .card p,
+    .card span,
+    .card small,
+    .card label,
+    .card a,
+    .card div {
+      color: #f8fafc !important;
+    }
+    .card .transfer-arrow,
+    .transfer-arrow {
+      color: var(--fwd) !important;
+    }
+    .btn,
+    .btn-green,
+    .btn-blue,
+    .btn-outline,
+    .icon-btn,
+    .page-wrap button,
+    .page-wrap .btn {
+      background: var(--green) !important;
+      color: #ffffff !important;
+      border-color: var(--green) !important;
+    }
+    .btn-outline {
+      border: 1px solid var(--green) !important;
+      background: var(--green) !important;
+    }
+    .icon-btn {
+      background: var(--green) !important;
+      color: #ffffff !important;
     }
     #modal-team-content {
       display: block !important;
@@ -198,6 +258,49 @@
       gap: 10px;
       color: var(--text-muted);
       min-height: 60px;
+    }
+    #league-banner,
+    #league-banner .section-eyebrow,
+    #league-banner .nav-badge,
+    #league-banner div[id^="league-"],
+    #league-banner .section-eyebrow + div {
+      color: #f8fafc !important;
+    }
+    #league-banner .nav-badge {
+      background: rgba(255,255,255,0.08);
+      color: #ffffff !important;
+      position: relative;
+      padding-left: 1.5rem;
+    }
+    #league-banner .nav-badge::before {
+      content: '';
+      position: absolute;
+      left: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 0 rgba(0,200,83,0.35);
+      animation: badge-pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes badge-pulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(0,200,83,0.35);
+      }
+      50% {
+        box-shadow: 0 0 0 8px rgba(0,200,83,0);
+      }
+    }
+    .transfer-arrow {
+      color: var(--fwd) !important;
+    }
+    #league-banner > div {
+      color: #f8fafc !important;
+    }
+    #league-banner > div > div {
+      color: #f8fafc !important;
     }
   </style>
 </head>
@@ -220,8 +323,8 @@
     <h2 class="card-title">📊 Track Your League</h2>
     <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
       <div style="flex:1;min-width:200px;">
-        <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">League ID</label>
-        <input type="number" id="league-id-input" placeholder="e.g. 12345" style="width:100%;padding:0.7rem;border:1.5px solid #e2e8f0;border-radius:var(--radius-sm);font-size:0.95rem;">
+        <label style="display:block;font-size:0.85rem;font-weight:600;color:#f8fafc;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">League ID</label>
+        <input type="number" id="league-id-input" placeholder="e.g. 12345" style="width:100%;padding:0.7rem;border:1.5px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);font-size:0.95rem;background:#15223a;color:#f8fafc;">
       </div>
       <button class="btn btn-green" id="load-league-btn" style="font-weight:700;">Load League</button>
       <a href="/how-to-findids.html" class="hint-link" style="font-size:0.85rem;">💡 How to Find League ID</a>
@@ -229,7 +332,7 @@
   </div>
 
   <!-- League Stats Banner -->
-  <div id="league-banner" style="background:var(--bg-card);border-radius:var(--radius-md);padding:1.5rem;margin-bottom:2rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;box-shadow:var(--shadow-sm);display:none;">
+  <div id="league-banner" style="background:var(--navy);border-radius:var(--radius-md);padding:1.5rem;margin-bottom:2rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;box-shadow:var(--shadow-sm);display:none;">
     <div>
       <div class="section-eyebrow">Current Gameweek</div>
       <div style="font-size:1.2rem;font-weight:700;" id="current-gw">—</div>
@@ -259,8 +362,8 @@
     <div class="card">
       <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
         <div style="flex:1;min-width:200px;">
-          <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Manager Name or Team</label>
-          <input type="text" id="manager-search-input" placeholder="Search by manager name or team name..." style="width:100%;padding:0.7rem;border:1.5px solid #e2e8f0;border-radius:var(--radius-sm);font-size:0.95rem;">
+          <label style="display:block;font-size:0.85rem;font-weight:600;color:#f8fafc;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Manager Name or Team</label>
+          <input type="text" id="manager-search-input" placeholder="Search by manager name or team name..." style="width:100%;padding:0.7rem;border:1.5px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);font-size:0.95rem;background:#15223a;color:#f8fafc;">
         </div>
         <button class="btn btn-blue" id="search-btn" style="font-weight:700;">Search</button>
         <button class="btn btn-outline" id="clear-search-btn" style="font-weight:700;">Show Top 10</button>
@@ -274,7 +377,7 @@
 
   <!-- Rivals List -->
   <div id="rivals-container">
-    <div style="background:#f8faff;border:1.5px dashed #dfe7f1;border-radius:var(--radius-md);padding:3rem 1.5rem;text-align:center;color:var(--text-muted);">
+    <div style="background:var(--navy);border:1.5px dashed rgba(255,255,255,0.12);border-radius:var(--radius-md);padding:3rem 1.5rem;text-align:center;color:#f8fafc;">
       <div style="font-size:1.5rem;margin-bottom:0.5rem;">🔍</div>
       <p>Enter a league ID to start tracking rivals and analyzing their teams.</p>
     </div>
@@ -304,7 +407,7 @@
 
   <!-- Team View Modal -->
   <div id="team-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;overflow-y:auto;padding:1rem;">
-    <div class="modal" style="max-width:900px;margin:2rem auto;background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:2rem;margin-bottom:2rem;">
+    <div class="modal" style="max-width:900px;margin:2rem auto;background:var(--navy);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:2rem;margin-bottom:2rem;color:#f8fafc;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;gap:1rem;">
         <div>
           <h2 class="card-title" style="margin:0;font-size:1.1rem;" id="modal-team-name">Team Squad</h2>
@@ -314,9 +417,9 @@
       </div>
       
       <!-- Tabs -->
-      <div style="display:flex;gap:1rem;margin-bottom:1.5rem;border-bottom:2px solid #e2e8f0;padding-bottom:1rem;">
-        <button class="tab-btn active" data-tab="squad" style="background:none;border:none;padding:0.5rem 1rem;color:var(--text-primary);font-weight:600;cursor:pointer;border-bottom:3px solid transparent;border-bottom-color:var(--blue-light);">⚽ Squad</button>
-        <button class="tab-btn" data-tab="activity" style="background:none;border:none;padding:0.5rem 1rem;color:var(--text-muted);font-weight:600;cursor:pointer;border-bottom:3px solid transparent;">⚡ Recent Activity</button>
+      <div style="display:flex;gap:1rem;margin-bottom:1.5rem;border-bottom:2px solid rgba(255,255,255,0.12);padding-bottom:1rem;">
+        <button class="tab-btn active" data-tab="squad" style="background:none;border:none;padding:0.5rem 1rem;color:#f8fafc;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;border-bottom-color:var(--blue-light);">⚽ Squad</button>
+        <button class="tab-btn" data-tab="activity" style="background:none;border:none;padding:0.5rem 1rem;color:rgba(248,250,252,0.7);font-weight:600;cursor:pointer;border-bottom:3px solid transparent;">⚡ Recent Activity</button>
       </div>
       
       <!-- Squad Tab -->
@@ -550,40 +653,40 @@ async function loadRecentActivity(rivals) {
     // Render captain changes
     if (captainChanges.length > 0) {
       const captainHtml = captainChanges.map(c => `
-        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#f8faff;border-radius:8px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;margin-bottom:8px;color:#f8fafc;">
           <div class="player-avatar" style="width:32px;height:32px;flex-shrink:0;">
             <img src="${photoUrl(c.code)}" alt="${c.player}" loading="lazy" style="width:100%;height:100%;object-fit:contain;border-radius:6px;" onerror="this.parentElement.textContent='${c.player.slice(0,2)}'" />
           </div>
           <div style="flex:1;font-size:0.85rem;">
             <strong>${c.player}</strong> · ${c.team}
           </div>
-          <div style="font-size:0.75rem;color:var(--text-muted);">${c.manager}</div>
+          <div style="font-size:0.75rem;color:rgba(248,250,252,0.75);">${c.manager}</div>
         </div>
       `).join('');
       document.getElementById('captain-alerts').innerHTML = captainHtml;
     } else {
-      document.getElementById('captain-alerts').innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No captain changes this GW</p>';
+      document.getElementById('captain-alerts').innerHTML = '<p style="color:rgba(248,250,252,0.75);font-size:0.85rem;">No captain changes this GW</p>';
     }
     
     // Render transfers
     if (transfers.length > 0) {
       const transferHtml = transfers.map(t => `
-        <div style="display:flex;align-items:center;gap:8px;padding:10px;background:#f8faff;border-radius:8px;margin-bottom:8px;font-size:0.85rem;">
+        <div style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;margin-bottom:8px;font-size:0.85rem;color:#f8fafc;">
           <div style="flex:1;">
             <strong>${t.out}</strong>
-            <span style="color:var(--fwd);">→</span>
+            <span class="transfer-arrow" style="color:var(--fwd);">→</span>
             <strong>${t.in}</strong>
           </div>
-          <div style="font-size:0.7rem;color:var(--text-muted);">${t.manager}</div>
+          <div style="font-size:0.7rem;color:rgba(248,250,252,0.75);">${t.manager}</div>
         </div>
       `).join('');
       document.getElementById('transfer-alerts').innerHTML = transferHtml;
     } else {
-      document.getElementById('transfer-alerts').innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No recent transfers</p>';
+      document.getElementById('transfer-alerts').innerHTML = '<p style="color:rgba(248,250,252,0.75);font-size:0.85rem;">No recent transfers</p>';
     }
     
     // Chip usage
-    document.getElementById('chip-alerts').innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">Chip data coming soon</p>';
+    document.getElementById('chip-alerts').innerHTML = '<p style="color:rgba(248,250,252,0.75);font-size:0.85rem;">Chip data coming soon</p>';
     
   } catch (e) {
     console.error('Failed to load recent activity:', e);
@@ -699,11 +802,11 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
         // Split the name string safely and take the last element name
         const shortName = player.web_name ? player.web_name.split(' ').pop() : 'Player';
         
-        startersHtml += `<div class="player-card" style="position:relative; padding:8px 4px; background:linear-gradient(135deg, ${posColor}15 0%, ${posColor}05 100%); border-top:2px solid ${posColor}; border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box; text-align:center; min-height:60px;">
+        startersHtml += `<div class="player-card" style="position:relative; padding:8px 4px; background:var(--navy); border:1px solid rgba(255,255,255,0.08); border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box; text-align:center; min-height:60px;">
           ${capBadge}
-          <div style="font-weight:700; font-size:0.6rem; color:var(--text-primary); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; padding:0 2px;">${shortName}</div>
-          <div style="font-size:0.5rem; color:var(--text-muted); margin-top:2px;">${posLabels[player.element_type]}</div>
-          <div style="font-size:0.55rem; color:var(--text-muted); font-weight:600; margin-top:2px;">£${(player.now_cost/10).toFixed(1)}m</div>
+          <div style="font-weight:700; font-size:0.6rem; color:#f8fafc; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; padding:0 2px;">${shortName}</div>
+          <div style="font-size:0.5rem; color:rgba(248,250,252,0.7); margin-top:2px;">${posLabels[player.element_type]}</div>
+          <div style="font-size:0.55rem; color:rgba(248,250,252,0.7); font-weight:600; margin-top:2px;">£${(player.now_cost/10).toFixed(1)}m</div>
         </div>`;
       }
     });
@@ -713,7 +816,7 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
         // Build bench HTML - Compact 4-column row display layout
     let benchHtml = '';
     if (bench.length > 0) {
-      benchHtml = `<div class="bench-section" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; width: 100%; box-sizing:border-box;">
+      benchHtml = `<div class="bench-section" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.12); width: 100%; box-sizing:border-box;">
         <h4 style="font-size:0.8rem; margin:0 0 0.75rem 0; color:var(--text-muted); text-align:left; font-weight:700;">🔄 Bench</h4>
         <div class="bench-grid" style="display:flex; gap:6px; width:100%; box-sizing:border-box; overflow-x:auto;">`;
       
@@ -723,17 +826,17 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
           const posColor = posColors[player.element_type];
           const shortName = player.web_name ? player.web_name.split(' ').pop() : 'Player';
           
-          benchHtml += `<div class="player-card" style="padding:8px 4px; background:linear-gradient(135deg, ${posColor}10 0%, ${posColor}02 100%); border-top:2px solid ${posColor}; opacity:0.85; border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box; text-align:center; min-height:60px;">
-            <div style="font-weight:700; font-size:0.6rem; color:var(--text-primary); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; padding:0 2px;">${shortName}</div>
-            <div style="font-size:0.5rem; color:var(--text-muted); margin-top:2px;">${posLabels[player.element_type]}</div>
-            <div style="font-size:0.55rem; color:var(--text-muted); font-weight:600; margin-top:2px;">£${(player.now_cost/10).toFixed(1)}m</div>
+          benchHtml += `<div class="player-card" style="padding:8px 4px; background:var(--navy); border:1px solid rgba(255,255,255,0.08); border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box; text-align:center; min-height:60px;">
+            <div style="font-weight:700; font-size:0.6rem; color:#f8fafc; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; padding:0 2px;">${shortName}</div>
+            <div style="font-size:0.5rem; color:rgba(248,250,252,0.7); margin-top:2px;">${posLabels[player.element_type]}</div>
+            <div style="font-size:0.55rem; color:rgba(248,250,252,0.7); font-weight:600; margin-top:2px;">£${(player.now_cost/10).toFixed(1)}m</div>
           </div>`;
         }
       });
       
       benchHtml += `</div></div>`;
     } else {
-      benchHtml = `<div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; width: 100%; box-sizing:border-box;">
+      benchHtml = `<div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.12); width: 100%; box-sizing:border-box;">
         <h4 style="font-size:0.8rem; margin:0 0 0.5rem 0; color:var(--text-muted); text-align:left; font-weight:700;">🔄 Bench</h4>
         <p style="text-align:center; color:var(--text-muted); font-size:0.7rem; margin:0;">No bench players</p>
       </div>`;
@@ -977,14 +1080,14 @@ async function loadManagerTransfers(managerId, playerName) {
       const playerOut = bsData.elements.find(e => e.id === transfer.element_out);
       
       if (playerIn && playerOut) {
-        html += `<div style="padding:10px;background:#f8faff;border-left:4px solid var(--blue-light);border-radius:8px;margin-bottom:8px;font-size:0.85rem;">
+        html += `<div style="padding:10px;background:rgba(255,255,255,0.05);border-left:4px solid var(--green);border-radius:8px;margin-bottom:8px;font-size:0.85rem;color:#f8fafc;">
           <div style="margin-bottom:4px;">
             <span style="color:var(--fwd);font-weight:700;">OUT:</span> ${playerOut.web_name}
           </div>
           <div>
             <span style="color:var(--green);font-weight:700;">IN:</span> ${playerIn.web_name}
           </div>
-          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:6px;">GW ${transfer.event}</div>
+          <div style="font-size:0.75rem;color:rgba(248,250,252,0.75);margin-top:6px;">GW ${transfer.event}</div>
         </div>`;
       } else {
         console.warn('⚠️ Transfer player not found:', {in: transfer.element_in, out: transfer.element_out});
@@ -1009,7 +1112,7 @@ async function loadManagerChipUsage(managerId) {
     
     if (!history || !history.chips || history.chips.length === 0) {
       console.warn('⚠️ No chips used yet');
-      return '<p style="color:var(--text-muted);font-size:0.85rem;">No chips used yet</p>';
+      return '<p style="color:rgba(248,250,252,0.75);font-size:0.85rem;">No chips used yet</p>';
     }
     
     console.log('✓ Found', history.chips.length, 'chips used');
@@ -1021,11 +1124,11 @@ async function loadManagerChipUsage(managerId) {
     for (const chip of history.chips) {
       const emoji = chipEmojis[chip.name] || '🃏';
       const displayName = chipNames[chip.name] || chip.name;
-      html += `<div style="padding:12px;background:linear-gradient(135deg, #4a90d915 0%, #4a90d905 100%);border-left:4px solid var(--blue-light);border-radius:8px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+      html += `<div style="padding:12px;background:rgba(255,255,255,0.05);border-left:4px solid var(--green);border-radius:8px;margin-bottom:8px;display:flex;align-items:center;gap:10px;color:#f8fafc;">
         <div style="font-size:1.5rem;">${emoji}</div>
         <div style="flex:1;">
-          <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">${displayName}</div>
-          <div style="font-size:0.8rem;color:var(--text-muted);">Used in GW ${chip.event}</div>
+          <div style="font-weight:700;font-size:0.9rem;color:#f8fafc;">${displayName}</div>
+          <div style="font-size:0.8rem;color:rgba(248,250,252,0.75);">Used in GW ${chip.event}</div>
         </div>
       </div>`;
     }

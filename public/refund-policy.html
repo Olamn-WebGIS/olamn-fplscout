@@ -166,6 +166,11 @@
                 padding: 1.5rem;
             }
         }
+            /* Force readable white text for policy content only (does not affect nav/footer) */
+            .policy-container, .policy-container * { color: #f8fafc !important; }
+            .policy-container a { color: #f8fafc !important; }
+            /* CTA button text should be blue despite the page-wide white override */
+            .policy-container .cta-section a { color: #0070f3 !important; }
     </style>
 </head>
 <body>

@@ -189,6 +189,49 @@
         .faq-item.active p {
             display: block;
         }
+        /* Page-scoped: make contact page content text white but keep form fields readable */
+        .contact-container { color: #f8fafc; }
+        .contact-container, .contact-container > * { color: inherit; }
+        .contact-container a { color: #f8fafc !important; }
+        .contact-container .contact-header p { color: rgba(255,255,255,0.85); }
+        /* Keep form inputs readable (dark text on white background) */
+        .contact-container input,
+        .contact-container textarea {
+            color: var(--text-primary) !important;
+            background: #ffffff !important;
+            border-color: #e2e8f0 !important;
+        }
+        /* Make submit button green */
+        .contact-container .submit-btn {
+            background: var(--green) !important;
+            color: #ffffff !important;
+        }
+        .contact-container .submit-btn:hover { background: var(--green-dark) !important; }
+        /* Ensure headings and FAQ text are visible on dark background */
+        .contact-container .contact-header h1,
+        .contact-container h1,
+        .contact-container h2 { color: #ffffff !important; }
+        .contact-container .contact-info h2,
+        .contact-container .contact-item h3,
+        .contact-container .faq-section h2,
+        .contact-container .faq-item h3 {
+            color: rgba(255,255,255,0.95) !important;
+        }
+        .contact-container .contact-item p,
+        .contact-container .faq-item p {
+            color: rgba(255,255,255,0.82) !important;
+        }
+        .contact-container label {
+            color: rgba(255,255,255,0.95) !important;
+        }
+        .contact-container .contact-item p[style] {
+            color: rgba(255,255,255,0.76) !important;
+        }
+        .contact-container .contact-info,
+        .contact-container .contact-form,
+        .contact-container .faq-item {
+            background: transparent !important;
+        }
         @media (max-width: 768px) {
             .contact-content {
                 grid-template-columns: 1fr;

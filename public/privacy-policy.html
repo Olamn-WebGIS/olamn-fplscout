@@ -80,6 +80,11 @@
       color: var(--text-primary);
       font-weight: 600;
     }
+    /* Force readable white text for policy content only (does not affect nav/footer) */
+    .content-wrapper, .content-wrapper * {
+      color: #f8fafc !important;
+    }
+    .content-wrapper a { color: #f8fafc !important; }
   </style>
 </head>
 <body>

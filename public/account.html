@@ -362,6 +362,36 @@
                 white-space: nowrap;
             }
         }
+
+        /* Account page overrides (profile, security, support) */
+        /* Change text to white and buttons to green — do not modify subscription tab */
+        #tab-profile, #tab-profile *,
+        #tab-security, #tab-security *,
+        #tab-support, #tab-support *,
+        .account-header, .account-header * {
+            color: #f8fafc !important;
+        }
+
+        /* Inputs and selects readable on dark text */
+        #tab-profile input, #tab-profile textarea, #tab-profile select,
+        #tab-security input, #tab-security textarea, #tab-security select,
+        #tab-support input, #tab-support textarea, #tab-support select {
+            color: #f8fafc !important;
+        }
+
+        /* Make buttons green within profile/security/support */
+        #tab-profile .btn, #tab-security .btn, #tab-support .btn, .account-header .btn {
+            background: var(--green) !important;
+            color: #ffffff !important;
+            border-color: var(--green) !important;
+        }
+
+        /* Keep logout button red (btn-danger) even inside security tab */
+        #tab-security .btn-danger {
+            background: #ff4757 !important;
+            color: #ffffff !important;
+            border-color: #ff4757 !important;
+        }
     </style>
 </head>
 <body>

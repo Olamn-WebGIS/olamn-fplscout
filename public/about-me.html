@@ -43,9 +43,9 @@
       gap: 2rem;
       margin-bottom: 3rem;
       padding: 2rem;
-      background: linear-gradient(135deg, rgba(25, 118, 210, 0.08) 0%, rgba(0, 200, 83, 0.08) 100%);
+      background: var(--navy);
       border-radius: 12px;
-      border: 1px solid rgba(25, 118, 210, 0.2);
+      border: 1px solid rgba(255,255,255,0.04);
     }
     .about-photo {
       display: flex;
@@ -130,6 +130,50 @@
         flex-direction: column;
       }
     }
+    /* Page-specific overrides: make About Me content text white and buttons green */
+    .page-wrap, .page-wrap * {
+      color: #f8fafc !important;
+    }
+    /* Ensure links within the page content retain white text */
+    .page-wrap a, .page-wrap a * {
+      color: #f8fafc !important;
+    }
+    /* Make portfolio buttons green */
+    .portfolio-links a {
+      background: var(--green) !important;
+      color: #ffffff !important;
+      border-radius: 6px;
+      text-decoration: none !important;
+    }
+    .portfolio-links a:hover {
+      background: var(--green-dark) !important;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,200,83,0.12);
+    }
+    /* Ensure the role/title text is green despite the global white override */
+    .about-info .title {
+      color: var(--green) !important;
+    }
+    /* Ensure the eyebrow (Creator) is green and the 'Me' in the H1 stays green */
+    .page-wrap .section-eyebrow {
+      color: var(--green) !important;
+    }
+    .page-wrap .display em {
+      color: var(--green) !important;
+    }
+    /* Match home page hero text colors for About Me header */
+    .page-wrap > div[style*="background:var(--navy)"] h1,
+    .page-wrap > div[style*="background:var(--navy)"] .display {
+      color: #fff !important;
+    }
+    .page-wrap > div[style*="background:var(--navy)"] p {
+      color: rgba(255,255,255,0.85) !important;
+    }
+    /* Match footer text color from home page */
+    footer {
+      color: var(--text-on-dark-2) !important;
+    }
+    footer a { color: var(--yellow) !important; }
   </style>
 </head>
 <body>
