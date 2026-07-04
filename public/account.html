@@ -88,11 +88,12 @@
             transition: all 0.3s;
         }
         .tab-btn.active {
-            color: #0070f3;
-            border-bottom-color: #0070f3;
+            color: #ffffff;
+            border-bottom-color: var(--navy);
+            background: rgba(13, 27, 42, 0.3);
         }
         .tab-btn:hover {
-            color: #0070f3;
+            color: var(--navy);
         }
         .tab-content {
             display: none;
@@ -110,7 +111,7 @@
             font-size: 1.3rem;
             margin-bottom: 1.5rem;
             color: var(--text-primary);
-            border-bottom: 2px solid #0070f3;
+            border-bottom: 2px solid var(--navy);
             padding-bottom: 0.75rem;
         }
         .form-group {
@@ -192,11 +193,18 @@
             background: #26de81;
         }
         .subscription-card {
-            background: linear-gradient(135deg, #0070f3 0%, #0052cc 100%);
+            background: var(--navy);
             color: white;
             padding: 2rem;
             border-radius: 8px;
             margin-bottom: 2rem;
+        }
+        .subscription-card .btn-primary {
+            background: var(--green);
+            color: #000;
+        }
+        .subscription-card .btn-primary:hover {
+            background: var(--green-dark);
         }
         .subscription-card h3 {
             font-size: 1.2rem;

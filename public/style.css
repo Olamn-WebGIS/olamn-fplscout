@@ -123,7 +123,7 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 }
 
 .nav-badge {
-  background: var(--green); color: #000;
+  background: var(--navy-light); color: #fff;
   font-size: 0.72rem; font-weight: 700; letter-spacing: 0.6px;
   padding: 0.35rem 0.75rem; border-radius: 20px;
   display: flex; align-items: center; gap: 5px;
@@ -131,7 +131,7 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 }
 .nav-badge::before {
   content: ''; width: 7px; height: 7px; border-radius: 50%;
-  background: #000; animation: blink 1.4s infinite;
+  background: var(--green); animation: blink 1.4s infinite;
 }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 @keyframes glow { 0%,100%{box-shadow:0 0 0 0 rgba(0,200,83,0)} 50%{box-shadow:0 0 10px 2px rgba(0,200,83,0.4)} }
@@ -211,7 +211,10 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 /* ── Layout Containers ──────────────────────────────────────── */
 .page-wrap {
   max-width: var(--max-w); margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 3rem 1.5rem;
+  border-top: 2px solid rgba(255,255,255,0.12);
+  border-bottom: 2px solid rgba(255,255,255,0.12);
+  margin: 1.5rem 0;
 }
 .two-col {
   display: grid;
@@ -385,9 +388,11 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 .affiliate-home-highlight {
   background: var(--navy);
   color: #fff;
-  padding: 2rem 1.5rem;
-  margin: 2rem 1.5rem;
+  padding: 3rem 1.5rem;
+  margin: 1.5rem 1.5rem;
   border-radius: var(--radius-xl);
+  border-top: 2px solid rgba(255,255,255,0.12);
+  border-bottom: 2px solid rgba(255,255,255,0.12);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
@@ -578,7 +583,7 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 
 .tab-btn.active {
   color: var(--text-primary);
-  border-bottom-color: #0070f3;
+  border-bottom-color: var(--navy);
   background: #f8fafc;
 }
 
@@ -823,9 +828,10 @@ table {
 
 .home-latest-blog {
   padding: 3rem 1rem;
-  margin: 4.5rem 0 4rem;
+  margin: 1.5rem 0;
   background: var(--navy-light);
-  border-top: 1px solid rgba(255,255,255,0.08);
+  border-top: 2px solid rgba(255,255,255,0.12);
+  border-bottom: 2px solid rgba(255,255,255,0.12);
 }
 .home-latest-blog-inner {
   max-width: var(--max-w);
@@ -933,13 +939,18 @@ table {
 }
 
 /* Home fixtures horizontal scroller */
-.home-fixtures-preview { padding: 2rem 1rem; background: var(--navy-light); }
+.home-fixtures-preview { 
+  padding: 3rem 1rem;
+  background: var(--navy);
+  border-bottom: 2px solid rgba(255,255,255,0.12);
+  margin: 1.5rem 0;
+}
 .home-fixtures-inner { max-width: var(--max-w); margin: 0 auto; padding: 0 0.5rem; }
 .home-fixtures-header h2 { color: #ffffff; margin: 0; }
 .home-fixtures-header p { color: rgba(255,255,255,0.82); margin: 0; font-size:0.95rem; }
 .fixtures-root { position: relative; }
 .fixture-scroller { display: flex; gap: 1rem; overflow-x: auto; scroll-behavior: smooth; padding: 0.5rem 0; -webkit-overflow-scrolling: touch; }
-.fixture-card { flex: 0 0 auto; width: auto; min-width: 260px; max-width: 420px; background: var(--navy); color: var(--text-on-dark); border-radius: 12px; box-shadow: 0 12px 32px rgba(15,23,42,0.06); padding: 1rem; display:flex; flex-direction:column; gap:0.6rem; min-height:140px; }
+.fixture-card { flex: 0 0 auto; width: auto; min-width: 260px; max-width: 420px; background: var(--navy-light); color: var(--text-on-dark); border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 16px 40px rgba(15,23,42,0.2); padding: 1rem; display:flex; flex-direction:column; gap:0.6rem; min-height:140px; }
 .fixture-card .fixture-competition { font-size:0.85rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.12em; }
 .fixture-card .fixture-teams { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; }
 .fixture-team { display:flex; align-items:center; gap:0.65rem; }
@@ -1165,8 +1176,9 @@ tbody tr.highlight td { background: rgba(0,200,83,0.12); }
 /* ── Hero ───────────────────────────────────────────────────── */
 .hero {
   background: var(--navy);
-  padding: 3rem 1.5rem 2rem;
+  padding: 3rem 1.5rem 0;
   text-align: center;
+  border-bottom: 2px solid rgba(255,255,255,0.12);
 }
 .hero-eyebrow {
   display: inline-flex; align-items: center; gap: 8px;
@@ -1186,11 +1198,12 @@ tbody tr.highlight td { background: rgba(0,200,83,0.12); }
   justify-content: center;
   gap: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e2e8f0;
-  max-width: 900px;
+  padding-bottom: 1.5rem;
+  max-width: 100%;
   margin-left: auto;
   margin-right: auto;
   overflow-x: auto;
+  margin-bottom: 1.5rem;
 }
 .hero-stat {
   display: flex;
@@ -1212,6 +1225,13 @@ tbody tr.highlight td { background: rgba(0,200,83,0.12); }
   color: #ffffff;
   margin-top: 6px;
   white-space: nowrap;
+}
+
+.hero-features {
+  background: var(--navy-mid);
+  padding: 2.5rem 1.5rem;
+  border-bottom: 2px solid rgba(255,255,255,0.12);
+  margin-bottom: 1.5rem;
 }
 
 /* ── Feature cards ──────────────────────────────────────────── */
@@ -1889,7 +1909,9 @@ main { max-width: 100%; overflow-x: hidden; }
 .features-section {
   background: var(--navy-light);
   padding: 3rem 1.5rem;
-  border-top: 1px solid rgba(255,255,255,0.08);
+  border-top: 2px solid rgba(255,255,255,0.12);
+  border-bottom: 2px solid rgba(255,255,255,0.12);
+  margin: 1.5rem 0;
 }
 
 .features-container {
