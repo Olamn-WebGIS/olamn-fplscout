@@ -553,7 +553,7 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 }
 
 .affiliate-note.success {
-  color: #0070f3;
+  color: #00c853;
   font-weight: 600;
 }
 
@@ -1101,6 +1101,7 @@ tbody tr.highlight td { background: rgba(0,200,83,0.12); }
   font-size: 0.7rem; font-weight: 700; color: var(--text-muted);
 }
 .player-avatar img { width: 100%; height: 100%; object-fit: contain; }
+#players-table .player-avatar img { object-fit: cover; object-position: top center; }
 .player-name { font-weight: 800; color: #ffffff; font-size: 0.9rem; }
 .player-club { font-size: 0.75rem; color: rgba(255,255,255,0.75); }
 .pts-cell { font-weight: 800; font-size: 1rem; color: #ffffff; }

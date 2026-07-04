@@ -301,7 +301,7 @@ function showAffiliateCopyStatus(message, isError = false) {
   const status = document.getElementById('affiliate-copy-status');
   if (!status) return;
   status.textContent = message;
-  status.style.color = isError ? '#c02323' : '#00c853';
+  status.className = isError ? 'affiliate-note error' : 'affiliate-note success';
 }
 
 function shareReferralLink() {

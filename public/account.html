@@ -199,6 +199,10 @@
             border-radius: 8px;
             margin-bottom: 2rem;
         }
+        .subscription-status.premium {
+            background: #00c853;
+            color: #000;
+        }
         .subscription-card .btn-primary {
             background: var(--green);
             color: #000;
@@ -879,7 +883,7 @@ document.getElementById('change-email-form').addEventListener('submit', async (e
                 content.innerHTML = `
                     <div class="subscription-card">
                         <h3>Premium Subscription Active ✓</h3>
-                        <div class="subscription-status">${statusText}</div>
+                        <div class="subscription-status premium">${statusText}</div>
                         <div class="subscription-details">
                             <p><strong>Status:</strong> Active</p>
                             <p><strong>Plan:</strong> ₦3,000/month (~$3 USD)</p>
@@ -918,7 +922,7 @@ document.getElementById('change-email-form').addEventListener('submit', async (e
                 `;
             } else {
                 content.innerHTML = `
-                    <div class="subscription-card" style="background: linear-gradient(135deg, #888 0%, #666 100%);">
+                    <div class="subscription-card" style="background: #071f3f;">
                         <h3>Free Tier</h3>
                         <div class="subscription-status">Free Member</div>
                         <div class="subscription-details">
