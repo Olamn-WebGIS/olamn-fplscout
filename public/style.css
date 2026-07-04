@@ -979,7 +979,7 @@ table {
 .home-fixtures-header p { color: rgba(255,255,255,0.82); margin: 0; font-size:0.95rem; }
 .fixtures-root { position: relative; }
 .fixture-scroller { display: flex; gap: 1rem; overflow-x: auto; scroll-behavior: smooth; padding: 0.5rem 0; -webkit-overflow-scrolling: touch; }
-.fixture-card { flex: 0 0 auto; width: auto; min-width: 260px; max-width: 420px; background: var(--navy-light); color: var(--text-on-dark); border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 16px 40px rgba(15,23,42,0.2); padding: 1rem; display:flex; flex-direction:column; gap:0.6rem; min-height:180px; }
+.fixture-card { flex: 0 0 auto; width: auto; min-width: 260px; max-width: 420px; background: var(--navy-light); color: var(--text-on-dark); border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 16px 40px rgba(15,23,42,0.2); padding: 1rem; display:flex; flex-direction:column; gap:0.6rem; min-height:220px; }
 .fixture-card .fixture-competition { font-size:0.85rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.12em; }
 .fixture-card .fixture-teams { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; }
 .fixture-team { display:flex; align-items:center; gap:0.65rem; }
@@ -993,11 +993,13 @@ table {
 .fixture-scroller::-webkit-scrollbar { height:8px; }
 
 @media (max-width: 680px) {
+  .fixture-card:not(.clickable-fixture) { min-height: 220px; }
   .fixture-card.clickable-fixture { min-width: 220px; max-width: 320px; min-height: 180px; padding: 0.85rem; }
   .fixture-card.clickable-fixture .fixture-team .team-name { max-width: 140px; font-size: 0.95rem; }
 }
 
 @media (max-width: 420px) {
+  .fixture-card:not(.clickable-fixture) { min-height: 240px; }
   .fixture-card.clickable-fixture { min-height: 160px; padding: 0.75rem; }
   .fixture-card.clickable-fixture .fixture-team .team-name { max-width: 110px; font-size: 0.9rem; }
 }
