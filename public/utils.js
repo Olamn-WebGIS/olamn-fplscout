@@ -121,7 +121,7 @@ function showToast(msg, type = 'success') {
 function posBadge(pos) {
   const map = { 1:'GKP', 2:'DEF', 3:'MID', 4:'FWD' };
   const cls = { 1:'gkp', 2:'def', 3:'mid', 4:'fwd' };
-  return `<span class="badge badge-${cls[pos]||'mid'}">${map[pos]||'?'}</span>`;
+  return `<span class="badge badge-${cls[pos]||'mid'}" style="color:#ffffff !important;">${map[pos]||'?'}</span>`;
 }
 function posName(pos) { return {1:'GKP',2:'DEF',3:'MID',4:'FWD'}[pos]||'?'; }
 
@@ -132,7 +132,11 @@ function chipLabel(chip) {
 
 /* ── Player photo URL ────────────────────────────────────────── */
 function photoUrl(code) {
-  return `https://resources.premierleague.com/premierleague/photos/players/110x140/p${code}.png`;
+  const normalized = String(code || '')
+    .replace(/\.(jpg|png|jpeg)$/i, '')
+    .replace(/^p/i, '')
+    .padStart(5, '0');
+  return normalized ? `https://resources.premierleague.com/premierleague/photos/players/110x140/p${normalized}.png` : '';
 }
 
 /* ── Team badge URL ─────────────────────────────────────────── */

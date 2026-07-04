@@ -43,7 +43,13 @@
       display: block !important;
     }
     /* Captain / Vice-Captain box styling */
+    #captain-alerts {
+      width: 100%;
+      max-width: 100%;
+    }
     .captain-box {
+      width: 100%;
+      max-width: 100%;
       padding: 14px;
       background: linear-gradient(135deg,#ffd60015 0%,#ffd60005 100%);
       border-left: 4px solid #ffd600;
@@ -56,9 +62,57 @@
     .captain-item { display:flex; align-items:center; gap:10px; }
     .captain-icon { font-size:1.4rem; }
     .captain-stats { font-size:0.95rem; font-weight:700; color:#975a16; }
-    @media (max-width: 640px) {
-      .captain-box { flex-direction:row; justify-content:flex-start; }
-      .captain-stats { margin-left:auto; }
+    @media (max-width: 768px) {
+      #captain-alerts {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+      }
+      .captain-box {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        gap: 10px !important;
+        padding: 12px !important;
+        box-sizing: border-box !important;
+        position: static !important;
+        margin: 0 auto !important;
+      }
+      .captain-item {
+        width: 100% !important;
+        min-width: 0 !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+        align-items: center !important;
+      }
+      .captain-item > div {
+        width: 100% !important;
+        min-width: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 4px !important;
+      }
+      .captain-stats {
+        width: 100% !important;
+        text-align: left !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .captain-box [style*="position:absolute"] {
+        position: static !important;
+        right: auto !important;
+        left: auto !important;
+        top: auto !important;
+        margin-top: 0 !important;
+      }
     }
   </style>
 </head>
@@ -260,18 +314,16 @@
 
   function renderCaptain(bs, picks, currentGW) {
     if (!Array.isArray(picks) || picks.length === 0) return '<p style="color:var(--text-muted)">No captain data available</p>';
-    const captain = picks.find(p => p.is_captain) || picks[0];
-    const vice = picks.find(p => p.is_vice || p.is_vice_captain || p.is_viceCaptain || p.is_vice || p.vice) || null;
+    const captain = picks.find(p => p.is_captain || p.is_captain === 1) || picks[0];
     if (!captain) return '<p style="color:var(--text-muted)">No captain data available</p>';
-    const player = bs.elements.find(e => e.id === (captain.element || captain.id || captain.player));
-    const vicePlayer = vice ? bs.elements.find(e => e.id === (vice.element || vice.id || vice.player)) : null;
-    const playerName = player ? `${player.web_name} · ${bs.teams.find(t => t.id === player.team)?.short_name || '—'}` : `ID ${captain.element || captain.id || 'unknown'}`;
+    const captainId = String(captain.element || captain.id || captain.player || '');
+    const player = bs.elements.find(e => String(e.id) === captainId);
+    const playerName = player ? `${player.web_name} · ${bs.teams.find(t => t.id === player.team)?.short_name || '—'}` : `ID ${captainId || 'unknown'}`;
     const captainPoints = player ? (player.event_points || 0) : 0;
 
     return `<div class="captain-box" style="background:rgba(255,255,255,0.05);border-left-color:#ffd600;">
       <div style="display:flex;flex-direction:column;gap:8px;min-width:0;">
         <div class="captain-item"><div class="captain-icon">🎖</div><div style="min-width:0;"><div style="font-size:0.95rem;font-weight:700;color:#f8fafc;">Captain (GW ${currentGW})</div><div style="font-size:0.82rem;color:rgba(248,250,252,0.75);">${playerName}</div></div></div>
-        ${vicePlayer ? `<div class="captain-item"><div class="captain-icon">👥</div><div style="min-width:0;"><div style="font-size:0.86rem;font-weight:700;color:#f8fafc;">Vice Captain</div><div style="font-size:0.78rem;color:rgba(248,250,252,0.75);">${vicePlayer.web_name} · ${bs.teams.find(t => t.id === vicePlayer.team)?.short_name || '—'}</div></div></div>` : ''}
       </div>
       <div class="captain-stats" style="color:#f8fafc;">${captainPoints}</div>
     </div>`;

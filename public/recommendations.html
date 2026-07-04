@@ -42,18 +42,102 @@
     .card p, .card span, .card small, .card div, .card label { color: rgba(255,255,255,0.92) !important; }
     .card a, .card button { color: inherit !important; }
     .card .filter-tab, .tab-bar .tab-btn { color: rgba(255,255,255,0.85) !important; }
+    .card p, .card small, .card label { color: rgba(255,255,255,0.92) !important; }
+    .card .badge, .card .stat-pill, .card .badge *, .card .stat-pill * { color: #ffffff !important; }
+    .badge, .stat-pill, .pill-blue, .pill-green, .pill-red, .pill-yellow { color: #ffffff !important; }
     .card input, .card select, .card textarea { background: rgba(255,255,255,0.05) !important; color: #ffffff !important; border-color: rgba(255,255,255,0.12) !important; }
     .display { color: #ffffff !important; }
     .display em { color: var(--green) !important; }
     @media (max-width: 768px) {
-      #gw-banner { grid-template-columns: 1fr 1fr !important; gap: 1rem !important; }
-      #gw-banner > div:nth-child(2), #gw-banner > div:nth-child(4), #gw-banner > div:nth-child(6) { display: none !important; }
-      #gw-banner > div:last-child { grid-column: 1 / -1; margin-top: 1rem; }
+      #gw-banner { grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr) 1px minmax(0, 1fr) 1px minmax(0, 1fr) auto !important; gap: 0.35rem !important; padding: 0.65rem !important; align-items: center !important; }
+      #gw-banner > div { width: 100% !important; min-width: 0 !important; padding: 0.15rem 0 !important; }
+      #gw-banner > div:nth-child(2), #gw-banner > div:nth-child(4), #gw-banner > div:nth-child(6) { display: block !important; background: rgba(255,255,255,0.15) !important; width: 1px !important; min-width: 1px !important; height: auto !important; margin: 0 !important; }
+      #gw-banner > div:not(:nth-child(2)):not(:nth-child(4)):not(:nth-child(6)):not(:last-child) { display: flex !important; flex-direction: column !important; justify-content: center !important; gap: 0.1rem !important; }
+      #gw-banner .section-eyebrow { font-size: 0.55rem !important; letter-spacing: 0.14em !important; margin-bottom: 0.08rem !important; }
+      #gw-banner #cur-gw-label,
+      #gw-banner #cur-deadline,
+      #gw-banner #cur-avg,
+      #gw-banner #cur-top { font-size: 0.85rem !important; line-height: 1.1 !important; }
+      #gw-banner #cur-deadline { font-size: 0.8rem !important; }
+      #gw-banner .nav-badge { font-size: 0.6rem !important; padding: 0.18rem 0.45rem !important; min-width: auto !important; }
+      #gw-banner > div:last-child { grid-column: 8 !important; justify-content: flex-end !important; align-items: center !important; }
     }
     @media (max-width: 480px) {
-      #gw-banner { grid-template-columns: 1fr !important; padding: 1rem !important; }
-      #gw-banner > div:last-child { grid-column: 1; margin-top: 1rem; }
+      #gw-banner { grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr) 1px minmax(0, 1fr) 1px minmax(0, 1fr) auto !important; padding: 0.55rem !important; gap: 0.25rem !important; }
+      #gw-banner > div { padding: 0.1rem 0 !important; }
+      #gw-banner .section-eyebrow { font-size: 0.5rem !important; }
+      #gw-banner #cur-gw-label,
+      #gw-banner #cur-deadline,
+      #gw-banner #cur-avg,
+      #gw-banner #cur-top { font-size: 0.78rem !important; }
+      #gw-banner .nav-badge { font-size: 0.58rem !important; padding: 0.16rem 0.4rem !important; }
     }
+    .nav-badge.header-live-badge { display: inline-flex !important; }
+
+    @media (max-width: 768px) {
+      #captain-cards .player-avatar img,
+      #transfers-list .player-avatar img,
+      #diff-list .player-avatar img {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        object-fit: cover !important;
+        object-position: top center !important;
+      }
+      #captain-cards .player-avatar,
+      #transfers-list .player-avatar,
+      #diff-list .player-avatar {
+        width: 44px !important;
+        height: 44px !important;
+      }
+      #captain-cards .stat-pill,
+      #captain-cards .badge,
+      #transfers-list .stat-pill,
+      #transfers-list .badge,
+      #diff-list .stat-pill,
+      #diff-list .badge {
+        color: #ffffff !important;
+      }
+      #captain-cards .player-meta-sub,
+      #captain-cards p,
+      #captain-cards div[style*="color:rgba(255,255,255,0.75)"] ,
+      #transfers-list .player-meta-sub,
+      #transfers-list p,
+      #transfers-list div[style*="color:rgba(255,255,255,0.75)"] ,
+      #diff-list .player-meta-sub,
+      #diff-list p,
+      #diff-list div[style*="color:rgba(255,255,255,0.75)"] ,
+      #cap-gw,
+      #cur-deadline,
+      #cur-avg,
+      #cur-top {
+        color: #ffffff !important;
+      }
+      #captain-cards *[style*="color:rgba(255,255,255,0.75)"],
+      #transfers-list *[style*="color:rgba(255,255,255,0.75)"],
+      #diff-list *[style*="color:rgba(255,255,255,0.75)"] {
+        color: #ffffff !important;
+      }
+    }
+    @media (max-width: 768px) {
+      .stat-pill,
+      .badge,
+      .pill-blue,
+      .pill-green,
+      .pill-red,
+      .pill-yellow {
+        color: #ffffff !important;
+      }
+      .card .badge,
+      .card .stat-pill,
+      .card .badge *,
+      .card .stat-pill * {
+        color: #ffffff !important;
+      }
+    }
+
+
   </style>
 </head>
 <body>
@@ -79,7 +163,7 @@
       <div style="height:50px;background:rgba(255,255,255,0.2);"></div>
       <div style="display:flex;flex-direction:column;justify-content:center;"><div class="section-eyebrow">Top Score</div><div style="font-size:1.5rem;font-weight:800;font-family:'Barlow Condensed',sans-serif;" id="cur-top">—</div></div>
       <div style="margin-left:auto;display:flex;align-items:center;">
-        <span class="nav-badge" style="font-size:0.75rem;">LIVE DATA</span>
+        <span class="nav-badge header-live-badge" style="font-size:0.75rem;">LIVE DATA</span>
       </div>
     </div>
 
@@ -237,11 +321,11 @@ function playerCard(p, teams, showOwn = true, extra = '') {
     </div>
     <div style="flex:1;">
       <div style="font-weight:700;font-size:0.9rem;">${p.web_name}</div>
-      <div style="font-size:0.75rem;color:rgba(255,255,255,0.75);">${team?team.name:''} · £${(p.now_cost/10).toFixed(1)}m</div>
+      <div style="font-size:0.75rem;color:#ffffff;">${team?team.name:''} · £${(p.now_cost/10).toFixed(1)}m</div>
     </div>
     <div style="text-align:right;">
       ${posBadge(p.element_type)}
-      ${showOwn ? `<div style="font-size:0.72rem;color:rgba(255,255,255,0.75);margin-top:3px;">${p.selected_by_percent}% own</div>` : ''}
+      ${showOwn ? `<div style="font-size:0.72rem;color:#ffffff;margin-top:3px;">${p.selected_by_percent}% own</div>` : ''}
       ${extra}
     </div>
   </div>`;
@@ -265,7 +349,7 @@ function renderCaptainPicks() {
       </div>
       <div style="flex:1;">
         <div style="font-weight:700;">${p.web_name}</div>
-        <div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">${(bsData.teams.find(t=>t.id===p.team)||{}).name||''} · £${(p.now_cost/10).toFixed(1)}m</div>
+        <div style="font-size:0.78rem;color:#ffffff;">${(bsData.teams.find(t=>t.id===p.team)||{}).name||''} · £${(p.now_cost/10).toFixed(1)}m</div>
         <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;">
           ${posBadge(p.element_type)}
           <span class="stat-pill pill-blue">Form: ${p.form}</span>
@@ -274,8 +358,8 @@ function renderCaptainPicks() {
       </div>
       <div style="text-align:right;flex-shrink:0;">
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:800;color:#7ef3b9;">${score}</div>
-        <div style="font-size:0.7rem;color:rgba(255,255,255,0.75);">pred. score</div>
-        <div style="font-size:0.72rem;margin-top:3px;color:rgba(255,255,255,0.75);">${p.selected_by_percent}% own</div>
+        <div style="font-size:0.7rem;color:#ffffff;">pred. score</div>
+        <div style="font-size:0.72rem;margin-top:3px;color:#ffffff;">${p.selected_by_percent}% own</div>
       </div>
     </div>`;
   }).join('');
@@ -294,7 +378,7 @@ function renderTransfers(pos) {
 
   document.getElementById('transfers-list').innerHTML = list.map(p =>
     playerCard(p, bsData.teams, true,
-      `<div style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;color:#96caff;">${Number(p.ep_next).toFixed(1)}</div><div style="font-size:0.7rem;color:rgba(255,255,255,0.75);">ep next</div>`)
+      `<div style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;color:#96caff;">${Number(p.ep_next).toFixed(1)}</div><div style="font-size:0.7rem;color:#ffffff;">ep next</div>`)
   ).join('');
 }
 
@@ -314,13 +398,13 @@ function renderDifferentials() {
         </div>
         <div>
           <div style="font-weight:700;font-size:0.85rem;">${p.web_name}</div>
-          <div style="font-size:0.72rem;color:rgba(255,255,255,0.75);">${(bsData.teams.find(t=>t.id===p.team)||{}).short_name||''} · £${(p.now_cost/10).toFixed(1)}m</div>
+          <div style="font-size:0.72rem;color:#ffffff;">${(bsData.teams.find(t=>t.id===p.team)||{}).short_name||''} · £${(p.now_cost/10).toFixed(1)}m</div>
         </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
         ${posBadge(p.element_type)}
         <span class="stat-pill ${own < 5 ? 'pill-green' : 'pill-blue'}">${own}% own</span>
-        <span class="diff-pts-up" style="color:rgba(255,255,255,0.85);">Form ${p.form}</span>
+        <span class="diff-pts-up" style="color:#ffffff;">Form ${p.form}</span>
       </div>
     </div>`;
   }).join('');
@@ -338,7 +422,7 @@ function renderChipGuide(cur) {
       <div style="font-size:2rem;flex-shrink:0;">${c.emoji}</div>
       <div>
         <div style="font-weight:700;margin-bottom:4px;">${c.name} <span class="stat-pill pill-${c.timing.includes('Save')?'yellow':'green'}" style="font-size:0.7rem;">${c.timing}</span></div>
-        <div style="font-size:0.82rem;color:rgba(255,255,255,0.75);line-height:1.5;">${c.desc}</div>
+        <div style="font-size:0.82rem;color:#ffffff;line-height:1.5;">${c.desc}</div>
       </div>
     </div>`
   ).join('');
@@ -350,12 +434,12 @@ function renderPriceChanges() {
 
   const priceRow = (p, dir) =>
     `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.12);font-size:0.83rem;color:#ffffff;">
-      <div><span style="font-weight:600;">${p.web_name}</span> <span style="font-size:0.72rem;color:rgba(255,255,255,0.75);">£${(p.now_cost/10).toFixed(1)}m</span></div>
+      <div><span style="font-weight:600;">${p.web_name}</span> <span style="font-size:0.72rem;color:#ffffff;">£${(p.now_cost/10).toFixed(1)}m</span></div>
       <span class="stat-pill ${dir==='up'?'pill-green':'pill-red'}">${dir==='up'?'+':''}${(p.cost_change_event/10).toFixed(1)}m</span>
     </div>`;
 
-  document.getElementById('price-risers').innerHTML  = risers.length  ? risers.map(p  => priceRow(p,'up')).join('')   : '<p style="font-size:0.82rem;color:rgba(255,255,255,0.75);padding:8px 0;">No price rises this GW.</p>';
-  document.getElementById('price-fallers').innerHTML = fallers.length ? fallers.map(p => priceRow(p,'down')).join('') : '<p style="font-size:0.82rem;color:rgba(255,255,255,0.75);padding:8px 0;">No price falls this GW.</p>';
+  document.getElementById('price-risers').innerHTML  = risers.length  ? risers.map(p  => priceRow(p,'up')).join('')   : '<p style="font-size:0.82rem;color:#ffffff;padding:8px 0;">No price rises this GW.</p>';
+  document.getElementById('price-fallers').innerHTML = fallers.length ? fallers.map(p => priceRow(p,'down')).join('') : '<p style="font-size:0.82rem;color:#ffffff;padding:8px 0;">No price falls this GW.</p>';
 }
 
 /* ── Tab switching ────────────────────────────────────────────── */
