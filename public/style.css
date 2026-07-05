@@ -245,7 +245,7 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 /* ── Affiliate History Table ─────────────────────────────── */
 .affiliate-history-table-wrap {
   overflow-x: auto;
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 12px;
   background: var(--navy);
 }
@@ -257,16 +257,16 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 }
 
 .affiliate-history-table th,
-.affiliate-history-table td {
-  padding: 0.9rem 1rem;
-  text-align: left;
-  border-bottom: 1px solid #eef2f7;
-}
-
 .affiliate-history-table thead {
-  background: #f8fafc;
+  background: var(--navy-light);
 }
-
+.affiliate-history-table th {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-on-dark);
+}
 .affiliate-history-table th {
   font-size: 0.85rem;
   font-weight: 700;
