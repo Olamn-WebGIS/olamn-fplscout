@@ -166,7 +166,7 @@ function showAffiliateJoinStatus(message, isError = false) {
   const status = document.getElementById('affiliate-join-status');
   if (!status) return;
   status.textContent = message;
-  status.style.color = isError ? '#c02323' : '#0070f3';
+  status.className = isError ? 'affiliate-note error' : 'affiliate-note success';
 }
 
 function showAffiliatePageStatus(message, isError = false) {
@@ -516,7 +516,7 @@ async function loadAffiliateDashboard() {
 
   if (status) {
     status.textContent = '';
-    status.style.color = '';
+    status.classList.remove('error', 'success');
   }
 
   if (balanceElem) balanceElem.textContent = 'Loading...';
