@@ -53,8 +53,10 @@ let editingPostSlug = null;
 let existingSlugs = new Set();
 
 function showStatus(element, message, success = true) {
+  if (!element) return;
   element.textContent = message;
-  element.style.color = success ? '#0070f3' : '#c02323';
+  element.classList.remove('text-error', 'text-success');
+  element.classList.add(success ? 'text-success' : 'text-error');
 }
 
 function normalizeUrl(url) {

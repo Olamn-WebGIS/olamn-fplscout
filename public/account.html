@@ -709,7 +709,7 @@ async function sendEmailChangeOTP() {
 
         otpLabel.style.display = 'block';
         otpLabel.textContent = "Please enter the OTP sent to your new email address.";
-        otpLabel.style.color = "";
+        otpLabel.classList.remove('text-error','text-success');
 
         otpInput.style.display = 'block';
         otpInput.required = true;
@@ -737,7 +737,7 @@ document.getElementById('change-email-form').addEventListener('submit', async (e
     if (!otpValue) {
         if (otpLabel) {
             otpLabel.textContent = "⚠️ Fill in your OTP code to proceed!";
-            otpLabel.style.color = "#ef4444";
+            otpLabel.classList.add('text-error');
         }
         return;
     }
@@ -753,7 +753,7 @@ document.getElementById('change-email-form').addEventListener('submit', async (e
         if (!data.success) {
             if (otpLabel) {
                 otpLabel.textContent = data.message || 'Invalid OTP. Please try again.';
-                otpLabel.style.color = '#ef4444';
+                otpLabel.classList.add('text-error');
             }
             return;
         }
