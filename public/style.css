@@ -565,7 +565,8 @@ h4 { font-size: 0.95rem; font-weight: 600; }
   padding: 0.9rem 1rem;
   border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 0.85rem;
-  background: #fff;
+  background: var(--navy-light);
+  color: var(--text-on-dark);
 }
 
 .affiliate-note {
@@ -984,7 +985,7 @@ table {
 .fixture-card .fixture-teams { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; }
 .fixture-team { display:flex; align-items:center; gap:0.65rem; }
 .fixture-team .team-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
-.fixture-team-logo { width:44px; height:44px; object-fit:contain; border-radius:50%; background:#fff; padding:4px; border:1px solid rgba(13,27,42,0.06); }
+.fixture-team-logo { width:44px; height:44px; object-fit:contain; border-radius:50%; background: var(--navy); padding:4px; border:1px solid rgba(13,27,42,0.06); }
 .fixture-card .time { color: var(--text-on-dark-2); font-size:0.9rem; }
 .fixture-card .fixture-action { margin-top:auto; display:flex; justify-content:flex-end; }
 .fixture-empty { padding:1rem; color:var(--text-secondary); }
