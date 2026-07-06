@@ -603,6 +603,8 @@ async function startEditPost(id, slug) {
     document.getElementById('post-title').value = post.title;
     document.getElementById('post-slug').value = post.slug;
     document.getElementById('post-summary').value = post.summary;
+    document.getElementById('post-reel').value = post.reel_link || '';
+    document.getElementById('post-image-alt').value = post.image_alt || '';
     quill.root.innerHTML = post.content;
     editingPostId = id;
     editingPostSlug = post.slug;
@@ -638,6 +640,8 @@ function resetEditorState() {
   document.getElementById('post-title').value = '';
   document.getElementById('post-slug').value = '';
   document.getElementById('post-summary').value = '';
+  document.getElementById('post-reel').value = '';
+  document.getElementById('post-image-alt').value = '';
   if (quill) quill.root.innerHTML = '';
   editingPostId = null;
   editingPostSlug = null;

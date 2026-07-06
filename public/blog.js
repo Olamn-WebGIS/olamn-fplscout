@@ -16,6 +16,32 @@ function normalizeUrl(url) {
   return `https://${trimmed}`;
 }
 
+function renderVideoEmbed(url) {
+  const normalizedUrl = normalizeUrl(url);
+  if (!normalizedUrl) return '';
+
+  try {
+    const parsedUrl = new URL(normalizedUrl);
+    const isFacebookHost = ['www.facebook.com', 'facebook.com', 'm.facebook.com'].includes(parsedUrl.hostname);
+    if (!isFacebookHost) return '';
+
+    const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(normalizedUrl)}&show_text=0&width=560`;
+    return `
+      <div class="blog-video-embed-wrapper">
+        <iframe
+          class="blog-video-embed"
+          src="${embedUrl}"
+          loading="lazy"
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+          allowfullscreen
+          title="Embedded Facebook video"
+        ></iframe>
+      </div>`;
+  } catch (error) {
+    return '';
+  }
+}
+
 async function fetchPosts() {
   const res = await fetch('/api/posts');
   if (!res.ok) throw new Error('Unable to load posts');
@@ -45,10 +71,6 @@ function createPostCard(post) {
   const imgWrap = document.createElement('div');
   if (post.image_url) {
     imgWrap.style.textAlign = 'center';
-    const a = document.createElement('a');
-    a.href = normalizeUrl(post.reel_link) || '#';
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
     const img = document.createElement('img');
     img.src = post.image_url;
     img.alt = post.image_alt || post.title || 'Featured image';
@@ -56,8 +78,7 @@ function createPostCard(post) {
     img.style.maxWidth = '100%';
     img.style.height = 'auto';
     img.className = 'blog-featured-list';
-    a.appendChild(img);
-    imgWrap.appendChild(a);
+    imgWrap.appendChild(img);
   }
 
   const actions = document.createElement('div');
@@ -105,7 +126,8 @@ function renderPost(post) {
       <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span></div>
       <p style="font-size:1rem;color:#555;">${post.summary}</p>
       <div>${post.content}</div>
-      ${post.image_url ? `<div style="text-align:center;margin:1rem 0;"><a href="${normalizeUrl(post.reel_link) || '#'}" target="_blank" rel="noopener noreferrer"><img src="${post.image_url}" alt="${(post.image_alt||post.title||'Featured image').replace(/"/g,'') }" loading="lazy" style="max-width:100%;height:auto;" /></a></div>` : ''}
+      ${renderVideoEmbed(post.reel_link)}
+      ${post.image_url ? `<div style="text-align:center;margin:1rem 0;"><img src="${post.image_url}" alt="${(post.image_alt||post.title||'Featured image').replace(/"/g,'') }" loading="lazy" style="max-width:100%;height:auto;" /></div>` : ''}
       <div class="blog-actions blog-actions-minimal">
         <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}','${encodeURIComponent(post.image_url || '')}')">🔗<span>Share</span></button>
         <button class="btn-icon" id="like-button" onclick="toggleLike('${post.slug}')">❤️<span id="like-count">${post.likes || 0}</span></button>

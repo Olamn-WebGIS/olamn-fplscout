@@ -11,6 +11,7 @@ const nodemailer = require('nodemailer');
 const sanitizeHtml = require('sanitize-html');
 const { createClient } = require('@supabase/supabase-js');
 const { calculateAvailableAffiliateBalance } = require('./affiliate-balance');
+const { buildResponsiveVideoEmbedMarkup } = require('./blog-embed-utils');
 require('dotenv').config(); // Load environment variables
 
 const app = express();
@@ -785,7 +786,7 @@ app.get(['/blog', '/blog/'], async (req, res) => {
           <h2><a href="/blog/${post.slug}">${post.title}</a></h2>
           <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span><span>${post.likes || 0} likes</span></div>
           <p>${post.summary}</p>
-          ${post.image_url ? `<div style="margin-bottom:1rem;text-align:center;"><a href="${normalizedPreviewLink}" target="_blank" rel="noopener noreferrer"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g,'')}" style="max-width:100%;height:auto;border-radius:14px;" loading="lazy" /></a></div>` : ''}
+          ${post.image_url ? `<div style="margin-bottom:1rem;text-align:center;"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g,'')}" style="max-width:100%;height:auto;border-radius:14px;" loading="lazy" /></div>` : ''}
           <div class="blog-actions">
             <a href="/blog/${post.slug}" class="blog-read-link">Read full article</a>
             <button class="btn-icon btn-share-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">Share 🔗</button>
@@ -844,13 +845,15 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
     }
 
     const normalizedReelLink = normalizeUrlForRendering(post.reel_link);
+    const embedMarkup = buildResponsiveVideoEmbedMarkup(normalizedReelLink || post.reel_link);
     const staticContent = `
       <div class="blog-post" id="blog-article">
         <h1>${post.title}</h1>
         <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span></div>
         <p style="font-size:1rem;color:#555;">${post.summary}</p>
         <div>${post.content.replace(/\n/g, '<br>')}</div>
-        ${post.image_url ? `<div style="text-align:center;margin:1.5rem 0;"><a href="${normalizedReelLink || '#'}" target="_blank" rel="noopener noreferrer"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g,'')}" loading="lazy" style="max-width:100%;height:auto;border-radius:14px;" /></a></div>` : ''}
+        ${embedMarkup ? `<div class="blog-embed-section">${embedMarkup}</div>` : ''}
+        ${post.image_url ? `<div style="text-align:center;margin:1.5rem 0;"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g,'')}" loading="lazy" style="max-width:100%;height:auto;border-radius:14px;" /></div>` : ''}
         <div class="blog-actions blog-actions-minimal">
           <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">🔗<span>Share</span></button>
           <button class="btn-icon" id="like-button" onclick="toggleLike('${post.slug}')">❤️<span id="like-count">${typeof post.likes === 'number' ? post.likes : 0}</span></button>
