@@ -16,25 +16,78 @@ function normalizeUrl(url) {
   return `https://${trimmed}`;
 }
 
+function getYouTubeVideoId(parsedUrl) {
+  if (!parsedUrl) return '';
+  const host = parsedUrl.hostname.toLowerCase();
+
+  if (host === 'youtu.be') {
+    return parsedUrl.pathname.slice(1);
+  }
+
+  if (host === 'www.youtube.com' || host === 'youtube.com') {
+    if (parsedUrl.pathname === '/watch') {
+      return parsedUrl.searchParams.get('v') || '';
+    }
+    if (parsedUrl.pathname.startsWith('/shorts/')) {
+      return parsedUrl.pathname.split('/')[2] || '';
+    }
+    if (parsedUrl.pathname.startsWith('/embed/')) {
+      return parsedUrl.pathname.split('/')[2] || '';
+    }
+  }
+
+  return '';
+}
+
+function getEmbedWrapperClass(url) {
+  if (!url) return 'blog-video-embed-wrapper';
+
+  try {
+    const parsedUrl = new URL(normalizeUrl(url));
+    if (/\/reel\/|\/reels\//i.test(parsedUrl.pathname)) {
+      return 'blog-video-embed-wrapper blog-video-embed-wrapper--vertical';
+    }
+    return 'blog-video-embed-wrapper';
+  } catch (error) {
+    return 'blog-video-embed-wrapper';
+  }
+}
+
 function renderVideoEmbed(url) {
   const normalizedUrl = normalizeUrl(url);
   if (!normalizedUrl) return '';
 
   try {
     const parsedUrl = new URL(normalizedUrl);
-    const isFacebookHost = ['www.facebook.com', 'facebook.com', 'm.facebook.com'].includes(parsedUrl.hostname);
-    if (!isFacebookHost) return '';
+    const host = parsedUrl.hostname.toLowerCase();
+    const facebookHosts = ['www.facebook.com', 'facebook.com', 'm.facebook.com'];
+    const youtubeHosts = ['www.youtube.com', 'youtube.com', 'youtu.be'];
 
-    const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(normalizedUrl)}&show_text=0&width=560`;
+    let embedUrl = '';
+    let title = 'Embedded video';
+
+    if (facebookHosts.includes(host)) {
+      embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(normalizedUrl)}&show_text=0&width=560`;
+      title = 'Embedded Facebook video';
+    } else if (youtubeHosts.includes(host)) {
+      const videoId = getYouTubeVideoId(parsedUrl);
+      if (!videoId) return '';
+      embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&showinfo=0`;
+      title = 'Embedded YouTube video';
+    } else {
+      return '';
+    }
+
+    const wrapperClass = getEmbedWrapperClass(url);
     return `
-      <div class="blog-video-embed-wrapper">
+      <div class="${wrapperClass}">
         <iframe
           class="blog-video-embed"
           src="${embedUrl}"
           loading="lazy"
           allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
           allowfullscreen
-          title="Embedded Facebook video"
+          title="${title}"
         ></iframe>
       </div>`;
   } catch (error) {
@@ -126,8 +179,8 @@ function renderPost(post) {
       <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span></div>
       <p style="font-size:1rem;color:#555;">${post.summary}</p>
       <div>${post.content}</div>
-      ${renderVideoEmbed(post.reel_link)}
       ${post.image_url ? `<div style="text-align:center;margin:1rem 0;"><img src="${post.image_url}" alt="${(post.image_alt||post.title||'Featured image').replace(/"/g,'') }" loading="lazy" style="max-width:100%;height:auto;" /></div>` : ''}
+      ${renderVideoEmbed(post.reel_link)}
       <div class="blog-actions blog-actions-minimal">
         <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}','${encodeURIComponent(post.image_url || '')}')">🔗<span>Share</span></button>
         <button class="btn-icon" id="like-button" onclick="toggleLike('${post.slug}')">❤️<span id="like-count">${post.likes || 0}</span></button>

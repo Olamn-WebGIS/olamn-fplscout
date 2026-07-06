@@ -852,8 +852,8 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
         <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span></div>
         <p style="font-size:1rem;color:#555;">${post.summary}</p>
         <div>${post.content.replace(/\n/g, '<br>')}</div>
-        ${embedMarkup ? `<div class="blog-embed-section">${embedMarkup}</div>` : ''}
         ${post.image_url ? `<div style="text-align:center;margin:1.5rem 0;"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g,'')}" loading="lazy" style="max-width:100%;height:auto;border-radius:14px;" /></div>` : ''}
+        ${embedMarkup ? `<div class="blog-embed-section">${embedMarkup}</div>` : ''}
         <div class="blog-actions blog-actions-minimal">
           <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">🔗<span>Share</span></button>
           <button class="btn-icon" id="like-button" onclick="toggleLike('${post.slug}')">❤️<span id="like-count">${typeof post.likes === 'number' ? post.likes : 0}</span></button>
