@@ -244,7 +244,7 @@
         // Validate video file size (23MB max)
         const maxSize = 23 * 1024 * 1024;
         if (videoFile.size > maxSize) {
-          messageBox.textContent = 'Video file is too large. Maximum size is 23MB. Please compress or trim your video.';
+          messageBox.textContent = 'Video file is too large. Maximum size is 23MB.';
           submitBtn.disabled = false;
           return;
         }
@@ -257,38 +257,76 @@
           return;
         }
 
-        // Check if file is too large for Vercel (>5MB) and warn user
-        if (videoFile.size > 5 * 1024 * 1024) {
-          messageBox.textContent = 'Video is large. Sending may take longer...';
-        }
-
-        // Send application data to API (without video file - it will be handled by backend)
-        messageBox.textContent = 'Submitting application...';
-        const formData = new FormData(form);
-        
-        const response = await fetch('/api/careers/apply', {
+        // Step 1: Request upload URL from server
+        messageBox.textContent = 'Generating upload link...';
+        const urlResponse = await fetch('/api/careers/get-upload-url', {
           method: 'POST',
-          body: formData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: videoFile.name }),
         });
 
-        if (!response.ok) {
-          const contentType = response.headers.get('content-type');
-          let errorMsg = `Error: ${response.status}`;
+        if (!urlResponse.ok) {
+          const errorData = await urlResponse.json().catch(() => ({}));
+          messageBox.textContent = errorData.message || 'Failed to generate upload link.';
+          submitBtn.disabled = false;
+          return;
+        }
+
+        const { uploadUrl, publicUrl } = await urlResponse.json();
+
+        // Step 2: Upload video directly to Supabase using signed URL
+        messageBox.textContent = `Uploading video (${(videoFile.size / 1024 / 1024).toFixed(1)}MB)...`;
+        
+        const uploadResponse = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': videoFile.type,
+          },
+          body: videoFile,
+        });
+
+        if (!uploadResponse.ok) {
+          messageBox.textContent = 'Video upload failed. Please try again.';
+          submitBtn.disabled = false;
+          console.error('Upload error:', uploadResponse.status, uploadResponse.statusText);
+          return;
+        }
+
+        // Step 3: Submit application with video URL
+        messageBox.textContent = 'Submitting application...';
+        const applicationResponse = await fetch('/api/careers/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            email,
+            phone,
+            has_experience: hasExperience,
+            accepted_terms: acceptedTerms ? 'true' : 'false',
+            video_url: publicUrl,
+            video_name: videoFile.name,
+            notes,
+          }),
+        });
+
+        if (!applicationResponse.ok) {
+          const contentType = applicationResponse.headers.get('content-type');
+          let errorMsg = `Error: ${applicationResponse.status}`;
           if (contentType && contentType.includes('application/json')) {
             try {
-              const errorData = await response.json();
+              const errorData = await applicationResponse.json();
               errorMsg = errorData.message || errorMsg;
             } catch (e) {
-              errorMsg = `Server error: ${response.status}`;
+              errorMsg = `Server error: ${applicationResponse.status}`;
             }
           }
           messageBox.textContent = errorMsg;
           submitBtn.disabled = false;
-          console.error('Response:', response.status, errorMsg);
+          console.error('Response:', applicationResponse.status, errorMsg);
           return;
         }
 
-        const result = await response.json();
+        const result = await applicationResponse.json();
         messageBox.textContent = result.message || 'Application submitted successfully!';
         if (result.success) {
           form.reset();

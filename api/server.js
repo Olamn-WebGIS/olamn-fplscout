@@ -185,8 +185,8 @@ async function sendCareerApplicationEmail(applicant, videoFile) {
       <p><strong>Email:</strong> ${applicant.email}</p>
       <p><strong>Phone:</strong> ${applicant.phone || 'Not provided'}</p>
       <p><strong>Experience:</strong> ${applicant.has_experience === 'yes' ? 'Yes' : 'No'}</p>
-      <p><strong>Terms Accepted:</strong> ${applicant.accepted_terms === 'true' ? 'Yes' : 'No'}</p>
-      <p><strong>Video:</strong> ${applicant.video_name || 'Attached'}</p>
+      <p><strong>Terms Accepted:</strong> ${applicant.accepted_terms === 'true' || applicant.accepted_terms === true ? 'Yes' : 'No'}</p>
+      <p><strong>Video:</strong> <a href="${applicant.video_url}">${applicant.video_url}</a></p>
     </div>
   `;
 
@@ -197,7 +197,7 @@ async function sendCareerApplicationEmail(applicant, videoFile) {
     html,
   };
 
-  // Attach video file if provided
+  // Attach video file only if provided (legacy support)
   if (videoFile) {
     mailOptions.attachments = [{
       filename: applicant.video_name || 'video.mp4',
@@ -234,27 +234,56 @@ async function sendCareerStatusEmail(applicant, status) {
   }
 }
 
-app.post('/api/careers/apply', careerUpload.single('video'), async (req, res) => {
+app.post('/api/careers/get-upload-url', async (req, res) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(500).json({ success: false, message: 'Storage not configured.' });
+    }
+
+    const { fileName } = req.body || {};
+    if (!fileName) {
+      return res.status(400).json({ success: false, message: 'Missing fileName.' });
+    }
+
+    // Generate a safe file path
+    const sanitized = String(fileName || 'video').replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storagePath = `careers/${Date.now()}-${sanitized}`;
+
+    // Create a signed upload URL valid for 1 hour
+    const { data, error } = await supabaseAdmin.storage
+      .from('careers-videos')
+      .createSignedUploadUrl(storagePath);
+
+    if (error) {
+      console.error('Supabase signed URL error:', error);
+      return res.status(500).json({ success: false, message: 'Could not generate upload URL.' });
+    }
+
+    // Get public URL for the file (after upload)
+    const { data: publicData } = supabaseAdmin.storage
+      .from('careers-videos')
+      .getPublicUrl(storagePath);
+
+    return res.json({
+      success: true,
+      uploadUrl: data.signedUrl,
+      publicUrl: publicData.publicUrl,
+      storagePath: storagePath,
+    });
+  } catch (error) {
+    console.error('Upload URL generation failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to generate upload URL.' });
+  }
+});
+
+app.post('/api/careers/apply', async (req, res) => {
   try {
     if (!isCareerSubmissionOpen(new Date())) {
       return res.status(403).json({ success: false, message: 'Applications are now closed. The deadline was August 1, 2026.' });
     }
 
-    // Handle both multipart and JSON requests
-    let name, email, phone, has_experience, accepted_terms, video_url, storage_path, video_name, notes;
-
-    if (req.file) {
-      // Multipart form data upload with video file
-      ({ name, email, phone, has_experience, accepted_terms, notes } = req.body || {});
-      video_name = req.file.originalname;
-      
-      // Don't upload to Supabase - instead, we'll attach to email
-      video_url = null;
-      storage_path = null;
-    } else {
-      // JSON request (video already handled separately)
-      ({ name, email, phone, has_experience, accepted_terms, video_url, storage_path, video_name, notes } = req.body || {});
-    }
+    // Only JSON request now (video already uploaded to Supabase)
+    const { name, email, phone, has_experience, accepted_terms, video_url, video_name, notes } = req.body || {};
 
     const trimmedName = String(name || '').trim();
     const trimmedEmail = normalizeEmail(email);
@@ -272,7 +301,7 @@ app.post('/api/careers/apply', careerUpload.single('video'), async (req, res) =>
       return res.status(400).json({ success: false, message: 'Please answer whether you have at least 1 year of experience.' });
     }
 
-    if (!req.file && !video_url) {
+    if (!video_url) {
       return res.status(400).json({ success: false, message: 'Please upload a video sample.' });
     }
 
@@ -284,8 +313,8 @@ app.post('/api/careers/apply', careerUpload.single('video'), async (req, res) =>
       has_experience: String(has_experience || '').toLowerCase(),
       accepted_terms: String(accepted_terms || '').toLowerCase() === 'true' || accepted_terms === true,
       video_name: video_name || 'video',
-      video_url: video_url || 'Attached to email',
-      storage_path: storage_path || null,
+      video_url: video_url,
+      storage_path: null,
       status: 'Pending',
       submitted_at: new Date().toISOString(),
       access_token: crypto.randomBytes(8).toString('hex'),
@@ -293,8 +322,9 @@ app.post('/api/careers/apply', careerUpload.single('video'), async (req, res) =>
 
     const persistedApplicant = await persistCareerApplicant(applicant);
     
-    // Send email with video file attached instead of uploading to Supabase
-    await sendCareerApplicationEmail(persistedApplicant, req.file);
+    // Send email notification (video is already in Supabase)
+    const emailApplicant = { ...persistedApplicant, video_name };
+    await sendCareerApplicationEmail(emailApplicant, null);
 
     return res.json({ success: true, message: 'Application received successfully. We will review it shortly.', applicant: persistedApplicant });
   } catch (error) {
