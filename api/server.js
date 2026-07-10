@@ -50,7 +50,7 @@ const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY ? createClient(S
 const careerApplicationsInMemory = [];
 const careerUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 23 * 1024 * 1024 },
+  limits: { fileSize: 25 * 1024 * 1024 },
 });
 
 if (!SUPABASE_SERVICE_ROLE_KEY) {
@@ -124,9 +124,59 @@ function getCareerApplicantByIdOrToken(identifier) {
   return careerApplicationsInMemory.find((applicant) => applicant.id === identifier || applicant.access_token === identifier || applicant.email === identifier);
 }
 
-function getCareerApplicantByEmail(email) {
+async function findCareerApplicantByIdOrToken(identifier) {
+  if (!identifier || typeof identifier !== 'string') return null;
+  const normalized = normalizeEmail(identifier);
+
+  let applicant = getCareerApplicantByIdOrToken(identifier);
+  if (applicant) return applicant;
+
+  if (!supabase) return null;
+
+  try {
+    let query = supabase.from('careers_applications').select('*').limit(1);
+    if (normalized.includes('@')) {
+      query = query.eq('email', normalized);
+    } else {
+      query = query.or(`id.eq.${identifier},access_token.eq.${identifier}`);
+    }
+
+    const { data, error } = await query.single();
+    if (error || !data) return null;
+
+    applicant = data;
+    careerApplicationsInMemory.unshift(applicant);
+    return applicant;
+  } catch (err) {
+    console.error('Supabase career lookup by token/email failed:', err.message || err);
+    return null;
+  }
+}
+
+async function findCareerApplicantByEmail(email) {
   const normalized = normalizeEmail(email);
-  return careerApplicationsInMemory.find((applicant) => normalizeEmail(applicant.email) === normalized);
+  if (!normalized) return null;
+
+  const cached = careerApplicationsInMemory.find((applicant) => normalizeEmail(applicant.email) === normalized);
+  if (cached) return cached;
+
+  if (!supabase) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('careers_applications')
+      .select('*')
+      .eq('email', normalized)
+      .single();
+
+    if (error || !data) return null;
+
+    careerApplicationsInMemory.unshift(data);
+    return data;
+  } catch (err) {
+    console.error('Supabase career lookup by email failed:', err.message || err);
+    return null;
+  }
 }
 
 async function persistCareerApplicant(applicant) {
@@ -259,7 +309,7 @@ async function sendCareerApplicationEmail(applicant, videoFile) {
 }
 
 async function sendCareerStatusEmail(applicant, status) {
-  const uploadLink = applicant?.access_token ? `${BASE_URL}/careers/test-upload/${applicant.access_token}` : null;
+  const uploadLink = applicant?.access_token ? `${BASE_URL}/careers/track?token=${applicant.access_token}` : null;
   const trackLink = applicant?.email ? `${BASE_URL}/careers/track?email=${encodeURIComponent(applicant.email)}` : null;
   const { subject, html } = buildCareerStatusEmail({
     name: applicant.name,
@@ -413,20 +463,82 @@ app.get('/api/careers/applicants', requireAdminSession, async (req, res) => {
 
 app.get('/api/careers/track', async (req, res) => {
   try {
+    const token = String(req.query.token || '').trim();
     const email = normalizeEmail(req.query.email);
-    if (!email) {
-      return res.status(400).json({ success: false, message: 'Please provide an email address.' });
+
+    if (!token && !email) {
+      return res.status(400).json({ success: false, message: 'Please provide an email address or upload token.' });
     }
 
-    const applicant = getCareerApplicantByEmail(email);
+    let applicant = null;
+    if (token) {
+      applicant = await findCareerApplicantByIdOrToken(token);
+    }
+
+    if (!applicant && email) {
+      applicant = await findCareerApplicantByEmail(email);
+    }
+
     if (!applicant) {
-      return res.status(404).json({ success: false, message: 'We could not find an application with that email.' });
+      return res.status(404).json({ success: false, message: 'We could not find an application with that email or token.' });
     }
 
-    return res.json({ success: true, applicant: { name: applicant.name, status: applicant.status, submitted_at: applicant.submitted_at } });
+    return res.json({
+      success: true,
+      applicant: {
+        name: applicant.name,
+        status: applicant.status,
+        submitted_at: applicant.submitted_at,
+        access_token: applicant.access_token,
+      },
+    });
   } catch (error) {
     console.error('Career track lookup failed:', error);
     return res.status(500).json({ success: false, message: 'Unable to retrieve your application status.' });
+  }
+});
+
+app.post('/api/careers/test-upload-notify/:token', async (req, res) => {
+  try {
+    const token = String(req.params.token || '').trim();
+    if (!token) {
+      return res.status(400).json({ success: false, message: 'Missing upload token.' });
+    }
+
+    const { video_url, video_name } = req.body || {};
+    if (!video_url) {
+      return res.status(400).json({ success: false, message: 'Missing video URL.' });
+    }
+
+    const applicant = await findCareerApplicantByIdOrToken(token);
+    if (!applicant) {
+      return res.status(404).json({ success: false, message: 'Upload token is not valid.' });
+    }
+
+    if (String(applicant.status || '').toLowerCase() !== 'approved') {
+      return res.status(403).json({ success: false, message: 'This upload portal is only available for approved applicants.' });
+    }
+
+    const mailOptions = {
+      from: `${ZOHO_OTP_EMAIL}`,
+      to: CAREER_ADMIN_EMAIL,
+      subject: `Test Video Upload – ${applicant.name}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;">
+          <h2 style="color:#00c853;">Approved Applicant Test Video Uploaded</h2>
+          <p><strong>Name:</strong> ${applicant.name}</p>
+          <p><strong>Email:</strong> ${applicant.email}</p>
+          <p><strong>Video URL:</strong> <a href="${video_url}">${video_url}</a></p>
+          <p><strong>Uploaded at:</strong> ${new Date().toISOString()}</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    return res.json({ success: true, message: 'Test video upload confirmed. The team has been notified.' });
+  } catch (error) {
+    console.error('Career test upload notify failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to confirm your test upload right now.' });
   }
 });
 
@@ -478,7 +590,7 @@ app.post('/api/webhooks/careers-status', async (req, res) => {
 
 app.post('/api/careers/test-upload/:token', careerUpload.single('video'), async (req, res) => {
   try {
-    const applicant = getCareerApplicantByIdOrToken(req.params.token);
+    const applicant = await findCareerApplicantByIdOrToken(req.params.token);
     if (!applicant) {
       return res.status(404).json({ success: false, message: 'This upload link is not valid.' });
     }
@@ -487,28 +599,62 @@ app.post('/api/careers/test-upload/:token', careerUpload.single('video'), async 
       return res.status(403).json({ success: false, message: 'This upload portal is only available for approved applicants.' });
     }
 
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Please upload a video file.' });
+    }
+
     const videoValidation = validateCareerVideo(req.file || {});
     if (!videoValidation.valid) {
       return res.status(400).json({ success: false, message: videoValidation.message });
     }
 
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Please upload a video file.' });
+    if (!supabaseAdmin) {
+      return res.status(500).json({ success: false, message: 'Supabase admin client is not configured.' });
     }
 
-    const tempPath = await saveUploadToTemp(req.file);
+    const originalName = String(req.file.originalname || 'test-video');
+    const safeName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storagePath = `careers/${Date.now()}-${safeName}`;
+    const bucket = 'careers-videos';
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from(bucket)
+      .upload(storagePath, req.file.buffer, {
+        contentType: req.file.mimetype || 'video/mp4',
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error('Supabase test upload error:', uploadError.message || uploadError);
+      return res.status(500).json({ success: false, message: 'Failed to save your test video to storage.' });
+    }
+
+    const { data: publicData, error: urlError } = await supabaseAdmin.storage
+      .from(bucket)
+      .getPublicUrl(storagePath);
+
+    const publicUrl = publicData?.publicUrl || null;
+    if (urlError) {
+      console.warn('Could not generate public URL for test upload:', urlError.message || urlError);
+    }
+
     const mailOptions = {
       from: `${ZOHO_OTP_EMAIL}`,
       to: CAREER_ADMIN_EMAIL,
       subject: `Test Video Upload – ${applicant.name}`,
-      html: `<p>Approved applicant ${applicant.name} submitted a test video.</p>`,
-      attachments: [{ filename: req.file.originalname || 'test-upload.mp4', content: fs.createReadStream(tempPath) }],
+      html: `
+        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;">
+          <h2 style="color:#00c853;">Approved Applicant Test Video Uploaded</h2>
+          <p><strong>Name:</strong> ${applicant.name}</p>
+          <p><strong>Email:</strong> ${applicant.email}</p>
+          <p><strong>Video URL:</strong> ${publicUrl ? `<a href=\"${publicUrl}\">${publicUrl}</a>` : storagePath}</p>
+        </div>
+      `,
     };
 
     await transporter.sendMail(mailOptions);
-    await removeTempFile(tempPath);
 
-    return res.json({ success: true, message: 'Test video received and forwarded to the team.' });
+    return res.json({ success: true, message: 'Test video uploaded successfully. The team has been notified.' });
   } catch (error) {
     console.error('Career test upload failed:', error);
     return res.status(500).json({ success: false, message: 'Unable to process your test video right now.' });

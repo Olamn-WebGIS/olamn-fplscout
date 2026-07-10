@@ -42,6 +42,9 @@
   <script>
     const button = document.getElementById('track-btn');
     const result = document.getElementById('result');
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialToken = urlParams.get('token');
+    const initialEmail = urlParams.get('email');
 
     function formatDate(value) {
       try {
@@ -52,46 +55,171 @@
       }
     }
 
+    function getStatusCopy(status, name) {
+      const applicantName = name ? name : 'there';
+      switch ((status || '').toLowerCase()) {
+        case 'approved':
+          return {
+            headline: 'Application Approved',
+            message: `Congratulations ${applicantName}! Your application has been approved. Please upload your test video using the secure upload form below.`,
+            note: 'Only approved applicants can upload their test video here.',
+          };
+        case 'under review':
+        case 'review':
+          return {
+            headline: 'Under Review',
+            message: `Your application is currently under review by our selection team. We appreciate your patience while we assess your submission.`,
+            note: 'We will notify you as soon as a decision is made.',
+          };
+        case 'declined':
+          return {
+            headline: 'Application Declined',
+            message: `Thank you for applying. After careful consideration, we are not moving forward with your application at this time.`,
+            note: 'We appreciate your interest and encourage you to apply again in the future.',
+          };
+        case 'successful':
+          return {
+            headline: 'Application Successful',
+            message: `Great news! Your application has been successful and the next stage is underway.`,
+            note: 'A member of our team will contact you shortly with next steps.',
+          };
+        case 'pending':
+        default:
+          return {
+            headline: 'Application Received',
+            message: `We have received your application and it is currently pending review. Thank you for applying to FPL Scout.`,
+            note: 'You may check back later for updates or watch your inbox for a tracking email.',
+          };
+      }
+    }
+
     function renderStatusCard(applicant) {
+      const statusText = applicant.status || 'Pending';
+      const statusCopy = getStatusCopy(statusText, applicant.name);
       return `
         <div class="status-card">
-          <h2>Application summary</h2>
-          <div class="status-tag">${applicant.status || 'Pending'}</div>
+          <h2>${statusCopy.headline}</h2>
+          <div class="status-tag status-${statusText.toLowerCase().replace(/\s+/g, '-')}">${statusText}</div>
           <div class="status-details">
             <div class="status-detail"><span>Applicant:</span><strong>${applicant.name || 'Applicant'}</strong></div>
             <div class="status-detail"><span>Email:</span><strong>${applicant.email || 'N/A'}</strong></div>
             <div class="status-detail"><span>Submitted:</span><strong>${formatDate(applicant.submitted_at || '')}</strong></div>
           </div>
-          <p>Thank you for applying to FPL Scout. Your application is currently being reviewed, and we will notify you again once the next update is available.</p>
-          <p>Please check your inbox and spam folder for your tracking email.</p>
+          <p>${statusCopy.message}</p>
+          <p>${statusCopy.note}</p>
         </div>
       `;
     }
 
-    button.addEventListener('click', async () => {
-      const email = document.getElementById('email').value.trim();
-      if (!email) {
+    function renderUploadSection(token) {
+      return `
+        <div class="status-card">
+          <h2>Approved Test Upload</h2>
+          <p>Upload your test video below. The file must be 25MB or smaller and should be in MP4, MOV, MKV, WebM, or AVI format.</p>
+          <form id="approved-upload-form" class="upload-form">
+            <input id="approved-upload-file" type="file" accept="video/mp4,video/quicktime,video/x-matroska,video/webm,video/avi" required />
+            <button id="approved-upload-button" type="submit">Send test video</button>
+          </form>
+          <div id="upload-result" style="margin-top:1rem;color:#cbd5e1;"></div>
+        </div>
+      `;
+    }
+
+    async function fetchCareerStatus({ email, token }) {
+      if (!email && !token) {
         result.innerHTML = '<div class="status-error">Please enter the email you used to apply.</div>';
         return;
       }
 
+      const queryParts = [];
+      if (email) queryParts.push(`email=${encodeURIComponent(email)}`);
+      if (token) queryParts.push(`token=${encodeURIComponent(token)}`);
+      const query = queryParts.join('&');
+
       result.innerHTML = '<div class="status-card"><p>Checking your application status…</p></div>';
 
       try {
-        const response = await fetch(`/api/careers/track?email=${encodeURIComponent(email)}`);
+        const response = await fetch(`/api/careers/track?${query}`);
         const data = await response.json();
 
         if (!response.ok || !data.success) {
-          result.innerHTML = `<div class="status-error">${data.message || 'Unable to locate your application. Please verify your email and try again.'}</div>`;
+          result.innerHTML = `<div class="status-error">${data.message || 'Unable to locate your application. Please verify your email or token and try again.'}</div>`;
           return;
         }
 
         result.innerHTML = renderStatusCard(data.applicant);
+
+        if (String(data.applicant.status || '').toLowerCase() === 'approved' && data.applicant.access_token) {
+          result.innerHTML += renderUploadSection(data.applicant.access_token);
+          attachApproveUploadHandler(data.applicant.access_token);
+        }
       } catch (error) {
         console.error('Track error:', error);
         result.innerHTML = '<div class="status-error">Unable to load your application status right now. Please try again later.</div>';
       }
+    }
+
+    button.addEventListener('click', async () => {
+      const email = document.getElementById('email').value.trim();
+      await fetchCareerStatus({ email });
     });
+
+    if (initialToken || initialEmail) {
+      fetchCareerStatus({ email: initialEmail, token: initialToken });
+    }
+
+    function attachApproveUploadHandler(token) {
+      const uploadForm = document.getElementById('approved-upload-form');
+      const uploadResult = document.getElementById('upload-result');
+
+      if (!uploadForm) return;
+      uploadForm.onsubmit = async (event) => {
+        event.preventDefault();
+        uploadResult.textContent = '';
+
+        const fileInput = document.getElementById('approved-upload-file');
+        const file = fileInput?.files?.[0];
+
+        if (!file) {
+          uploadResult.textContent = 'Please select a video file to upload.';
+          return;
+        }
+
+        if (file.size > 25 * 1024 * 1024) {
+          uploadResult.textContent = 'Your video must be 25MB or smaller.';
+          return;
+        }
+
+        const allowedTypes = ['video/mp4', 'video/quicktime', 'video/x-matroska', 'video/webm', 'video/avi'];
+        if (!allowedTypes.includes(file.type)) {
+          uploadResult.textContent = 'Please upload a video in MP4, MOV, MKV, WebM, or AVI format.';
+          return;
+        }
+
+        uploadResult.textContent = 'Uploading your test video…';
+
+        const formData = new FormData();
+        formData.append('video', file);
+
+        try {
+          const uploadResponse = await fetch(`/api/careers/test-upload/${encodeURIComponent(token)}`, {
+            method: 'POST',
+            body: formData,
+          });
+          const uploadData = await uploadResponse.json();
+
+          if (!uploadResponse.ok || !uploadData.success) {
+            uploadResult.textContent = uploadData.message || 'Upload failed. Please try again.';
+            return;
+          }
+
+          uploadResult.textContent = uploadData.message || 'Your test video has been uploaded successfully.';
+        } catch (uploadError) {
+          console.error('Upload error:', uploadError);
+          uploadResult.textContent = 'Unable to upload your video right now. Please try again later.';
+        }
+      };
+    }
   </script>
 </body>
 </html>

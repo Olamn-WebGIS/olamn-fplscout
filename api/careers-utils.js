@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const CAREER_DEADLINE = new Date('2026-08-01T23:59:59.999Z');
-const MAX_VIDEO_SIZE_BYTES = 23 * 1024 * 1024;
+const MAX_VIDEO_SIZE_BYTES = 25 * 1024 * 1024;
 const ALLOWED_VIDEO_TYPES = new Set(['video/mp4', 'video/quicktime', 'video/x-matroska', 'video/webm', 'video/avi']);
 const ALLOWED_VIDEO_EXTENSIONS = new Set(['.mp4', '.mov', '.mkv', '.webm', '.avi']);
 
@@ -28,7 +28,7 @@ function validateCareerVideo(file) {
   }
 
   if (file.size > MAX_VIDEO_SIZE_BYTES) {
-    return { valid: false, message: 'Video must be 23MB or smaller.' };
+    return { valid: false, message: 'Video must be 25MB or smaller.' };
   }
 
   return { valid: true };
