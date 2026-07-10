@@ -198,15 +198,8 @@
     </section>
   </main>
   <div id="footer-placeholder"></div>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/+esm"></script>
   <script src="/layout.js"></script>
-  <script type="module">
-    // Initialize Supabase client
-    const supabaseUrl = 'https://zkqpjjnfaocnhwtglhjq.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InprcXBqam5mYW9jbmh3dGdsaGpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE0MTkxODUsImV4cCI6MjAzNjk5OTE4NX0.L0RWe_MZYHEIhKIHq_HvVPn_8qZfI24hTf5pM0Oz9aw';
-    const { createClient } = window.supabase;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
+  <script>
     const form = document.getElementById('careers-form');
     const submitBtn = document.getElementById('submit-btn');
     const messageBox = document.getElementById('form-message');
@@ -223,7 +216,7 @@
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      messageBox.textContent = 'Uploading video...';
+      messageBox.textContent = 'Preparing upload...';
       submitBtn.disabled = true;
 
       try {
@@ -264,47 +257,13 @@
           return;
         }
 
-        // Upload video to Supabase Storage
-        const timestamp = Date.now();
-        const sanitizedFilename = videoFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const storagePath = `careers/${timestamp}-${sanitizedFilename}`;
-
-        messageBox.textContent = 'Uploading video to server...';
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('careers-videos')
-          .upload(storagePath, videoFile, { upsert: false });
-
-        if (uploadError) {
-          console.error('Video upload error:', uploadError);
-          messageBox.textContent = 'Failed to upload video. Please try again.';
-          submitBtn.disabled = false;
-          return;
-        }
-
-        // Get public URL for the uploaded video
-        const { data: publicData } = supabase.storage
-          .from('careers-videos')
-          .getPublicUrl(storagePath);
-        const videoUrl = publicData?.publicUrl || '';
-
-        // Send application data to API
+        // Send application data to API (without video file - it will be handled by backend)
         messageBox.textContent = 'Submitting application...';
-        const applicationData = {
-          name,
-          email,
-          phone,
-          has_experience: hasExperience,
-          accepted_terms: 'true',
-          video_name: videoFile.name,
-          video_url: videoUrl,
-          storage_path: storagePath,
-          notes,
-        };
-
+        const formData = new FormData(form);
+        
         const response = await fetch('/api/careers/apply', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(applicationData),
+          body: formData,
         });
 
         if (!response.ok) {
@@ -320,6 +279,7 @@
           }
           messageBox.textContent = errorMsg;
           submitBtn.disabled = false;
+          console.error('Response:', response.status, errorMsg);
           return;
         }
 
