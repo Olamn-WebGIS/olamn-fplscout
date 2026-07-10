@@ -540,7 +540,7 @@ app.post('/api/careers/test-upload-notify/:token', async (req, res) => {
       return res.status(403).json({ success: false, message: 'This upload portal is only available for approved applicants.' });
     }
 
-    const mailOptions = {
+    const adminMailOptions = {
       from: `${ZOHO_OTP_EMAIL}`,
       to: CAREER_ADMIN_EMAIL,
       cc: ZOHO_OTP_EMAIL,
@@ -555,8 +555,31 @@ app.post('/api/careers/test-upload-notify/:token', async (req, res) => {
         </div>
       `,
     };
-    const info = await transporter.sendMail(mailOptions);
+
+    const applicantMailOptions = {
+      from: `${ZOHO_OTP_EMAIL}`,
+      to: applicant.email,
+      subject: 'We received your test video upload',
+      html: `
+        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;">
+          <h2 style="color:#00c853;">Test Video Uploaded Successfully</h2>
+          <p>Hi ${applicant.name || 'Applicant'},</p>
+          <p>We have received your test video and our team will review it shortly.</p>
+          <p>Thank you for applying to FPL Scout.</p>
+        </div>
+      `,
+    };
+
+    const info = await transporter.sendMail(adminMailOptions);
     console.log('Test upload notification sent:', info && info.messageId ? info.messageId : '(no messageId)');
+
+    try {
+      const applicantInfo = await transporter.sendMail(applicantMailOptions);
+      console.log('Applicant confirmation email sent:', applicantInfo && applicantInfo.messageId ? applicantInfo.messageId : '(no messageId)');
+    } catch (emailError) {
+      console.warn('Applicant confirmation email failed:', emailError && emailError.message ? emailError.message : emailError);
+    }
+
     return res.json({ success: true, message: 'Test video upload confirmed. The team has been notified.' });
   } catch (error) {
     console.error('Career test upload notify failed:', error);

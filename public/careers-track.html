@@ -136,7 +136,7 @@
             <input id="approved-upload-file" type="file" accept="video/mp4,video/quicktime,video/x-matroska,video/webm,video/avi" required />
             <button id="approved-upload-button" type="submit">Send test video</button>
           </form>
-          <div id="upload-result" style="margin-top:1rem;color:#cbd5e1;"></div>
+          <div id="upload-result" style="margin-top:1rem;color:#64748b;"></div>
         </div>
       `;
     }
@@ -198,21 +198,25 @@
         const file = fileInput?.files?.[0];
 
         if (!file) {
+          uploadResult.style.color = '#dc2626';
           uploadResult.textContent = 'Please select a video file to upload.';
           return;
         }
 
         if (file.size > 25 * 1024 * 1024) {
+          uploadResult.style.color = '#dc2626';
           uploadResult.textContent = 'Your video must be 25MB or smaller.';
           return;
         }
 
         const allowedTypes = ['video/mp4', 'video/quicktime', 'video/x-matroska', 'video/webm', 'video/avi'];
         if (!allowedTypes.includes(file.type)) {
+          uploadResult.style.color = '#dc2626';
           uploadResult.textContent = 'Please upload a video in MP4, MOV, MKV, WebM, or AVI format.';
           return;
         }
 
+        uploadResult.style.color = '#64748b';
         uploadResult.textContent = 'Preparing upload...';
 
         try {
@@ -224,11 +228,13 @@
           });
           const prep = await prepResp.json();
           if (!prepResp.ok || !prep.success) {
+            uploadResult.style.color = '#dc2626';
             uploadResult.textContent = prep.message || 'Failed to prepare upload.';
             return;
           }
 
           const { supabaseUrl, supabaseKey, storagePath, bucket, publicUrl } = prep;
+          uploadResult.style.color = '#64748b';
           uploadResult.textContent = 'Uploading to storage...';
 
           // Upload directly to Supabase storage to avoid server size limits
@@ -246,6 +252,7 @@
           if (!uploadResp.ok) {
             const text = await uploadResp.text().catch(() => 'no body');
             console.error('Supabase storage upload failed', uploadResp.status, text);
+            uploadResult.style.color = '#dc2626';
             uploadResult.textContent = 'Upload to storage failed. Please try again.';
             return;
           }
@@ -258,13 +265,16 @@
           });
           const notifyData = await notifyResp.json();
           if (!notifyResp.ok || !notifyData.success) {
+            uploadResult.style.color = '#dc2626';
             uploadResult.textContent = notifyData.message || 'Upload succeeded but notification failed.';
             return;
           }
 
+          uploadResult.style.color = '#16a34a';
           uploadResult.textContent = notifyData.message || 'Your test video has been uploaded successfully.';
         } catch (uploadError) {
           console.error('Upload error:', uploadError);
+          uploadResult.style.color = '#dc2626';
           uploadResult.textContent = 'Unable to upload your video right now. Please try again later.';
         }
       }
