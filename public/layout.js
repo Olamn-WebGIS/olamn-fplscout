@@ -76,6 +76,10 @@
     const isHome = currentPath === '/';
     const isAffiliate = currentPath.startsWith('/affiliate');
 
+    if (src.includes('sidewalkboiling.com/56/e2/ab/56e2ab4abf6078cce6ce40441e6f6b7c.js')) {
+      return currentPath === '/careers' || currentPath === '/careers.html' || currentPath === '/careers/track';
+    }
+
     if (isHome) return true;
     if (!isAffiliate) return true;
 
@@ -111,7 +115,8 @@
 
     const adScripts = [
       { src: 'https://5gvci.com/act/files/tag.min.js?z=11206227', attrs: { async: true, 'data-ad-script': 'true', 'data-cfasync': 'false' } },
-      { src: 'https://sidewalkboiling.com/a971d37adb76d2f7565f5acc30b1239e/invoke.js', attrs: { async: true, 'data-ad-script': 'true', 'data-cfasync': 'false' } }
+      { src: 'https://sidewalkboiling.com/a971d37adb76d2f7565f5acc30b1239e/invoke.js', attrs: { async: true, 'data-ad-script': 'true', 'data-cfasync': 'false' } },
+      { src: 'https://sidewalkboiling.com/56/e2/ab/56e2ab4abf6078cce6ce40441e6f6b7c.js', attrs: { async: true, 'data-ad-script': 'true', 'data-cfasync': 'false' } }
     ];
 
     const allowedScripts = adScripts.filter(({ src }) => isAdScriptAllowedOnPage(src));
