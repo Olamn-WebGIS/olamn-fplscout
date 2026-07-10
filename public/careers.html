@@ -199,6 +199,7 @@
   </main>
   <div id="footer-placeholder"></div>
   <script src="/layout.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const form = document.getElementById('careers-form');
     const submitBtn = document.getElementById('submit-btn');
@@ -257,7 +258,7 @@
           return;
         }
 
-        // Step 1: Request upload URL from server
+        // Step 1: Request upload credentials from server
         messageBox.textContent = 'Generating upload link...';
         const urlResponse = await fetch('/api/careers/get-upload-url', {
           method: 'POST',
@@ -272,23 +273,23 @@
           return;
         }
 
-        const { uploadUrl, publicUrl } = await urlResponse.json();
+        const { supabaseUrl, supabaseKey, storagePath, publicUrl, bucket } = await urlResponse.json();
 
-        // Step 2: Upload video directly to Supabase using signed URL
+        // Step 2: Upload video directly to Supabase using client SDK
         messageBox.textContent = `Uploading video (${(videoFile.size / 1024 / 1024).toFixed(1)}MB)...`;
         
-        const uploadResponse = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': videoFile.type,
-          },
-          body: videoFile,
-        });
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        const { error: uploadError } = await supabase.storage
+          .from(bucket)
+          .upload(storagePath, videoFile, {
+            contentType: videoFile.type,
+            upsert: false,
+          });
 
-        if (!uploadResponse.ok) {
-          messageBox.textContent = 'Video upload failed. Please try again.';
+        if (uploadError) {
+          messageBox.textContent = 'Video upload failed: ' + (uploadError.message || 'Unknown error');
           submitBtn.disabled = false;
-          console.error('Upload error:', uploadResponse.status, uploadResponse.statusText);
+          console.error('Upload error:', uploadError);
           return;
         }
 

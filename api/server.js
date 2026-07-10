@@ -236,7 +236,7 @@ async function sendCareerStatusEmail(applicant, status) {
 
 app.post('/api/careers/get-upload-url', async (req, res) => {
   try {
-    if (!supabaseAdmin) {
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
       return res.status(500).json({ success: false, message: 'Storage not configured.' });
     }
 
@@ -249,26 +249,17 @@ app.post('/api/careers/get-upload-url', async (req, res) => {
     const sanitized = String(fileName || 'video').replace(/[^a-zA-Z0-9._-]/g, '_');
     const storagePath = `careers/${Date.now()}-${sanitized}`;
 
-    // Create a signed upload URL valid for 1 hour
-    const { data, error } = await supabaseAdmin.storage
-      .from('careers-videos')
-      .createSignedUploadUrl(storagePath);
-
-    if (error) {
-      console.error('Supabase signed URL error:', error);
-      return res.status(500).json({ success: false, message: 'Could not generate upload URL.' });
-    }
-
-    // Get public URL for the file (after upload)
-    const { data: publicData } = supabaseAdmin.storage
-      .from('careers-videos')
-      .getPublicUrl(storagePath);
+    // Return upload credentials for client-side upload
+    // Client will use the anon key to upload directly to Supabase
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/careers-videos/${storagePath}`;
 
     return res.json({
       success: true,
-      uploadUrl: data.signedUrl,
-      publicUrl: publicData.publicUrl,
+      supabaseUrl: SUPABASE_URL,
+      supabaseKey: SUPABASE_KEY,
       storagePath: storagePath,
+      publicUrl: publicUrl,
+      bucket: 'careers-videos',
     });
   } catch (error) {
     console.error('Upload URL generation failed:', error);
