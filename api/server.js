@@ -1790,6 +1790,39 @@ app.get('/api/giscus-config', (req, res) => {
   });
 });
 
+// Admin diagnostics (protected) — reports Supabase client availability and careers count
+app.get('/api/admin/diagnostics', requireAdminSession, async (req, res) => {
+  try {
+    const supabaseAvailable = !!supabase;
+    const supabaseAdminAvailable = !!supabaseAdmin;
+    let careersCount = null;
+    let lastError = null;
+
+    const dbClient = supabaseAdmin || supabase;
+    if (dbClient) {
+      try {
+        const { data, error, count } = await dbClient
+          .from('careers_applications')
+          .select('id', { count: 'exact' });
+        if (error) {
+          lastError = error.message;
+        } else if (Array.isArray(data)) {
+          careersCount = data.length; // fallback if count unavailable
+        }
+        // Some clients populate `count` when requested; include if present
+        if (typeof count === 'number') careersCount = count;
+      } catch (err) {
+        lastError = err.message || String(err);
+      }
+    }
+
+    return res.json({ success: true, supabase: supabaseAvailable, supabaseAdmin: supabaseAdminAvailable, careersCount, error: lastError });
+  } catch (err) {
+    console.error('Diagnostics failed:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Diagnostics failed' });
+  }
+});
+
 app.get('/api/admin/signup-attempts', requireAdminSession, async (req, res) => {
   try {
     const dbClient = supabaseAdmin || supabase;
