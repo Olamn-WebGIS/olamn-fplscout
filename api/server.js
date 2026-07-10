@@ -160,19 +160,40 @@ async function findCareerApplicantByEmail(email) {
   const cached = careerApplicationsInMemory.find((applicant) => normalizeEmail(applicant.email) === normalized);
   if (cached) return cached;
 
-  if (!supabase) return null;
+  // Prefer anon client for public read; fall back to admin client if RLS blocks anon.
+  if (!supabase && !supabaseAdmin) return null;
 
   try {
-    const { data, error } = await supabase
-      .from('careers_applications')
-      .select('*')
-      .eq('email', normalized)
-      .single();
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('careers_applications')
+        .select('*')
+        .eq('email', normalized)
+        .single();
 
-    if (error || !data) return null;
+      if (data && !error) {
+        careerApplicationsInMemory.unshift(data);
+        return data;
+      }
+      // If anon client returned an error or no data, try admin client (if available)
+      if (error) console.warn('Anon Supabase lookup returned error:', error.message || error);
+    }
 
-    careerApplicationsInMemory.unshift(data);
-    return data;
+    if (supabaseAdmin) {
+      const { data: adminData, error: adminError } = await supabaseAdmin
+        .from('careers_applications')
+        .select('*')
+        .eq('email', normalized)
+        .single();
+
+      if (adminData && !adminError) {
+        careerApplicationsInMemory.unshift(adminData);
+        return adminData;
+      }
+      if (adminError) console.warn('Admin Supabase lookup returned error:', adminError.message || adminError);
+    }
+
+    return null;
   } catch (err) {
     console.error('Supabase career lookup by email failed:', err.message || err);
     return null;
