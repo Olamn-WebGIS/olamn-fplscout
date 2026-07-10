@@ -176,7 +176,7 @@ async function updateCareerApplicantStatus(applicantId, status) {
   return applicant;
 }
 
-async function sendCareerApplicationEmail(applicant, videoUrl) {
+async function sendCareerApplicationEmail(applicant, videoFile) {
   const subject = `New FPL Content Creator Application – ${applicant.name}`;
   const html = `
     <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;">
@@ -186,17 +186,27 @@ async function sendCareerApplicationEmail(applicant, videoUrl) {
       <p><strong>Phone:</strong> ${applicant.phone || 'Not provided'}</p>
       <p><strong>Experience:</strong> ${applicant.has_experience === 'yes' ? 'Yes' : 'No'}</p>
       <p><strong>Terms Accepted:</strong> ${applicant.accepted_terms === 'true' ? 'Yes' : 'No'}</p>
-      <p><strong>Video:</strong> <a href="${videoUrl}">${videoUrl}</a></p>
+      <p><strong>Video:</strong> ${applicant.video_name || 'Attached'}</p>
     </div>
   `;
 
+  const mailOptions = {
+    from: `${ZOHO_OTP_EMAIL}`,
+    to: CAREER_ADMIN_EMAIL,
+    subject,
+    html,
+  };
+
+  // Attach video file if provided
+  if (videoFile) {
+    mailOptions.attachments = [{
+      filename: applicant.video_name || 'video.mp4',
+      content: videoFile.buffer || videoFile,
+    }];
+  }
+
   try {
-    await transporter.sendMail({
-      from: `${ZOHO_OTP_EMAIL}`,
-      to: CAREER_ADMIN_EMAIL,
-      subject,
-      html,
-    });
+    await transporter.sendMail(mailOptions);
   } catch (error) {
     console.warn('Career application email failed:', error.message);
   }
@@ -234,28 +244,15 @@ app.post('/api/careers/apply', careerUpload.single('video'), async (req, res) =>
     let name, email, phone, has_experience, accepted_terms, video_url, storage_path, video_name, notes;
 
     if (req.file) {
-      // Legacy multipart form data upload (for backward compatibility)
-      ({ name, email, phone, has_experience, accepted_terms } = req.body || {});
+      // Multipart form data upload with video file
+      ({ name, email, phone, has_experience, accepted_terms, notes } = req.body || {});
       video_name = req.file.originalname;
       
-      // Upload to Supabase if not already done
-      if (supabaseAdmin && !video_url) {
-        const fileName = `${Date.now()}-${String(video_name || 'video').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-        storage_path = `careers/${fileName}`;
-        const { error: uploadError } = await supabaseAdmin.storage
-          .from('careers-videos')
-          .upload(storage_path, req.file.buffer, {
-            contentType: req.file.mimetype || 'video/mp4',
-            upsert: false,
-          });
-
-        if (!uploadError) {
-          const { data: publicData } = supabaseAdmin.storage.from('careers-videos').getPublicUrl(storage_path);
-          video_url = publicData?.publicUrl || '';
-        }
-      }
+      // Don't upload to Supabase - instead, we'll attach to email
+      video_url = null;
+      storage_path = null;
     } else {
-      // JSON request (video already uploaded to Supabase)
+      // JSON request (video already handled separately)
       ({ name, email, phone, has_experience, accepted_terms, video_url, storage_path, video_name, notes } = req.body || {});
     }
 
@@ -275,7 +272,7 @@ app.post('/api/careers/apply', careerUpload.single('video'), async (req, res) =>
       return res.status(400).json({ success: false, message: 'Please answer whether you have at least 1 year of experience.' });
     }
 
-    if (!video_url) {
+    if (!req.file && !video_url) {
       return res.status(400).json({ success: false, message: 'Please upload a video sample.' });
     }
 
@@ -287,7 +284,7 @@ app.post('/api/careers/apply', careerUpload.single('video'), async (req, res) =>
       has_experience: String(has_experience || '').toLowerCase(),
       accepted_terms: String(accepted_terms || '').toLowerCase() === 'true' || accepted_terms === true,
       video_name: video_name || 'video',
-      video_url: video_url,
+      video_url: video_url || 'Attached to email',
       storage_path: storage_path || null,
       status: 'Pending',
       submitted_at: new Date().toISOString(),
@@ -295,7 +292,9 @@ app.post('/api/careers/apply', careerUpload.single('video'), async (req, res) =>
     };
 
     const persistedApplicant = await persistCareerApplicant(applicant);
-    await sendCareerApplicationEmail(persistedApplicant, video_url);
+    
+    // Send email with video file attached instead of uploading to Supabase
+    await sendCareerApplicationEmail(persistedApplicant, req.file);
 
     return res.json({ success: true, message: 'Application received successfully. We will review it shortly.', applicant: persistedApplicant });
   } catch (error) {
