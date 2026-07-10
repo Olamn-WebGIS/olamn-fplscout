@@ -14,5 +14,24 @@ create table if not exists careers_applications (
   access_token text
 );
 
+alter table careers_applications enable row level security;
+
+create policy careers_applications_admin_all
+  on careers_applications
+  for all
+  using (auth.role() = 'service_role')
+  with check (auth.role() = 'service_role');
+
+create policy careers_applications_self_select
+  on careers_applications
+  for select
+  using (email = auth.email());
+
+create policy careers_applications_self_update
+  on careers_applications
+  for update
+  using (email = auth.email())
+  with check (email = auth.email());
+
 create index if not exists careers_applications_email_idx on careers_applications (email);
 create index if not exists careers_applications_status_idx on careers_applications (status);

@@ -17,6 +17,7 @@ const {
   isCareerSubmissionOpen,
   validateCareerVideo,
   makeStatusLabel,
+  buildCareerStatusEmail,
   saveUploadToTemp,
   removeTempFile,
 } = require('./careers-utils');
@@ -202,18 +203,12 @@ async function sendCareerApplicationEmail(applicant, videoUrl) {
 }
 
 async function sendCareerStatusEmail(applicant, status) {
-  const statusLabel = makeStatusLabel(status);
-  const subject = `FPL Scout Careers Update – ${statusLabel}`;
   const uploadLink = applicant.access_token ? `${BASE_URL}/careers/test-upload/${applicant.access_token}` : null;
-  const html = `
-    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;">
-      <h2 style="color:#00c853;">Application Update</h2>
-      <p>Hi ${applicant.name || 'there'},</p>
-      <p>Your application status has been updated to <strong>${statusLabel}</strong>.</p>
-      ${uploadLink && statusLabel === 'Approved' ? `<p>You can now access the test-upload portal here: <a href="${uploadLink}">${uploadLink}</a></p>` : ''}
-      <p>Thanks,<br />FPL Scout Team</p>
-    </div>
-  `;
+  const { subject, html } = buildCareerStatusEmail({
+    name: applicant.name,
+    status,
+    uploadLink,
+  });
 
   try {
     await transporter.sendMail({
@@ -222,8 +217,10 @@ async function sendCareerStatusEmail(applicant, status) {
       subject,
       html,
     });
+    return true;
   } catch (error) {
     console.warn('Career status email failed:', error.message);
+    return false;
   }
 }
 
@@ -355,6 +352,35 @@ app.put('/api/admin/careers-applicants/:id/status', requireAdminSession, async (
   } catch (error) {
     console.error('Career applicant status update failed:', error);
     return res.status(500).json({ success: false, message: 'Failed to update applicant status.' });
+  }
+});
+
+app.post('/api/webhooks/careers-status', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    const applicant = payload.applicant || payload.record || payload;
+    const status = applicant?.status || payload.status;
+    const emailAddress = applicant?.email || payload.email;
+
+    if (!emailAddress || !status) {
+      return res.status(400).json({ success: false, message: 'Missing applicant email or status.' });
+    }
+
+    const emailApplicant = {
+      name: applicant?.name || emailAddress,
+      email: emailAddress,
+      access_token: applicant?.access_token,
+    };
+
+    const emailed = await sendCareerStatusEmail(emailApplicant, status);
+    if (!emailed) {
+      return res.status(502).json({ success: false, message: 'Status email could not be sent.' });
+    }
+
+    return res.json({ success: true, message: 'Status notification email sent.' });
+  } catch (error) {
+    console.error('Career status webhook failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to send status notification.' });
   }
 });
 

@@ -51,6 +51,75 @@ function makeStatusLabel(status) {
   }
 }
 
+function getCareerStatusCopy(status) {
+  const statusLabel = makeStatusLabel(status);
+  switch (statusLabel) {
+    case 'Approved':
+      return {
+        headline: 'Application Approved',
+        body: 'We are pleased to inform you that your application has been approved. The next step will be shared with you shortly.',
+        footer: 'You may now use the secure upload link below to submit your test video if requested.',
+        subject: 'Your FPL Scout application has been Approved',
+      };
+    case 'Declined':
+      return {
+        headline: 'Application Update',
+        body: 'Thank you for your interest in joining the FPL Scout team. After careful consideration, we will not be moving forward with your application at this time.',
+        footer: 'We appreciate the time and effort you invested and wish you success in your future projects.',
+        subject: 'Update on your FPL Scout application',
+      };
+    case 'Under Review':
+      return {
+        headline: 'Application Under Review',
+        body: 'Your application is currently being reviewed by our team. We will contact you again once a decision has been made.',
+        footer: 'Please note that no further action is required from you at this stage.',
+        subject: 'Your FPL Scout application is under review',
+      };
+    case 'Successful':
+      return {
+        headline: 'Application Successful',
+        body: 'Congratulations. Your application has been marked as successful, and we look forward to working with you.',
+        footer: 'We will share the next steps with you shortly.',
+        subject: 'Congratulations — your FPL Scout application was successful',
+      };
+    case 'Pending':
+    default:
+      return {
+        headline: 'Application Received',
+        body: 'Your application has been received and is awaiting review. We will update you once the status changes.',
+        footer: 'Thank you for your interest in FPL Scout.',
+        subject: 'We received your FPL Scout application',
+      };
+  }
+}
+
+function buildCareerStatusEmail({ name, status, uploadLink }) {
+  const statusLabel = makeStatusLabel(status);
+  const copy = getCareerStatusCopy(statusLabel);
+  const displayName = String(name || 'there').trim() || 'there';
+  const subject = copy.subject || `FPL Scout Careers Update – ${statusLabel}`;
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;max-width:640px;margin:0 auto;">
+      <div style="background:linear-gradient(135deg,#0f172a,#111827);padding:24px 28px;border-radius:12px 12px 0 0;">
+        <h2 style="margin:0;color:#00c853;font-size:24px;">FPL Scout</h2>
+        <p style="margin:6px 0 0;color:#cbd5e1;font-size:13px;letter-spacing:0.4px;text-transform:uppercase;">Weekly football analysis for smart FPL managers</p>
+      </div>
+      <div style="padding:28px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;background:#ffffff;">
+        <h3 style="margin-top:0;color:#0f172a;">${copy.headline}</h3>
+        <p style="margin:0 0 12px;color:#334155;">Hi ${displayName},</p>
+        <p style="margin:0 0 12px;color:#334155;">${copy.body}</p>
+        <p style="margin:0 0 12px;color:#334155;">${copy.footer}</p>
+        ${uploadLink && statusLabel === 'Approved' ? `<p style="margin:0 0 12px;color:#334155;">Secure upload link: <a href="${uploadLink}" style="color:#00c853;">${uploadLink}</a></p>` : ''}
+        <div style="margin-top:18px;padding-top:12px;border-top:1px solid #e2e8f0;color:#64748b;">
+          <p style="margin:0 0 6px;">Kind regards,</p>
+          <p style="margin:0;font-weight:600;color:#0f172a;">The FPL Scout Team</p>
+        </div>
+      </div>
+    </div>
+  `;
+  return { subject, html };
+}
+
 function createTempFilePath(originalName) {
   const safeName = String(originalName || 'upload').replace(/[^a-zA-Z0-9._-]/g, '_');
   const stamp = Date.now();
@@ -82,6 +151,7 @@ module.exports = {
   isCareerSubmissionOpen,
   validateCareerVideo,
   makeStatusLabel,
+  buildCareerStatusEmail,
   createTempFilePath,
   saveUploadToTemp,
   removeTempFile,
