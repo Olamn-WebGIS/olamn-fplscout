@@ -259,12 +259,17 @@ async function sendCareerApplicationEmail(applicant, videoFile) {
 }
 
 async function sendCareerStatusEmail(applicant, status) {
-  const uploadLink = applicant.access_token ? `${BASE_URL}/careers/test-upload/${applicant.access_token}` : null;
+  const uploadLink = applicant?.access_token ? `${BASE_URL}/careers/test-upload/${applicant.access_token}` : null;
+  const trackLink = applicant?.email ? `${BASE_URL}/careers/track?email=${encodeURIComponent(applicant.email)}` : null;
   const { subject, html } = buildCareerStatusEmail({
     name: applicant.name,
     status,
     uploadLink,
+    trackLink,
   });
+
+  // Debug logging for link presence
+  console.log('career-status-email: to=', applicant?.email, 'uploadLink=', uploadLink, 'trackLink=', trackLink);
 
   try {
     await transporter.sendMail({
@@ -275,7 +280,7 @@ async function sendCareerStatusEmail(applicant, status) {
     });
     return true;
   } catch (error) {
-    console.warn('Career status email failed:', error.message);
+    console.warn('Career status email failed:', error && error.message ? error.message : error);
     return false;
   }
 }
