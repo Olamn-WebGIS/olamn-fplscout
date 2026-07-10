@@ -100,9 +100,9 @@ async function requirePremiumUser(req, res, next) {
 app.use(compression());
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
-// Allow larger payloads for image upload base64 payloads
-app.use(express.json({ limit: '12mb' }));
-app.use(express.urlencoded({ extended: true, limit: '12mb' }));
+// Allow larger payloads for video and image uploads
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 app.get('/careers', (req, res) => {
   res.sendFile(path.join(process.cwd(), 'public', 'careers.html'));
