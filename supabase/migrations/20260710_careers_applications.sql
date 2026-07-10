@@ -7,6 +7,7 @@ create table if not exists careers_applications (
   accepted_terms boolean not null default false,
   video_name text,
   video_url text,
+  notes text,
   storage_path text,
   status text not null default 'Pending',
   submitted_at timestamptz not null default now(),

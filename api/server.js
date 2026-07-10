@@ -326,6 +326,7 @@ app.post('/api/careers/apply', async (req, res) => {
     const trimmedName = String(name || '').trim();
     const trimmedEmail = normalizeEmail(email);
     const trimmedPhone = String(phone || '').trim();
+    const trimmedNotes = String(notes || '').trim();
 
     if (!trimmedName || !trimmedEmail || !trimmedPhone) {
       return res.status(400).json({ success: false, message: 'Please complete your name, email, and phone number.' });
@@ -343,6 +344,11 @@ app.post('/api/careers/apply', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please upload a video sample.' });
     }
 
+    const existingApplicant = await findCareerApplicantByEmail(trimmedEmail);
+    if (existingApplicant) {
+      return res.status(409).json({ success: false, message: 'An application already exists for this email address. Please contact support if you need to update your application.' });
+    }
+
     const applicant = {
       id: crypto.randomUUID(),
       name: trimmedName,
@@ -352,6 +358,8 @@ app.post('/api/careers/apply', async (req, res) => {
       accepted_terms: String(accepted_terms || '').toLowerCase() === 'true' || accepted_terms === true,
       video_name: video_name || 'video',
       video_url: video_url,
+      notes: String(notes || '').trim(),
+      notes: trimmedNotes,
       storage_path: null,
       status: 'Pending',
       submitted_at: new Date().toISOString(),
