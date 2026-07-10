@@ -13,7 +13,15 @@
     .row { display: flex; gap: .8rem; margin-top: 1rem; flex-wrap: wrap; }
     input { flex: 1; min-width: 220px; border: 1px solid rgba(255,255,255,0.12); background: #0b1220; color: white; border-radius: 999px; padding: .85rem 1rem; }
     button { border: 0; background: linear-gradient(135deg, #00c853, #009c40); color: black; font-weight: 800; padding: .85rem 1.1rem; border-radius: 999px; cursor: pointer; }
-    .result { margin-top: 1.2rem; color: #cbd5e1; }
+    .result { margin-top: 1.6rem; }
+    .status-card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 1.5rem; }
+    .status-card h2 { margin: 0 0 0.5rem; font-size: 1.3rem; color: #f8fafc; }
+    .status-card p { margin: 0.6rem 0; color: #cbd5e1; line-height: 1.6; }
+    .status-tag { display: inline-flex; align-items: center; justify-content: center; padding: 0.55rem 0.9rem; border-radius: 999px; background: rgba(0,200,83,0.15); color: #00c853; font-weight: 700; text-transform: uppercase; font-size: 0.82rem; letter-spacing: 0.08em; }
+    .status-details { display: grid; gap: 0.85rem; margin-top: 1rem; }
+    .status-detail { display: flex; justify-content: space-between; gap: 1rem; color: #e2e8f0; }
+    .status-detail span:first-child { color: #94a3b8; }
+    .status-error { background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.2); padding: 1rem; border-radius: 16px; color: #fecaca; }
   </style>
 </head>
 <body>
@@ -34,12 +42,55 @@
   <script>
     const button = document.getElementById('track-btn');
     const result = document.getElementById('result');
+
+    function formatDate(value) {
+      try {
+        const date = new Date(value);
+        return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+      } catch {
+        return value;
+      }
+    }
+
+    function renderStatusCard(applicant) {
+      return `
+        <div class="status-card">
+          <h2>Application summary</h2>
+          <div class="status-tag">${applicant.status || 'Pending'}</div>
+          <div class="status-details">
+            <div class="status-detail"><span>Applicant:</span><strong>${applicant.name || 'Applicant'}</strong></div>
+            <div class="status-detail"><span>Email:</span><strong>${applicant.email || 'N/A'}</strong></div>
+            <div class="status-detail"><span>Submitted:</span><strong>${formatDate(applicant.submitted_at || '')}</strong></div>
+          </div>
+          <p>Thank you for applying to FPL Scout. Your application is currently being reviewed, and we will notify you again once the next update is available.</p>
+          <p>Please check your inbox and spam folder for your tracking email.</p>
+        </div>
+      `;
+    }
+
     button.addEventListener('click', async () => {
-      const email = document.getElementById('email').value;
-      result.textContent = 'Checking...';
-      const response = await fetch(`/api/careers/track?email=${encodeURIComponent(email)}`);
-      const data = await response.json();
-      result.textContent = data.success ? `Status: ${data.applicant.status}` : (data.message || 'Unable to load your application.');
+      const email = document.getElementById('email').value.trim();
+      if (!email) {
+        result.innerHTML = '<div class="status-error">Please enter the email you used to apply.</div>';
+        return;
+      }
+
+      result.innerHTML = '<div class="status-card"><p>Checking your application status…</p></div>';
+
+      try {
+        const response = await fetch(`/api/careers/track?email=${encodeURIComponent(email)}`);
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          result.innerHTML = `<div class="status-error">${data.message || 'Unable to locate your application. Please verify your email and try again.'}</div>`;
+          return;
+        }
+
+        result.innerHTML = renderStatusCard(data.applicant);
+      } catch (error) {
+        console.error('Track error:', error);
+        result.innerHTML = '<div class="status-error">Unable to load your application status right now. Please try again later.</div>';
+      }
     });
   </script>
 </body>

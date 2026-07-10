@@ -27,3 +27,9 @@ test('builds a status email for approved applicants', () => {
   assert.match(email.subject, /Approved/);
   assert.match(email.html, /https:\/\/example\.com\/upload/);
 });
+
+test('builds a pending status email with a track application link', () => {
+  const email = buildCareerStatusEmail({ name: 'Ada', status: 'pending', trackLink: 'https://example.com/careers/track?email=ada@example.com' });
+  assert.match(email.subject, /received|pending/i);
+  assert.match(email.html, /https:\/\/example\.com\/careers\/track\?email=ada@example\.com/);
+});

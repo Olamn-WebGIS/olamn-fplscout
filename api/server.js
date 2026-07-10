@@ -129,6 +129,32 @@ function getCareerApplicantByEmail(email) {
   return careerApplicationsInMemory.find((applicant) => normalizeEmail(applicant.email) === normalized);
 }
 
+async function findCareerApplicantByEmail(email) {
+  const normalized = normalizeEmail(email);
+  let applicant = getCareerApplicantByEmail(normalized);
+  if (applicant) return applicant;
+
+  if (!supabase) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('careers_applications')
+      .select('*')
+      .eq('email', normalized)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    careerApplicationsInMemory.unshift(data);
+    return data;
+  } catch (error) {
+    console.error('Career track lookup failed:', error.message || error);
+    return null;
+  }
+}
+
 async function persistCareerApplicant(applicant) {
   careerApplicationsInMemory.unshift(applicant);
 
@@ -156,7 +182,25 @@ async function persistCareerApplicant(applicant) {
 }
 
 async function updateCareerApplicantStatus(applicantId, status) {
-  const applicant = careerApplicationsInMemory.find((item) => item.id === applicantId);
+  let applicant = careerApplicationsInMemory.find((item) => item.id === applicantId);
+
+  if (!applicant && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('careers_applications')
+        .select('*')
+        .eq('id', applicantId)
+        .single();
+
+      if (!error && data) {
+        applicant = data;
+        careerApplicationsInMemory.unshift(applicant);
+      }
+    } catch (error) {
+      console.warn('Supabase fallback load failed for applicant status update:', error.message);
+    }
+  }
+
   if (!applicant) return null;
 
   applicant.status = makeStatusLabel(status);
@@ -186,6 +230,7 @@ async function sendCareerApplicationEmail(applicant, videoFile) {
       <p><strong>Phone:</strong> ${applicant.phone || 'Not provided'}</p>
       <p><strong>Experience:</strong> ${applicant.has_experience === 'yes' ? 'Yes' : 'No'}</p>
       <p><strong>Terms Accepted:</strong> ${applicant.accepted_terms === 'true' || applicant.accepted_terms === true ? 'Yes' : 'No'}</p>
+      ${applicant.notes ? `<p><strong>Football content experience:</strong> ${applicant.notes}</p>` : ''}
       <p><strong>Video:</strong> <a href="${applicant.video_url}">${applicant.video_url}</a></p>
     </div>
   `;
@@ -214,10 +259,12 @@ async function sendCareerApplicationEmail(applicant, videoFile) {
 
 async function sendCareerStatusEmail(applicant, status) {
   const uploadLink = applicant.access_token ? `${BASE_URL}/careers/test-upload/${applicant.access_token}` : null;
+  const trackLink = applicant.email ? `${BASE_URL}/careers/track?email=${encodeURIComponent(applicant.email)}` : null;
   const { subject, html } = buildCareerStatusEmail({
     name: applicant.name,
     status,
     uploadLink,
+    trackLink,
   });
 
   try {
@@ -326,6 +373,19 @@ app.post('/api/careers/apply', async (req, res) => {
 
 app.get('/api/careers/applicants', requireAdminSession, async (req, res) => {
   try {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('careers_applications')
+        .select('*')
+        .order('submitted_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        careerApplicationsInMemory.length = 0;
+        careerApplicationsInMemory.push(...data);
+        return res.json({ success: true, applicants: data });
+      }
+    }
+
     const applicants = careerApplicationsInMemory.slice().sort((a, b) => new Date(b.submitted_at || 0) - new Date(a.submitted_at || 0));
     return res.json({ success: true, applicants });
   } catch (error) {
@@ -341,7 +401,7 @@ app.get('/api/careers/track', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide an email address.' });
     }
 
-    const applicant = getCareerApplicantByEmail(email);
+    const applicant = await findCareerApplicantByEmail(email);
     if (!applicant) {
       return res.status(404).json({ success: false, message: 'We could not find an application with that email.' });
     }

@@ -27,25 +27,32 @@
     .hero-card p { color: var(--brand-muted); font-size: clamp(0.9rem, 2vw, 1.04rem); line-height: 1.6; margin: 0.5rem 0; }
     .hero-side { background: linear-gradient(135deg, rgba(0,200,83,.2), rgba(15,23,42,0.8)); border-radius: 16px; padding: 1.2rem; }
     .hero-side h3 { font-size: clamp(0.95rem, 2vw, 1.1rem); }
-    .quick-stats { display: grid; gap: 0.6rem; margin-top: 0.8rem; }
-    .quick-stats div { background: rgba(255,255,255,0.05); padding: 0.7rem 0.9rem; border-radius: 10px; font-size: clamp(0.85rem, 1.5vw, 0.95rem); }
-    .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.2rem; }
+    .quick-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin-top: 0.8rem; align-items: stretch; }
+    .quick-stats div { background: rgba(255,255,255,0.05); padding: 1rem 1.1rem; border-radius: 14px; font-size: clamp(0.85rem, 1.5vw, 0.95rem); min-height: 110px; display: flex; align-items: center; justify-content: center; text-align: center; }
+    .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.2rem; align-items: start; }
     .content-card, .form-card { padding: 1.4rem; }
+    .form-card { min-width: 0; display: flex; flex-direction: column; width: 100%; }
     .content-card h2, .form-card h2 { margin-bottom: 0.8rem; color: white; font-size: clamp(1.1rem, 2.5vw, 1.3rem); }
     .content-card ul { padding-left: 1rem; color: var(--brand-muted); line-height: 1.7; font-size: clamp(0.9rem, 1.5vw, 0.98rem); }
     .content-card ul li { margin-bottom: 0.5rem; }
-    .form-grid { display: grid; gap: 0.9rem; }
+    .form-grid { display: grid; gap: 0.9rem; width: 100%; }
     .form-group { display: flex; flex-direction: column; gap: .3rem; }
     .form-group label { font-weight: 600; color: white; font-size: clamp(0.85rem, 1.5vw, 0.95rem); }
-    .form-group input, .form-group select, .form-group textarea { border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 0.75rem 0.9rem; font: inherit; background: #0b1220; color: white; font-size: clamp(0.9rem, 1.5vw, 1rem); }
+    .form-group input, .form-group select, .form-group textarea { border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 0.75rem 0.9rem; font: inherit; background: #0b1220; color: white; font-size: clamp(0.9rem, 1.5vw, 1rem); width: 100%; }
     .form-group input::placeholder, .form-group textarea::placeholder { color: #64748b; }
-    .submit-btn { border: 0; background: linear-gradient(135deg, var(--brand-green), var(--brand-green-dark)); color: black; font-weight: 800; padding: 0.85rem 1.2rem; border-radius: 999px; cursor: pointer; font-size: clamp(0.9rem, 1.5vw, 1rem); }
+    .submit-btn { border: 0; background: linear-gradient(135deg, var(--brand-green), var(--brand-green-dark)); color: black; font-weight: 800; padding: 0.85rem 1.2rem; border-radius: 999px; cursor: pointer; font-size: clamp(0.9rem, 1.5vw, 1rem); width: 100%; }
     .submit-btn:disabled { opacity: .65; cursor: not-allowed; }
     .helper { color: var(--brand-muted); font-size: clamp(0.8rem, 1.5vw, 0.9rem); margin-top: 0.3rem; }
     .status-pill { display: inline-block; padding: 0.3rem 0.6rem; border-radius: 999px; background: rgba(0,200,83,0.16); color: var(--brand-green); font-weight: 700; font-size: clamp(0.7rem, 1.2vw, 0.8rem); margin-top: 0.7rem; }
     .deadline { color: #fef3c7; font-size: clamp(0.85rem, 1.5vw, 0.95rem); margin-top: 0.6rem; }
     .terms-row { display: flex; gap: 0.5rem; align-items: flex-start; color: var(--brand-muted); font-size: clamp(0.8rem, 1.5vw, 0.9rem); }
     .terms-row input { margin-top: 0.25rem; min-width: 18px; cursor: pointer; }
+    .modal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.9); padding: 1rem; z-index: 1000; }
+    .modal.hidden { display: none; }
+    .modal-content { width: 100%; max-width: 520px; background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255,255,255,0.12); border-radius: 24px; padding: 1.75rem; box-shadow: 0 24px 60px rgba(0,0,0,0.35); color: #f8fafc; text-align: center; }
+    .modal-content h2 { margin: 0 0 1rem; font-size: clamp(1.3rem, 2.4vw, 1.8rem); }
+    .modal-content p { margin: 0 0 1.4rem; color: #cbd5e1; line-height: 1.6; }
+    .modal-close { display: inline-flex; align-items: center; justify-content: center; min-width: 140px; background: linear-gradient(135deg, var(--brand-green), var(--brand-green-dark)); color: black; border: none; border-radius: 999px; padding: 0.85rem 1rem; font-weight: 700; cursor: pointer; }
     
     @media (max-width: 768px) {
       .careers-shell { margin: 1rem auto 2.5rem; padding: 0 0.85rem; }
@@ -63,8 +70,8 @@
       .hero-card p { font-size: 0.88rem; line-height: 1.5; margin: 0.3rem 0; }
       .hero-side { padding: 0.8rem; margin-top: 0.5rem; }
       .hero-side h3 { font-size: 0.9rem; margin: 0 0 0.4rem; }
-      .quick-stats { gap: 0.4rem; margin-top: 0.5rem; }
-      .quick-stats div { padding: 0.5rem 0.7rem; font-size: 0.82rem; line-height: 1.3; }
+      .quick-stats { gap: 0.4rem; margin-top: 0.5rem; grid-template-columns: 1fr; }
+      .quick-stats div { padding: 0.9rem 0.9rem; font-size: 0.88rem; line-height: 1.4; min-height: 100px; }
       .layout { gap: 0.6rem; margin-top: 0.6rem; }
       .content-card { display: none; }
       .form-card { padding: 0.9rem; border-radius: 12px; }
@@ -80,6 +87,7 @@
         border-radius: 6px;
         min-height: 44px;
         line-height: 1.4;
+        width: 100%;
       }
       .form-group input[type="file"] { padding: 0.5rem; }
       .form-group textarea { min-height: 100px; resize: vertical; }
@@ -198,6 +206,13 @@
     </section>
   </main>
   <div id="footer-placeholder"></div>
+  <div id="submission-modal" class="modal hidden" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="submission-modal-title">
+      <h2 id="submission-modal-title">Application submitted</h2>
+      <p>Your application has been received successfully. Please check your email or spam folder for the tracking link so you can follow your application status.</p>
+      <button id="submission-modal-close" class="modal-close" type="button">Close</button>
+    </div>
+  </div>
   <script src="/layout.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -205,6 +220,8 @@
     const submitBtn = document.getElementById('submit-btn');
     const messageBox = document.getElementById('form-message');
     const deadlineMessage = document.getElementById('deadline-message');
+    const submissionModal = document.getElementById('submission-modal');
+    const submissionModalClose = document.getElementById('submission-modal-close');
 
     const deadline = new Date('2026-08-01T23:59:59.999Z');
     if (new Date() > deadline) {
@@ -214,6 +231,23 @@
         if (element.id !== 'submit-btn') element.disabled = true;
       });
     }
+
+    function openSubmissionModal() {
+      if (!submissionModal) return;
+      submissionModal.classList.remove('hidden');
+      submissionModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeSubmissionModal() {
+      if (!submissionModal) return;
+      submissionModal.classList.add('hidden');
+      submissionModal.setAttribute('aria-hidden', 'true');
+    }
+
+    submissionModalClose?.addEventListener('click', closeSubmissionModal);
+    submissionModal?.addEventListener('click', (event) => {
+      if (event.target === submissionModal) closeSubmissionModal();
+    });
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -328,12 +362,16 @@
         }
 
         const result = await applicationResponse.json();
-        messageBox.textContent = result.message || 'Application submitted successfully!';
         if (result.success) {
+          const successMessage = 'Your application has been submitted successfully. Please check your email or spam folder for the tracking link to track your application status.';
+          messageBox.textContent = successMessage;
+          openSubmissionModal();
           form.reset();
           setTimeout(() => {
             messageBox.textContent = '';
-          }, 5000);
+          }, 8000);
+        } else {
+          messageBox.textContent = result.message || 'Application submitted successfully!';
         }
       } catch (error) {
         console.error('Form submission error:', error);
