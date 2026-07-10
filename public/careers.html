@@ -244,7 +244,7 @@
         // Validate video file size (23MB max)
         const maxSize = 23 * 1024 * 1024;
         if (videoFile.size > maxSize) {
-          messageBox.textContent = 'Video file is too large. Maximum size is 23MB.';
+          messageBox.textContent = 'Video file is too large. Maximum size is 23MB. Please compress or trim your video.';
           submitBtn.disabled = false;
           return;
         }
@@ -255,6 +255,11 @@
           messageBox.textContent = 'Invalid video format. Accepted formats: MP4, MOV, MKV, WebM, AVI.';
           submitBtn.disabled = false;
           return;
+        }
+
+        // Check if file is too large for Vercel (>5MB) and warn user
+        if (videoFile.size > 5 * 1024 * 1024) {
+          messageBox.textContent = 'Video is large. Sending may take longer...';
         }
 
         // Send application data to API (without video file - it will be handled by backend)
