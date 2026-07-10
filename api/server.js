@@ -9,8 +9,17 @@ const fs = require('fs');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const sanitizeHtml = require('sanitize-html');
+const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
 const { calculateAvailableAffiliateBalance } = require('./affiliate-balance');
+const {
+  normalizeEmail,
+  isCareerSubmissionOpen,
+  validateCareerVideo,
+  makeStatusLabel,
+  saveUploadToTemp,
+  removeTempFile,
+} = require('./careers-utils');
 require('dotenv').config(); // Load environment variables
 
 const app = express();
@@ -34,8 +43,14 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-const supabaseAdmin = SUPABASE_SERVICE_ROLE_KEY ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) : null;
+const supabase = SUPABASE_URL && SUPABASE_KEY ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) : null;
+
+const careerApplicationsInMemory = [];
+const careerUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 23 * 1024 * 1024 },
+});
 
 if (!SUPABASE_SERVICE_ROLE_KEY) {
   console.warn('Warning: SUPABASE_SERVICE_ROLE_KEY is not configured. Admin write operations will fail if row-level security is enabled.');
@@ -86,6 +101,302 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 // Allow larger payloads for image upload base64 payloads
 app.use(express.json({ limit: '12mb' }));
+app.use(express.urlencoded({ extended: true, limit: '12mb' }));
+
+app.get('/careers', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'public', 'careers.html'));
+});
+
+app.get('/careers/track', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'public', 'careers-track.html'));
+});
+
+app.get('/careers/admin', (req, res) => {
+  res.redirect('/admin');
+});
+
+app.get('/careers/test-upload/:token', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'public', 'careers-test-upload.html'));
+});
+
+function getCareerApplicantByIdOrToken(identifier) {
+  return careerApplicationsInMemory.find((applicant) => applicant.id === identifier || applicant.access_token === identifier || applicant.email === identifier);
+}
+
+function getCareerApplicantByEmail(email) {
+  const normalized = normalizeEmail(email);
+  return careerApplicationsInMemory.find((applicant) => normalizeEmail(applicant.email) === normalized);
+}
+
+async function persistCareerApplicant(applicant) {
+  careerApplicationsInMemory.unshift(applicant);
+
+  if (!supabaseAdmin) return applicant;
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('careers_applications')
+      .insert([applicant])
+      .select()
+      .single();
+
+    if (!error && data) {
+      const index = careerApplicationsInMemory.findIndex((item) => item.id === applicant.id);
+      if (index !== -1) {
+        careerApplicationsInMemory[index] = { ...careerApplicationsInMemory[index], ...data };
+      }
+      return { ...applicant, ...data };
+    }
+  } catch (error) {
+    console.warn('Supabase careers applicant persistence failed:', error.message);
+  }
+
+  return applicant;
+}
+
+async function updateCareerApplicantStatus(applicantId, status) {
+  const applicant = careerApplicationsInMemory.find((item) => item.id === applicantId);
+  if (!applicant) return null;
+
+  applicant.status = makeStatusLabel(status);
+  applicant.status_updated_at = new Date().toISOString();
+
+  if (supabaseAdmin) {
+    try {
+      await supabaseAdmin
+        .from('careers_applications')
+        .update({ status: applicant.status, status_updated_at: applicant.status_updated_at })
+        .eq('id', applicantId);
+    } catch (error) {
+      console.warn('Supabase careers applicant status update failed:', error.message);
+    }
+  }
+
+  return applicant;
+}
+
+async function sendCareerApplicationEmail(applicant, videoUrl) {
+  const subject = `New FPL Content Creator Application – ${applicant.name}`;
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;">
+      <h2 style="color:#00c853;">New Careers Application</h2>
+      <p><strong>Name:</strong> ${applicant.name}</p>
+      <p><strong>Email:</strong> ${applicant.email}</p>
+      <p><strong>Phone:</strong> ${applicant.phone || 'Not provided'}</p>
+      <p><strong>Experience:</strong> ${applicant.has_experience === 'yes' ? 'Yes' : 'No'}</p>
+      <p><strong>Terms Accepted:</strong> ${applicant.accepted_terms === 'true' ? 'Yes' : 'No'}</p>
+      <p><strong>Video:</strong> <a href="${videoUrl}">${videoUrl}</a></p>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `${ZOHO_OTP_EMAIL}`,
+      to: CAREER_ADMIN_EMAIL,
+      subject,
+      html,
+    });
+  } catch (error) {
+    console.warn('Career application email failed:', error.message);
+  }
+}
+
+async function sendCareerStatusEmail(applicant, status) {
+  const statusLabel = makeStatusLabel(status);
+  const subject = `FPL Scout Careers Update – ${statusLabel}`;
+  const uploadLink = applicant.access_token ? `${BASE_URL}/careers/test-upload/${applicant.access_token}` : null;
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;">
+      <h2 style="color:#00c853;">Application Update</h2>
+      <p>Hi ${applicant.name || 'there'},</p>
+      <p>Your application status has been updated to <strong>${statusLabel}</strong>.</p>
+      ${uploadLink && statusLabel === 'Approved' ? `<p>You can now access the test-upload portal here: <a href="${uploadLink}">${uploadLink}</a></p>` : ''}
+      <p>Thanks,<br />FPL Scout Team</p>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `${ZOHO_OTP_EMAIL}`,
+      to: applicant.email,
+      subject,
+      html,
+    });
+  } catch (error) {
+    console.warn('Career status email failed:', error.message);
+  }
+}
+
+app.post('/api/careers/apply', careerUpload.single('video'), async (req, res) => {
+  try {
+    if (!isCareerSubmissionOpen(new Date())) {
+      return res.status(403).json({ success: false, message: 'Applications are now closed. The deadline was August 1, 2026.' });
+    }
+
+    const { name, email, phone, has_experience, accepted_terms } = req.body || {};
+    const trimmedName = String(name || '').trim();
+    const trimmedEmail = normalizeEmail(email);
+    const trimmedPhone = String(phone || '').trim();
+
+    if (!trimmedName || !trimmedEmail || !trimmedPhone) {
+      return res.status(400).json({ success: false, message: 'Please complete your name, email, and phone number.' });
+    }
+
+    if (accepted_terms !== 'true') {
+      return res.status(400).json({ success: false, message: 'You must accept the terms and conditions to apply.' });
+    }
+
+    if (!['yes', 'no'].includes(String(has_experience || '').toLowerCase())) {
+      return res.status(400).json({ success: false, message: 'Please answer whether you have at least 1 year of experience.' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Please upload a video sample.' });
+    }
+
+    const videoValidation = validateCareerVideo(req.file);
+    if (!videoValidation.valid) {
+      return res.status(400).json({ success: false, message: videoValidation.message });
+    }
+
+    const fileName = `${Date.now()}-${String(req.file.originalname || 'video').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+    const storagePath = `careers/${fileName}`;
+    let uploadedVideoUrl = '';
+
+    if (supabaseAdmin) {
+      try {
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from('careers-videos')
+          .upload(storagePath, req.file.buffer, {
+            contentType: req.file.mimetype || 'video/mp4',
+            upsert: false,
+          });
+
+        if (!uploadError) {
+          const { data: publicData } = supabaseAdmin.storage.from('careers-videos').getPublicUrl(storagePath);
+          uploadedVideoUrl = publicData?.publicUrl || '';
+        } else {
+          console.warn('Career video upload to Supabase failed:', uploadError.message);
+        }
+      } catch (error) {
+        console.warn('Career video upload crashed:', error.message);
+      }
+    }
+
+    const applicant = {
+      id: crypto.randomUUID(),
+      name: trimmedName,
+      email: trimmedEmail,
+      phone: trimmedPhone,
+      has_experience: String(has_experience || '').toLowerCase(),
+      accepted_terms: String(accepted_terms || '').toLowerCase() === 'true',
+      video_name: req.file.originalname || 'video',
+      video_url: uploadedVideoUrl,
+      storage_path: uploadedVideoUrl ? storagePath : null,
+      status: 'Pending',
+      submitted_at: new Date().toISOString(),
+      access_token: crypto.randomBytes(8).toString('hex'),
+    };
+
+    const persistedApplicant = await persistCareerApplicant(applicant);
+
+    if (!uploadedVideoUrl) {
+      uploadedVideoUrl = `${BASE_URL}/careers/track?email=${encodeURIComponent(trimmedEmail)}`;
+    }
+
+    await sendCareerApplicationEmail(persistedApplicant, uploadedVideoUrl);
+
+    return res.json({ success: true, message: 'Application received successfully. We will review it shortly.', applicant: persistedApplicant });
+  } catch (error) {
+    console.error('Career application submission failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to submit your application right now.' });
+  }
+});
+
+app.get('/api/careers/applicants', requireAdminSession, async (req, res) => {
+  try {
+    const applicants = careerApplicationsInMemory.slice().sort((a, b) => new Date(b.submitted_at || 0) - new Date(a.submitted_at || 0));
+    return res.json({ success: true, applicants });
+  } catch (error) {
+    console.error('Career applicants fetch failed:', error);
+    return res.status(500).json({ success: false, message: 'Could not load applicants.' });
+  }
+});
+
+app.get('/api/careers/track', async (req, res) => {
+  try {
+    const email = normalizeEmail(req.query.email);
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Please provide an email address.' });
+    }
+
+    const applicant = getCareerApplicantByEmail(email);
+    if (!applicant) {
+      return res.status(404).json({ success: false, message: 'We could not find an application with that email.' });
+    }
+
+    return res.json({ success: true, applicant: { name: applicant.name, status: applicant.status, submitted_at: applicant.submitted_at } });
+  } catch (error) {
+    console.error('Career track lookup failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to retrieve your application status.' });
+  }
+});
+
+app.put('/api/admin/careers-applicants/:id/status', requireAdminSession, async (req, res) => {
+  try {
+    const { status } = req.body || {};
+    const applicant = await updateCareerApplicantStatus(req.params.id, status);
+    if (!applicant) {
+      return res.status(404).json({ success: false, message: 'Applicant not found.' });
+    }
+
+    await sendCareerStatusEmail(applicant, status);
+    return res.json({ success: true, applicant });
+  } catch (error) {
+    console.error('Career applicant status update failed:', error);
+    return res.status(500).json({ success: false, message: 'Failed to update applicant status.' });
+  }
+});
+
+app.post('/api/careers/test-upload/:token', careerUpload.single('video'), async (req, res) => {
+  try {
+    const applicant = getCareerApplicantByIdOrToken(req.params.token);
+    if (!applicant) {
+      return res.status(404).json({ success: false, message: 'This upload link is not valid.' });
+    }
+
+    if (String(applicant.status || '').toLowerCase() !== 'approved') {
+      return res.status(403).json({ success: false, message: 'This upload portal is only available for approved applicants.' });
+    }
+
+    const videoValidation = validateCareerVideo(req.file || {});
+    if (!videoValidation.valid) {
+      return res.status(400).json({ success: false, message: videoValidation.message });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Please upload a video file.' });
+    }
+
+    const tempPath = await saveUploadToTemp(req.file);
+    const mailOptions = {
+      from: `${ZOHO_OTP_EMAIL}`,
+      to: CAREER_ADMIN_EMAIL,
+      subject: `Test Video Upload – ${applicant.name}`,
+      html: `<p>Approved applicant ${applicant.name} submitted a test video.</p>`,
+      attachments: [{ filename: req.file.originalname || 'test-upload.mp4', content: fs.createReadStream(tempPath) }],
+    };
+
+    await transporter.sendMail(mailOptions);
+    await removeTempFile(tempPath);
+
+    return res.json({ success: true, message: 'Test video received and forwarded to the team.' });
+  } catch (error) {
+    console.error('Career test upload failed:', error);
+    return res.status(500).json({ success: false, message: 'Unable to process your test video right now.' });
+  }
+});
+
 app.use(express.static(path.join(process.cwd(), 'public')));
 
 // ── Admin image upload (receives base64 payload) ────────────
@@ -286,6 +597,7 @@ const ZOHO_OTP_EMAIL = process.env.ZOHO_OTP_EMAIL || process.env.ZOHO_EMAIL || '
 const ZOHO_OTP_PASSWORD = process.env.ZOHO_OTP_PASSWORD || process.env.ZOHO_PASSWORD;
 const ZOHO_NEWSLETTER_EMAIL = process.env.ZOHO_NEWSLETTER_EMAIL || 'olamn@fplscout.name.ng';
 const ZOHO_NEWSLETTER_PASSWORD = process.env.ZOHO_NEWSLETTER_PASSWORD || process.env.ZOHO_PASSWORD;
+const CAREER_ADMIN_EMAIL = process.env.CAREER_ADMIN_EMAIL || ZOHO_OTP_EMAIL;
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.zoho.com',

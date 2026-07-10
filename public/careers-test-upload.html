@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Approved Test Upload | FPL Scout</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    body { background: linear-gradient(135deg, #07111f 0%, #0f172a 100%); color: #f8fafc; }
+    .shell { max-width: 720px; margin: 3rem auto 4rem; padding: 0 1.2rem; }
+    .card { background: rgba(15,23,42,0.95); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 2rem; }
+    input { width: 100%; margin-top: .7rem; border: 1px solid rgba(255,255,255,0.12); background: #0b1220; color: white; border-radius: 12px; padding: .8rem .95rem; }
+    button { margin-top: 1rem; border: 0; background: linear-gradient(135deg, #00c853, #009c40); color: black; font-weight: 800; padding: .95rem 1.2rem; border-radius: 999px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main class="shell">
+    <div class="card">
+      <h1>Approved test upload</h1>
+      <p>This portal is only available to applicants whose status has been marked as Approved.</p>
+      <form id="test-upload-form" enctype="multipart/form-data">
+        <input id="video" name="video" type="file" accept="video/*" required />
+        <button type="submit">Send test video</button>
+      </form>
+      <div id="result" style="margin-top: 1rem;"></div>
+    </div>
+  </main>
+  <div id="footer-placeholder"></div>
+  <script src="/layout.js"></script>
+  <script>
+    const token = window.location.pathname.split('/').pop();
+    const form = document.getElementById('test-upload-form');
+    const result = document.getElementById('result');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const formData = new FormData(form);
+      const response = await fetch(`/api/careers/test-upload/${token}`, { method: 'POST', body: formData });
+      const data = await response.json();
+      result.textContent = data.message || 'Unable to upload your video.';
+    });
+  </script>
+</body>
+</html>

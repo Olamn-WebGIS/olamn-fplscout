@@ -23,10 +23,14 @@ const transactionHistoryBody = document.getElementById('transaction-history-body
 const financialRevenue = document.getElementById('financial-revenue');
 const financialPayouts = document.getElementById('financial-payouts');
 const financialProfit = document.getElementById('financial-profit');
+const careersApplicantsBody = document.getElementById('careers-applicants-body');
+const careersApplicantsNote = document.getElementById('careers-applicants-note');
+const careersApplicantsCard = document.getElementById('careers-applicants-card');
 const adminTabsCard = document.getElementById('admin-tabs-card');
 const withdrawalTabPanel = document.getElementById('withdrawal-tab');
 const financialTabPanel = document.getElementById('financial-tab');
 const blogTabPanel = document.getElementById('blog-tab');
+const careersTabPanel = document.getElementById('careers-tab');
 const tabButtons = document.querySelectorAll('.tab-btn');
 // Fixtures elements
 const fixturesCard = document.getElementById('fixtures-card');
@@ -206,6 +210,78 @@ function renderSignupAttempts() {
       <td>${attempt.ref_code || attempt.refCode || '—'}</td>
     </tr>
   `).join('');
+}
+
+async function loadCareersApplicants() {
+  if (!careersApplicantsBody || !careersApplicantsNote) return;
+
+  const card = careersApplicantsCard;
+  if (card) card.classList.remove('hidden');
+
+  try {
+    const res = await fetch('/api/careers/applicants', { credentials: 'same-origin' });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      careersApplicantsNote.textContent = data?.message || 'Unable to load careers applicants.';
+      careersApplicantsBody.innerHTML = '<tr><td colspan="5">No data to display.</td></tr>';
+      return;
+    }
+
+    const applicants = Array.isArray(data.applicants) ? data.applicants : [];
+    if (!applicants.length) {
+      careersApplicantsNote.textContent = 'No careers applicants yet.';
+      careersApplicantsBody.innerHTML = '<tr><td colspan="5">No careers applicants yet.</td></tr>';
+      return;
+    }
+
+    careersApplicantsNote.textContent = `Showing ${applicants.length} applicant(s).`;
+    careersApplicantsBody.innerHTML = applicants.map((applicant) => `
+      <tr>
+        <td>${applicant.name || '—'}</td>
+        <td>${applicant.email || '—'}</td>
+        <td>${applicant.phone || '—'}</td>
+        <td>
+          <select data-id="${applicant.id}" class="careers-status-select">
+            <option value="Pending" ${applicant.status === 'Pending' ? 'selected' : ''}>Pending</option>
+            <option value="Under Review" ${applicant.status === 'Under Review' ? 'selected' : ''}>Under Review</option>
+            <option value="Declined" ${applicant.status === 'Declined' ? 'selected' : ''}>Declined</option>
+            <option value="Approved" ${applicant.status === 'Approved' ? 'selected' : ''}>Approved</option>
+            <option value="Successful" ${applicant.status === 'Successful' ? 'selected' : ''}>Successful</option>
+          </select>
+        </td>
+        <td>${formatDate(applicant.submitted_at)}</td>
+      </tr>
+    `).join('');
+
+    careersApplicantsBody.querySelectorAll('.careers-status-select').forEach((select) => {
+      select.addEventListener('change', async (event) => {
+        const applicantId = event.target.dataset.id;
+        const status = event.target.value;
+        try {
+          const updateRes = await fetch(`/api/admin/careers-applicants/${encodeURIComponent(applicantId)}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ status }),
+          });
+          const result = await updateRes.json();
+          if (!updateRes.ok || !result.success) {
+            alert(result?.message || 'Unable to update status.');
+            return;
+          }
+          await loadCareersApplicants();
+        } catch (error) {
+          console.error('Career status update failed:', error);
+          alert('Unable to update status.');
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Careers applicants load failed:', error);
+    careersApplicantsNote.textContent = 'Could not load careers applicants.';
+    careersApplicantsBody.innerHTML = '<tr><td colspan="5">Could not load careers applicants.</td></tr>';
+  }
 }
 
 async function loadSignupAttempts() {
@@ -735,6 +811,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         await loadFixtures();
       }
+      if (target === 'careers-tab') {
+        if (!adminAuthenticated) {
+          careersApplicantsNote.textContent = 'Unlock the dashboard to review careers applicants.';
+          careersApplicantsBody.innerHTML = '<tr><td colspan="5">Unlock the dashboard to review careers applicants.</td></tr>';
+          return;
+        }
+        await loadCareersApplicants();
+      }
     });
 
   if (financialFilter) {
@@ -818,6 +902,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('blog-tab').classList.add('active');
       document.getElementById('withdrawal-tab').classList.remove('active');
       document.getElementById('financial-tab').classList.remove('active');
+      document.getElementById('careers-tab').classList.remove('active');
       showStatus(loginStatus, 'Dashboard unlocked.', true);
       await loadAdminPosts();
       await loadSignupAttempts();
@@ -839,6 +924,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     postsListCard.classList.add('hidden');
     withdrawalTabPanel.classList.add('hidden');
     financialTabPanel.classList.add('hidden');
+    careersTabPanel.classList.add('hidden');
     loginCard.classList.remove('hidden');
     showStatus(loginStatus, 'Dashboard locked.', true);
     postStatus.textContent = '';

@@ -184,6 +184,7 @@
               <li><a href="/recommendations" class="spy-lock">Recommendations</a></li>
               <li><a href="/spy" class="spy-lock">League Spy</a></li>
               <li><a href="/fixtures">Live Fixtures</a></li>
+              <li><a href="/careers">Careers</a></li>
             </ul>
           </div>
           <div>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Careers | FPL Scout</title>
+  <meta name="description" content="Apply to join the FPL Scout content team as a weekly football analyst and video creator." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    :root {
+      --brand-green: #00c853;
+      --brand-green-dark: #009c40;
+      --brand-blue: #0f172a;
+      --brand-surface: #111827;
+      --brand-muted: #94a3b8;
+    }
+    body { background: linear-gradient(135deg, #07111f 0%, #0f172a 100%); color: #f8fafc; }
+    .careers-shell { max-width: 1180px; margin: 2rem auto 4rem; padding: 0 1.2rem; }
+    .hero-card, .content-card, .form-card { background: rgba(15,23,42,0.95); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+    .hero-card { padding: 2.5rem; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 2rem; align-items: center; }
+    .hero-badge { display: inline-flex; align-items: center; gap: .5rem; color: var(--brand-green); font-weight: 700; text-transform: uppercase; letter-spacing: .12em; font-size: .8rem; }
+    .hero-card h1 { font-size: clamp(2rem,4vw,3rem); margin: .6rem 0 1rem; color: white; }
+    .hero-card p { color: var(--brand-muted); font-size: 1.04rem; line-height: 1.7; }
+    .hero-side { background: linear-gradient(135deg, rgba(0,200,83,.2), rgba(15,23,42,0.8)); border-radius: 18px; padding: 1.4rem; }
+    .quick-stats { display: grid; gap: .8rem; margin-top: 1rem; }
+    .quick-stats div { background: rgba(255,255,255,0.05); padding: .85rem 1rem; border-radius: 12px; }
+    .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+    .content-card, .form-card { padding: 1.6rem; }
+    .content-card h2, .form-card h2 { margin-bottom: 1rem; color: white; }
+    .content-card ul { padding-left: 1.1rem; color: var(--brand-muted); line-height: 1.8; }
+    .form-grid { display: grid; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: .4rem; }
+    .form-group label { font-weight: 600; color: white; }
+    .form-group input, .form-group select, .form-group textarea { border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: .8rem .95rem; font: inherit; background: #0b1220; color: white; }
+    .form-group input::placeholder, .form-group textarea::placeholder { color: #64748b; }
+    .submit-btn { border: 0; background: linear-gradient(135deg, var(--brand-green), var(--brand-green-dark)); color: black; font-weight: 800; padding: .95rem 1.2rem; border-radius: 999px; cursor: pointer; }
+    .submit-btn:disabled { opacity: .65; cursor: not-allowed; }
+    .helper { color: var(--brand-muted); font-size: .95rem; }
+    .status-pill { display: inline-block; padding: .35rem .65rem; border-radius: 999px; background: rgba(0,200,83,0.16); color: var(--brand-green); font-weight: 700; font-size: .78rem; margin-top: 1rem; }
+    .deadline { color: #fef3c7; font-size: .95rem; margin-top: .8rem; }
+    .terms-row { display: flex; gap: .6rem; align-items: flex-start; color: var(--brand-muted); font-size: .95rem; }
+    .terms-row input { margin-top: .2rem; }
+    @media (max-width: 860px) { .hero-card, .layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <main class="careers-shell">
+    <section class="hero-card">
+      <div>
+        <div class="hero-badge">⚽ FPL Content Creator</div>
+        <h1>Join the Olamn FPL Scout team and shape weekly football content that helps managers win.</h1>
+        <p>We are looking for a passionate football mind who can turn stats, form, injuries, and tactical insight into short-form video content that is clear, sharp, and practical for Fantasy Premier League managers.</p>
+        <div class="status-pill">Application Deadline: August 1, 2026</div>
+        <p class="deadline" id="deadline-message">Submissions are currently open.</p>
+      </div>
+      <div class="hero-side">
+        <h3 style="margin:0 0 .7rem; color:white;">Why join us?</h3>
+        <div class="quick-stats">
+          <div><strong>₦2,000</strong> per approved, high-quality video</div>
+          <div>Up to <strong>40 videos</strong> per season</div>
+          <div>Weekly content with a <strong>football-first</strong> angle</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <div class="content-card">
+        <h2>Role overview</h2>
+        <ul>
+          <li>Create 1 weekly high-energy video focused on transfer and captaincy choices.</li>
+          <li>Translate complex stats into actionable FPL insights.</li>
+          <li>Stay current on team news, injuries, and form to keep content accurate.</li>
+          <li>Work with a professional, analytical voice aligned with the FPL Scout brand.</li>
+        </ul>
+        <h2 style="margin-top:1.4rem;">What we need from you</h2>
+        <ul>
+          <li>Deep understanding of Premier League football and FPL strategy.</li>
+          <li>Evidence of short-form content creation (Reels/Shorts/TikTok).</li>
+          <li>Ability to meet weekly deadlines and deliver polished work.</li>
+          <li>Strong communication and a clear football-first mindset.</li>
+        </ul>
+      </div>
+
+      <div class="form-card">
+        <h2>Apply now</h2>
+        <form id="careers-form" enctype="multipart/form-data">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="name">Full name</label>
+              <input id="name" name="name" required placeholder="Adewale Okafor" />
+            </div>
+            <div class="form-group">
+              <label for="email">Email address</label>
+              <input id="email" name="email" type="email" required placeholder="you@example.com" />
+            </div>
+            <div class="form-group">
+              <label for="phone">Phone number</label>
+              <input id="phone" name="phone" required placeholder="08012345678" />
+            </div>
+            <div class="form-group">
+              <label for="has_experience">Do you have at least 1 year of experience in creating football content?</label>
+              <select id="has_experience" name="has_experience" required>
+                <option value="">Choose one</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="video">Upload a video sample (max 23MB)</label>
+              <input id="video" name="video" type="file" accept="video/*" required />
+              <div class="helper">Accepted formats: MP4, MOV, MKV, WebM, AVI.</div>
+            </div>
+            <div class="form-group">
+              <label for="notes">Tell us about your football content experience</label>
+              <textarea id="notes" name="notes" rows="4" placeholder="Share links or a short summary of your previous football content."></textarea>
+            </div>
+            <div class="terms-row">
+              <input id="accepted_terms" name="accepted_terms" type="checkbox" value="true" />
+              <label for="accepted_terms">I agree that my content may be used for evaluation and promotional purposes by FPL Scout.</label>
+            </div>
+            <button type="submit" class="submit-btn" id="submit-btn">Submit application</button>
+            <div id="form-message" class="helper"></div>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+  <div id="footer-placeholder"></div>
+  <script src="/layout.js"></script>
+  <script>
+    const form = document.getElementById('careers-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const messageBox = document.getElementById('form-message');
+    const deadlineMessage = document.getElementById('deadline-message');
+
+    const deadline = new Date('2026-08-01T23:59:59.999Z');
+    if (new Date() > deadline) {
+      deadlineMessage.textContent = 'Applications are now closed.';
+      submitBtn.disabled = true;
+      form.querySelectorAll('input, select, textarea, button').forEach((element) => {
+        if (element.id !== 'submit-btn') element.disabled = true;
+      });
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      messageBox.textContent = 'Submitting...';
+      submitBtn.disabled = true;
+
+      const formData = new FormData(form);
+      const response = await fetch('/api/careers/apply', {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await response.json();
+      messageBox.textContent = result.message || 'Unable to submit your application.';
+      submitBtn.disabled = false;
+      if (result.success) form.reset();
+    });
+  </script>
+</body>
+</html>

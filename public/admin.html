@@ -56,6 +56,10 @@
     .financial-controls { display:flex; gap:0.75rem; flex-wrap:wrap; margin-bottom:1rem; align-items:center; }
     .financial-controls label { font-size:0.95rem; color:#f8fafc; }
     .financial-controls select { padding:0.7rem 0.85rem; border-radius:12px; border:1px solid rgba(255,255,255,0.12); background:#0d172a; color:#f8fafc; }
+    .careers-table { width:100%; border-collapse: collapse; min-width: 700px; background:#031025; color:#f8fafc; }
+    .careers-table th, .careers-table td { padding: 0.75rem 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.08); text-align: left; }
+    .careers-table th { background: rgba(255,255,255,0.05); color:#f8fafc; font-weight:700; }
+    .careers-table select { padding:0.6rem 0.7rem; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:#0d172a; color:#f8fafc; }
     .custom-date-range { display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center; }
     .custom-date-range.hidden { display:none; }
     .custom-date-range label { font-size:0.95rem; color:#f8fafc; margin-bottom:0; }
@@ -99,6 +103,7 @@
         <button class="tab-btn" data-tab="withdrawal-tab">Withdrawal Requests</button>
         <button class="tab-btn" data-tab="signup-attempts-tab">Signups</button>
         <button class="tab-btn" data-tab="fixtures-tab">Live Fixtures</button>
+        <button class="tab-btn" data-tab="careers-tab">Careers</button>
       </div>
     </div>
 
@@ -246,6 +251,27 @@
             </tr>
           </thead>
           <tbody id="signup-attempts-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="careers-tab" class="tab-panel hidden">
+    <div class="admin-card hidden" id="careers-applicants-card">
+      <h2>Careers Applicants</h2>
+      <p class="status" id="careers-applicants-note">Unlock the dashboard and open this tab to review careers applicants.</p>
+      <div class="table-responsive">
+        <table class="careers-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Status</th>
+              <th>Submitted</th>
+            </tr>
+          </thead>
+          <tbody id="careers-applicants-body"></tbody>
         </table>
       </div>
     </div>
