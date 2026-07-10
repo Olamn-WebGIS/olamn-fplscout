@@ -22,6 +22,22 @@
     .status-detail { display: flex; justify-content: space-between; gap: 1rem; color: #e2e8f0; }
     .status-detail span:first-child { color: #94a3b8; }
     .status-error { background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.2); padding: 1rem; border-radius: 16px; color: #fecaca; }
+    /* Improvements for mobile and spacing between cards */
+    .status-card { margin-bottom: 1rem; }
+    .result > .status-card + .status-card { margin-top: 1rem; }
+    .upload-form { display: flex; gap: .6rem; align-items: center; margin-top: .8rem; }
+    .upload-form input[type="file"] { flex: 1; min-width: 0; border-radius: 12px; padding: .5rem; background: #07121a; }
+    .upload-form button { flex: 0 0 auto; padding: .6rem 1rem; border-radius: 12px; }
+
+    @media (max-width: 520px) {
+      .track-shell { padding: 0 1rem; margin: 2rem auto; }
+      .upload-form { flex-direction: column; align-items: stretch; }
+      .upload-form input[type="file"] { width: 100%; }
+      .upload-form button { width: 100%; margin-top: .6rem; }
+      .status-card { padding: 1rem; }
+      input { border-radius: 12px; }
+      button { border-radius: 12px; }
+    }
   </style>
 </head>
 <body>
@@ -114,7 +130,7 @@
     function renderUploadSection(token) {
       return `
         <div class="status-card">
-          <h2>Approved Test Upload</h2>
+          <h2>Test Upload</h2>
           <p>Upload your test video below. The file must be 25MB or smaller and should be in MP4, MOV, MKV, WebM, or AVI format.</p>
           <form id="approved-upload-form" class="upload-form">
             <input id="approved-upload-file" type="file" accept="video/mp4,video/quicktime,video/x-matroska,video/webm,video/avi" required />
@@ -197,24 +213,56 @@
           return;
         }
 
-        uploadResult.textContent = 'Uploading your test video…';
-
-        const formData = new FormData();
-        formData.append('video', file);
+        uploadResult.textContent = 'Preparing upload...';
 
         try {
-          const uploadResponse = await fetch(`/api/careers/test-upload/${encodeURIComponent(token)}`, {
+          // Request upload metadata from server (storage path + anon key)
+          const prepResp = await fetch('/api/careers/get-upload-url', {
             method: 'POST',
-            body: formData,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileName: file.name }),
           });
-          const uploadData = await uploadResponse.json();
-
-          if (!uploadResponse.ok || !uploadData.success) {
-            uploadResult.textContent = uploadData.message || 'Upload failed. Please try again.';
+          const prep = await prepResp.json();
+          if (!prepResp.ok || !prep.success) {
+            uploadResult.textContent = prep.message || 'Failed to prepare upload.';
             return;
           }
 
-          uploadResult.textContent = uploadData.message || 'Your test video has been uploaded successfully.';
+          const { supabaseUrl, supabaseKey, storagePath, bucket, publicUrl } = prep;
+          uploadResult.textContent = 'Uploading to storage...';
+
+          // Upload directly to Supabase storage to avoid server size limits
+          const storageUrl = `${supabaseUrl.replace(/\/$/, '')}/storage/v1/object/${encodeURIComponent(bucket)}/${encodeURIComponent(storagePath)}`;
+          const uploadResp = await fetch(storageUrl, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': file.type || 'application/octet-stream',
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+            },
+            body: file,
+          });
+
+          if (!uploadResp.ok) {
+            const text = await uploadResp.text().catch(() => 'no body');
+            console.error('Supabase storage upload failed', uploadResp.status, text);
+            uploadResult.textContent = 'Upload to storage failed. Please try again.';
+            return;
+          }
+
+          // Notify server so it can email admin / record the upload
+          const notifyResp = await fetch(`/api/careers/test-upload-notify/${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ video_url: publicUrl, video_name: file.name }),
+          });
+          const notifyData = await notifyResp.json();
+          if (!notifyResp.ok || !notifyData.success) {
+            uploadResult.textContent = notifyData.message || 'Upload succeeded but notification failed.';
+            return;
+          }
+
+          uploadResult.textContent = notifyData.message || 'Your test video has been uploaded successfully.';
         } catch (uploadError) {
           console.error('Upload error:', uploadError);
           uploadResult.textContent = 'Unable to upload your video right now. Please try again later.';

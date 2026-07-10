@@ -543,6 +543,7 @@ app.post('/api/careers/test-upload-notify/:token', async (req, res) => {
     const mailOptions = {
       from: `${ZOHO_OTP_EMAIL}`,
       to: CAREER_ADMIN_EMAIL,
+      cc: ZOHO_OTP_EMAIL,
       subject: `Test Video Upload – ${applicant.name}`,
       html: `
         <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;">
@@ -554,8 +555,8 @@ app.post('/api/careers/test-upload-notify/:token', async (req, res) => {
         </div>
       `,
     };
-
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Test upload notification sent:', info && info.messageId ? info.messageId : '(no messageId)');
     return res.json({ success: true, message: 'Test video upload confirmed. The team has been notified.' });
   } catch (error) {
     console.error('Career test upload notify failed:', error);

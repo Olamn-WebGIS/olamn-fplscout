@@ -23,9 +23,9 @@ test('normalizes applicant emails to lowercase', () => {
 });
 
 test('builds a status email for approved applicants', () => {
-  const email = buildCareerStatusEmail({ name: 'Ada', status: 'approved', uploadLink: 'https://example.com/upload' });
+  const email = buildCareerStatusEmail({ name: 'Ada', status: 'approved', uploadLink: 'https://example.com/careers/track?email=ada@example.com' });
   assert.match(email.subject, /Approved/);
-  assert.match(email.html, /https:\/\/example\.com\/upload/);
+  assert.match(email.html, /https:\/\/example\.com\/careers\/track\?email=ada@example\.com/);
 });
 
 test('builds a pending status email with a track application link', () => {
