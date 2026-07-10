@@ -129,78 +129,41 @@ function getCareerApplicantByEmail(email) {
   return careerApplicationsInMemory.find((applicant) => normalizeEmail(applicant.email) === normalized);
 }
 
-async function findCareerApplicantByEmail(email) {
-  const normalized = normalizeEmail(email);
-  let applicant = getCareerApplicantByEmail(normalized);
-  if (applicant) return applicant;
-
-  if (!supabase) return null;
-
-  try {
-    const { data, error } = await supabase
-      .from('careers_applications')
-      .select('*')
-      .eq('email', normalized)
-      .single();
-
-    if (error || !data) {
-      return null;
-    }
-
-    careerApplicationsInMemory.unshift(data);
-    return data;
-  } catch (error) {
-    console.error('Career track lookup failed:', error.message || error);
-    return null;
-  }
-}
-
 async function persistCareerApplicant(applicant) {
+  // add to in-memory cache for quick access
   careerApplicationsInMemory.unshift(applicant);
 
-  if (!supabaseAdmin) return applicant;
+  const dbClient = supabaseAdmin || supabase;
+  if (!dbClient) {
+    throw new Error('Supabase client not configured. Set SUPABASE_SERVICE_ROLE_KEY or SUPABASE_KEY.');
+  }
 
   try {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await dbClient
       .from('careers_applications')
       .insert([applicant])
       .select()
       .single();
 
-    if (!error && data) {
-      const index = careerApplicationsInMemory.findIndex((item) => item.id === applicant.id);
-      if (index !== -1) {
-        careerApplicationsInMemory[index] = { ...careerApplicationsInMemory[index], ...data };
-      }
-      return { ...applicant, ...data };
+    if (error || !data) {
+      const msg = error?.message || 'Unknown Supabase insert error.';
+      throw new Error(`Career applicant persistence failed: ${msg}`);
     }
-  } catch (error) {
-    console.warn('Supabase careers applicant persistence failed:', error.message);
-  }
 
-  return applicant;
+    const index = careerApplicationsInMemory.findIndex((item) => item.id === applicant.id);
+    if (index !== -1) {
+      careerApplicationsInMemory[index] = { ...careerApplicationsInMemory[index], ...data };
+    }
+
+    return { ...applicant, ...data };
+  } catch (err) {
+    console.error('Supabase careers applicant persistence failed:', err.message || err);
+    throw err;
+  }
 }
 
 async function updateCareerApplicantStatus(applicantId, status) {
-  let applicant = careerApplicationsInMemory.find((item) => item.id === applicantId);
-
-  if (!applicant && supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('careers_applications')
-        .select('*')
-        .eq('id', applicantId)
-        .single();
-
-      if (!error && data) {
-        applicant = data;
-        careerApplicationsInMemory.unshift(applicant);
-      }
-    } catch (error) {
-      console.warn('Supabase fallback load failed for applicant status update:', error.message);
-    }
-  }
-
+  const applicant = careerApplicationsInMemory.find((item) => item.id === applicantId);
   if (!applicant) return null;
 
   applicant.status = makeStatusLabel(status);
@@ -230,7 +193,6 @@ async function sendCareerApplicationEmail(applicant, videoFile) {
       <p><strong>Phone:</strong> ${applicant.phone || 'Not provided'}</p>
       <p><strong>Experience:</strong> ${applicant.has_experience === 'yes' ? 'Yes' : 'No'}</p>
       <p><strong>Terms Accepted:</strong> ${applicant.accepted_terms === 'true' || applicant.accepted_terms === true ? 'Yes' : 'No'}</p>
-      ${applicant.notes ? `<p><strong>Football content experience:</strong> ${applicant.notes}</p>` : ''}
       <p><strong>Video:</strong> <a href="${applicant.video_url}">${applicant.video_url}</a></p>
     </div>
   `;
@@ -259,12 +221,10 @@ async function sendCareerApplicationEmail(applicant, videoFile) {
 
 async function sendCareerStatusEmail(applicant, status) {
   const uploadLink = applicant.access_token ? `${BASE_URL}/careers/test-upload/${applicant.access_token}` : null;
-  const trackLink = applicant.email ? `${BASE_URL}/careers/track?email=${encodeURIComponent(applicant.email)}` : null;
   const { subject, html } = buildCareerStatusEmail({
     name: applicant.name,
     status,
     uploadLink,
-    trackLink,
   });
 
   try {
@@ -326,7 +286,6 @@ app.post('/api/careers/apply', async (req, res) => {
     const trimmedName = String(name || '').trim();
     const trimmedEmail = normalizeEmail(email);
     const trimmedPhone = String(phone || '').trim();
-    const trimmedNotes = String(notes || '').trim();
 
     if (!trimmedName || !trimmedEmail || !trimmedPhone) {
       return res.status(400).json({ success: false, message: 'Please complete your name, email, and phone number.' });
@@ -344,11 +303,6 @@ app.post('/api/careers/apply', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please upload a video sample.' });
     }
 
-    const existingApplicant = await findCareerApplicantByEmail(trimmedEmail);
-    if (existingApplicant) {
-      return res.status(409).json({ success: false, message: 'An application already exists for this email address. Please contact support if you need to update your application.' });
-    }
-
     const applicant = {
       id: crypto.randomUUID(),
       name: trimmedName,
@@ -358,8 +312,6 @@ app.post('/api/careers/apply', async (req, res) => {
       accepted_terms: String(accepted_terms || '').toLowerCase() === 'true' || accepted_terms === true,
       video_name: video_name || 'video',
       video_url: video_url,
-      notes: String(notes || '').trim(),
-      notes: trimmedNotes,
       storage_path: null,
       status: 'Pending',
       submitted_at: new Date().toISOString(),
@@ -371,6 +323,12 @@ app.post('/api/careers/apply', async (req, res) => {
     // Send email notification (video is already in Supabase)
     const emailApplicant = { ...persistedApplicant, video_name };
     await sendCareerApplicationEmail(emailApplicant, null);
+    try {
+      // Notify applicant of receipt (Pending)
+      await sendCareerStatusEmail(persistedApplicant, 'Pending');
+    } catch (err) {
+      console.error('Failed to send applicant status email:', err.message || err);
+    }
 
     return res.json({ success: true, message: 'Application received successfully. We will review it shortly.', applicant: persistedApplicant });
   } catch (error) {
@@ -381,19 +339,6 @@ app.post('/api/careers/apply', async (req, res) => {
 
 app.get('/api/careers/applicants', requireAdminSession, async (req, res) => {
   try {
-    if (supabase) {
-      const { data, error } = await supabase
-        .from('careers_applications')
-        .select('*')
-        .order('submitted_at', { ascending: false });
-
-      if (!error && Array.isArray(data)) {
-        careerApplicationsInMemory.length = 0;
-        careerApplicationsInMemory.push(...data);
-        return res.json({ success: true, applicants: data });
-      }
-    }
-
     const applicants = careerApplicationsInMemory.slice().sort((a, b) => new Date(b.submitted_at || 0) - new Date(a.submitted_at || 0));
     return res.json({ success: true, applicants });
   } catch (error) {
@@ -409,7 +354,7 @@ app.get('/api/careers/track', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide an email address.' });
     }
 
-    const applicant = await findCareerApplicantByEmail(email);
+    const applicant = getCareerApplicantByEmail(email);
     if (!applicant) {
       return res.status(404).json({ success: false, message: 'We could not find an application with that email.' });
     }
