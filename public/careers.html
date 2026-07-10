@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Careers | FPL Scout</title>
   <meta name="description" content="Apply to join the FPL Scout content team as a weekly football analyst and video creator." />
+  <link rel="icon" type="image/svg+xml" href="images/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
@@ -197,8 +198,15 @@
     </section>
   </main>
   <div id="footer-placeholder"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/+esm"></script>
   <script src="/layout.js"></script>
-  <script>
+  <script type="module">
+    // Initialize Supabase client
+    const supabaseUrl = 'https://zkqpjjnfaocnhwtglhjq.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InprcXBqam5mYW9jbmh3dGdsaGpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE0MTkxODUsImV4cCI6MjAzNjk5OTE4NX0.L0RWe_MZYHEIhKIHq_HvVPn_8qZfI24hTf5pM0Oz9aw';
+    const { createClient } = window.supabase;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
     const form = document.getElementById('careers-form');
     const submitBtn = document.getElementById('submit-btn');
     const messageBox = document.getElementById('form-message');
@@ -215,29 +223,90 @@
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      messageBox.textContent = 'Submitting...';
+      messageBox.textContent = 'Uploading video...';
       submitBtn.disabled = true;
 
       try {
-        const formData = new FormData(form);
-        // Verify required fields
-        if (!formData.get('name') || !formData.get('email') || !formData.get('phone') || !formData.get('video')) {
+        // Validate required fields
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const hasExperience = document.getElementById('has_experience').value;
+        const videoFile = document.getElementById('video').files[0];
+        const notes = document.getElementById('notes').value.trim();
+        const acceptedTerms = document.getElementById('accepted_terms').checked;
+
+        if (!name || !email || !phone || !videoFile) {
           messageBox.textContent = 'Please fill in all required fields and select a video.';
           submitBtn.disabled = false;
           return;
         }
-        
-        if (!formData.get('accepted_terms')) {
+
+        if (!acceptedTerms) {
           messageBox.textContent = 'You must accept the terms to apply.';
           submitBtn.disabled = false;
           return;
         }
 
+        // Validate video file size (23MB max)
+        const maxSize = 23 * 1024 * 1024;
+        if (videoFile.size > maxSize) {
+          messageBox.textContent = 'Video file is too large. Maximum size is 23MB.';
+          submitBtn.disabled = false;
+          return;
+        }
+
+        // Validate video format
+        const validFormats = ['video/mp4', 'video/quicktime', 'video/x-matroska', 'video/webm', 'video/x-msvideo'];
+        if (!validFormats.includes(videoFile.type)) {
+          messageBox.textContent = 'Invalid video format. Accepted formats: MP4, MOV, MKV, WebM, AVI.';
+          submitBtn.disabled = false;
+          return;
+        }
+
+        // Upload video to Supabase Storage
+        const timestamp = Date.now();
+        const sanitizedFilename = videoFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const storagePath = `careers/${timestamp}-${sanitizedFilename}`;
+
+        messageBox.textContent = 'Uploading video to server...';
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('careers-videos')
+          .upload(storagePath, videoFile, { upsert: false });
+
+        if (uploadError) {
+          console.error('Video upload error:', uploadError);
+          messageBox.textContent = 'Failed to upload video. Please try again.';
+          submitBtn.disabled = false;
+          return;
+        }
+
+        // Get public URL for the uploaded video
+        const { data: publicData } = supabase.storage
+          .from('careers-videos')
+          .getPublicUrl(storagePath);
+        const videoUrl = publicData?.publicUrl || '';
+
+        // Send application data to API
+        messageBox.textContent = 'Submitting application...';
+        const applicationData = {
+          name,
+          email,
+          phone,
+          has_experience: hasExperience,
+          accepted_terms: 'true',
+          video_name: videoFile.name,
+          video_url: videoUrl,
+          storage_path: storagePath,
+          notes,
+        };
+
         const response = await fetch('/api/careers/apply', {
           method: 'POST',
-          body: formData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(applicationData),
         });
-        
+
         if (!response.ok) {
           const contentType = response.headers.get('content-type');
           let errorMsg = `Error: ${response.status}`;
@@ -248,14 +317,12 @@
             } catch (e) {
               errorMsg = `Server error: ${response.status}`;
             }
-          } else {
-            errorMsg = `Server error: ${response.status}`;
           }
           messageBox.textContent = errorMsg;
           submitBtn.disabled = false;
           return;
         }
-        
+
         const result = await response.json();
         messageBox.textContent = result.message || 'Application submitted successfully!';
         if (result.success) {
@@ -266,7 +333,7 @@
         }
       } catch (error) {
         console.error('Form submission error:', error);
-        messageBox.textContent = 'Network error. Please try again.';
+        messageBox.textContent = error.message || 'An error occurred. Please try again.';
       }
       submitBtn.disabled = false;
     });

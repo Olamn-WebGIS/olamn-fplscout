@@ -230,7 +230,35 @@ app.post('/api/careers/apply', careerUpload.single('video'), async (req, res) =>
       return res.status(403).json({ success: false, message: 'Applications are now closed. The deadline was August 1, 2026.' });
     }
 
-    const { name, email, phone, has_experience, accepted_terms } = req.body || {};
+    // Handle both multipart and JSON requests
+    let name, email, phone, has_experience, accepted_terms, video_url, storage_path, video_name, notes;
+
+    if (req.file) {
+      // Legacy multipart form data upload (for backward compatibility)
+      ({ name, email, phone, has_experience, accepted_terms } = req.body || {});
+      video_name = req.file.originalname;
+      
+      // Upload to Supabase if not already done
+      if (supabaseAdmin && !video_url) {
+        const fileName = `${Date.now()}-${String(video_name || 'video').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        storage_path = `careers/${fileName}`;
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from('careers-videos')
+          .upload(storage_path, req.file.buffer, {
+            contentType: req.file.mimetype || 'video/mp4',
+            upsert: false,
+          });
+
+        if (!uploadError) {
+          const { data: publicData } = supabaseAdmin.storage.from('careers-videos').getPublicUrl(storage_path);
+          video_url = publicData?.publicUrl || '';
+        }
+      }
+    } else {
+      // JSON request (video already uploaded to Supabase)
+      ({ name, email, phone, has_experience, accepted_terms, video_url, storage_path, video_name, notes } = req.body || {});
+    }
+
     const trimmedName = String(name || '').trim();
     const trimmedEmail = normalizeEmail(email);
     const trimmedPhone = String(phone || '').trim();
@@ -239,7 +267,7 @@ app.post('/api/careers/apply', careerUpload.single('video'), async (req, res) =>
       return res.status(400).json({ success: false, message: 'Please complete your name, email, and phone number.' });
     }
 
-    if (accepted_terms !== 'true') {
+    if (accepted_terms !== 'true' && accepted_terms !== true) {
       return res.status(400).json({ success: false, message: 'You must accept the terms and conditions to apply.' });
     }
 
@@ -247,37 +275,8 @@ app.post('/api/careers/apply', careerUpload.single('video'), async (req, res) =>
       return res.status(400).json({ success: false, message: 'Please answer whether you have at least 1 year of experience.' });
     }
 
-    if (!req.file) {
+    if (!video_url) {
       return res.status(400).json({ success: false, message: 'Please upload a video sample.' });
-    }
-
-    const videoValidation = validateCareerVideo(req.file);
-    if (!videoValidation.valid) {
-      return res.status(400).json({ success: false, message: videoValidation.message });
-    }
-
-    const fileName = `${Date.now()}-${String(req.file.originalname || 'video').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-    const storagePath = `careers/${fileName}`;
-    let uploadedVideoUrl = '';
-
-    if (supabaseAdmin) {
-      try {
-        const { error: uploadError } = await supabaseAdmin.storage
-          .from('careers-videos')
-          .upload(storagePath, req.file.buffer, {
-            contentType: req.file.mimetype || 'video/mp4',
-            upsert: false,
-          });
-
-        if (!uploadError) {
-          const { data: publicData } = supabaseAdmin.storage.from('careers-videos').getPublicUrl(storagePath);
-          uploadedVideoUrl = publicData?.publicUrl || '';
-        } else {
-          console.warn('Career video upload to Supabase failed:', uploadError.message);
-        }
-      } catch (error) {
-        console.warn('Career video upload crashed:', error.message);
-      }
     }
 
     const applicant = {
@@ -286,22 +285,17 @@ app.post('/api/careers/apply', careerUpload.single('video'), async (req, res) =>
       email: trimmedEmail,
       phone: trimmedPhone,
       has_experience: String(has_experience || '').toLowerCase(),
-      accepted_terms: String(accepted_terms || '').toLowerCase() === 'true',
-      video_name: req.file.originalname || 'video',
-      video_url: uploadedVideoUrl,
-      storage_path: uploadedVideoUrl ? storagePath : null,
+      accepted_terms: String(accepted_terms || '').toLowerCase() === 'true' || accepted_terms === true,
+      video_name: video_name || 'video',
+      video_url: video_url,
+      storage_path: storage_path || null,
       status: 'Pending',
       submitted_at: new Date().toISOString(),
       access_token: crypto.randomBytes(8).toString('hex'),
     };
 
     const persistedApplicant = await persistCareerApplicant(applicant);
-
-    if (!uploadedVideoUrl) {
-      uploadedVideoUrl = `${BASE_URL}/careers/track?email=${encodeURIComponent(trimmedEmail)}`;
-    }
-
-    await sendCareerApplicationEmail(persistedApplicant, uploadedVideoUrl);
+    await sendCareerApplicationEmail(persistedApplicant, video_url);
 
     return res.json({ success: true, message: 'Application received successfully. We will review it shortly.', applicant: persistedApplicant });
   } catch (error) {
