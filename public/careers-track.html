@@ -173,7 +173,8 @@
       const uploadResult = document.getElementById('upload-result');
 
       if (!uploadForm) return;
-      uploadForm.onsubmit = async (event) => {
+
+      async function handleUploadSubmit(event) {
         event.preventDefault();
         uploadResult.textContent = '';
 
@@ -218,7 +219,9 @@
           console.error('Upload error:', uploadError);
           uploadResult.textContent = 'Unable to upload your video right now. Please try again later.';
         }
-      };
+      }
+
+      uploadForm.addEventListener('submit', handleUploadSubmit);
     }
   </script>
 </body>
