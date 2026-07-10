@@ -28,7 +28,8 @@
     .hero-side { background: linear-gradient(135deg, rgba(0,200,83,.2), rgba(15,23,42,0.8)); border-radius: 16px; padding: 1.2rem; }
     .hero-side h3 { font-size: clamp(0.95rem, 2vw, 1.1rem); }
     .quick-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin-top: 0.8rem; align-items: stretch; }
-    .quick-stats div { background: rgba(255,255,255,0.05); padding: 1rem 1.1rem; border-radius: 14px; font-size: clamp(0.85rem, 1.5vw, 0.95rem); min-height: 110px; display: flex; align-items: center; justify-content: center; text-align: center; }
+    .quick-stats div { background: rgba(255,255,255,0.05); padding: 1rem 1.1rem; border-radius: 14px; font-size: clamp(0.85rem, 1.5vw, 0.95rem); min-height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; word-break: break-word; min-width: 120px; }
+    .quick-stats div strong { display:block; font-size: 1.05rem; margin-bottom: 0.35rem; }
     .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.2rem; align-items: start; }
     .content-card, .form-card { padding: 1.4rem; }
     .form-card { min-width: 0; display: flex; flex-direction: column; width: 100%; }
@@ -75,7 +76,8 @@
       .quick-stats { gap: 0.4rem; margin-top: 0.5rem; grid-template-columns: 1fr; }
       .quick-stats div { padding: 0.9rem 0.9rem; font-size: 0.88rem; line-height: 1.4; min-height: 100px; }
       .layout { gap: 0.6rem; margin-top: 0.6rem; }
-      .content-card { display: none; }
+      /* Show role/content section on small screens (previously hidden) */
+      .content-card { display: block; margin-bottom: 0.8rem; }
       .form-card { padding: 0.9rem; border-radius: 12px; }
       .content-card h2, .form-card h2 { margin-bottom: 0.6rem; font-size: 1.05rem; }
       .content-card ul { padding-left: 0.8rem; font-size: 0.88rem; line-height: 1.5; }
