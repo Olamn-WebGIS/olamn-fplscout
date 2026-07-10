@@ -163,24 +163,63 @@ async function persistCareerApplicant(applicant) {
 }
 
 async function updateCareerApplicantStatus(applicantId, status) {
-  const applicant = careerApplicationsInMemory.find((item) => item.id === applicantId);
-  if (!applicant) return null;
+  // Try load from memory first
+  let applicant = careerApplicationsInMemory.find((item) => item.id === applicantId);
 
-  applicant.status = makeStatusLabel(status);
-  applicant.status_updated_at = new Date().toISOString();
-
-  if (supabaseAdmin) {
+  // If not in memory, load from Supabase (read-only client)
+  if (!applicant) {
+    if (!supabase) return null;
     try {
-      await supabaseAdmin
+      const { data, error } = await supabase
         .from('careers_applications')
-        .update({ status: applicant.status, status_updated_at: applicant.status_updated_at })
-        .eq('id', applicantId);
-    } catch (error) {
-      console.warn('Supabase careers applicant status update failed:', error.message);
+        .select('*')
+        .eq('id', applicantId)
+        .single();
+      if (error || !data) return null;
+      applicant = data;
+      careerApplicationsInMemory.unshift(applicant);
+    } catch (err) {
+      console.error('Supabase fallback load failed for applicant status update:', err.message || err);
+      return null;
     }
   }
 
-  return applicant;
+  // Prepare new status
+  const newStatus = makeStatusLabel(status);
+  const now = new Date().toISOString();
+  applicant.status = newStatus;
+  applicant.status_updated_at = now;
+
+  // Writing requires the service role key (supabaseAdmin). Fail loudly if unavailable.
+  if (!supabaseAdmin) {
+    const errMsg = 'SUPABASE_SERVICE_ROLE_KEY is not configured. Cannot persist applicant status updates.';
+    console.error(errMsg);
+    throw new Error(errMsg);
+  }
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('careers_applications')
+      .update({ status: applicant.status, status_updated_at: applicant.status_updated_at })
+      .eq('id', applicantId)
+      .select()
+      .single();
+
+    if (error || !data) {
+      const msg = error?.message || 'Unknown Supabase update error';
+      console.error('Supabase careers applicant status update failed:', msg);
+      throw new Error(msg);
+    }
+
+    // sync in-memory cache
+    const idx = careerApplicationsInMemory.findIndex((it) => it.id === applicantId);
+    if (idx !== -1) careerApplicationsInMemory[idx] = { ...careerApplicationsInMemory[idx], ...data };
+
+    return data;
+  } catch (err) {
+    console.error('Supabase careers applicant status update failed:', err.message || err);
+    throw err;
+  }
 }
 
 async function sendCareerApplicationEmail(applicant, videoFile) {
@@ -398,7 +437,8 @@ app.put('/api/admin/careers-applicants/:id/status', requireAdminSession, async (
     return res.json({ success: true, applicant });
   } catch (error) {
     console.error('Career applicant status update failed:', error);
-    return res.status(500).json({ success: false, message: 'Failed to update applicant status.' });
+    const msg = (error && error.message) ? error.message : 'Failed to update applicant status.';
+    return res.status(500).json({ success: false, message: msg });
   }
 });
 
