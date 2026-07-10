@@ -339,6 +339,26 @@ app.post('/api/careers/apply', async (req, res) => {
 
 app.get('/api/careers/applicants', requireAdminSession, async (req, res) => {
   try {
+    const dbClient = supabaseAdmin || supabase;
+    if (dbClient) {
+      try {
+        const { data, error } = await dbClient
+          .from('careers_applications')
+          .select('*')
+          .order('submitted_at', { ascending: false });
+
+        if (!error && Array.isArray(data)) {
+          careerApplicationsInMemory.length = 0;
+          careerApplicationsInMemory.push(...data);
+          return res.json({ success: true, applicants: data });
+        }
+        console.warn('Supabase returned no data for careers_applications or error present:', error && error.message);
+      } catch (err) {
+        console.error('Supabase careers fetch failed:', err.message || err);
+      }
+    }
+
+    // Fallback to in-memory cache if Supabase not configured or fetch failed
     const applicants = careerApplicationsInMemory.slice().sort((a, b) => new Date(b.submitted_at || 0) - new Date(a.submitted_at || 0));
     return res.json({ success: true, applicants });
   } catch (error) {
