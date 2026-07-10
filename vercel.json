@@ -16,6 +16,9 @@
     
     { "source": "/account", "destination": "public/account.html" },
     { "source": "/affiliate", "destination": "public/affiliate.html" },
+    { "source": "/careers", "destination": "public/careers.html" },
+    { "source": "/careers/track", "destination": "public/careers-track.html" },
+    { "source": "/careers/test-upload/:token", "destination": "public/careers-test-upload.html" },
     { "source": "/blog", "destination": "/api/server.js" },
     { "source": "/blog/:slug", "destination": "/api/server.js" },
     { "source": "/admin", "destination": "public/admin.html" },
