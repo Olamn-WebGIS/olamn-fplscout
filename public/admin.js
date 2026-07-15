@@ -19,6 +19,18 @@ const customDateRange = document.getElementById('custom-date-range');
 const financialStartDate = document.getElementById('financial-start-date');
 const financialEndDate = document.getElementById('financial-end-date');
 const financialApplyRange = document.getElementById('financial-apply-range');
+const financialAddTransactionButton = document.getElementById('financial-add-transaction');
+const financialDownloadHistoryButton = document.getElementById('financial-download-history');
+const financialTransactionForm = document.getElementById('financial-transaction-form');
+const financialTransactionFormElement = document.getElementById('financial-transaction-form-element');
+const financialTransactionFormTitle = document.getElementById('financial-transaction-form-title');
+const financialTxType = document.getElementById('financial-tx-type');
+const financialTxAmount = document.getElementById('financial-tx-amount');
+const financialTxUser = document.getElementById('financial-tx-user');
+const financialTxStatus = document.getElementById('financial-tx-status');
+const financialTxReference = document.getElementById('financial-tx-reference');
+const financialTxNote = document.getElementById('financial-tx-note');
+const financialCancelTransaction = document.getElementById('financial-cancel-transaction');
 const transactionHistoryBody = document.getElementById('transaction-history-body');
 const financialRevenue = document.getElementById('financial-revenue');
 const financialPayouts = document.getElementById('financial-payouts');
@@ -47,6 +59,7 @@ const updateFixtureBtn = document.getElementById('update-fixture');
 const cancelFixtureBtn = document.getElementById('cancel-fixture');
 const replaceFixturesBtn = document.getElementById('replace-fixtures');
 let editingFixtureId = null;
+let editingTransactionId = null;
 
 let adminPassword = null;
 let adminAuthenticated = false;
@@ -172,11 +185,231 @@ function formatCurrency(value) {
   return `₦${Number(value || 0).toLocaleString()}`;
 }
 
+function updateFinancialSummaryValue(element, value, forcedClass = '') {
+  if (!element) return;
+
+  const numericValue = Number(value || 0);
+  element.textContent = formatCurrency(value);
+  element.classList.remove('financial-value-positive', 'financial-value-negative', 'financial-value-neutral');
+
+  if (numericValue === 0) {
+    element.classList.add('financial-value-neutral');
+  } else if (forcedClass) {
+    element.classList.add(forcedClass);
+  } else if (numericValue > 0) {
+    element.classList.add('financial-value-positive');
+  } else if (numericValue < 0) {
+    element.classList.add('financial-value-negative');
+  } else {
+    element.classList.add('financial-value-neutral');
+  }
+}
+
 function formatDate(dateValue) {
   try {
     return new Date(dateValue).toLocaleString();
   } catch {
     return dateValue || '';
+  }
+}
+
+function getFinancialFilterParams(options = { period: 'all', startDate: '', endDate: '' }) {
+  const params = new URLSearchParams();
+  params.set('period', options.period || 'all');
+  if (options.period === 'custom' && options.startDate && options.endDate) {
+    params.set('start_date', options.startDate);
+    params.set('end_date', options.endDate);
+  }
+  return params;
+}
+
+async function fetchFinancialOverviewData(options = { period: 'all', startDate: '', endDate: '' }) {
+  const params = getFinancialFilterParams(options);
+  const res = await fetch(`/api/admin/profit?${params.toString()}`, {
+    credentials: 'same-origin'
+  });
+  return res.json();
+}
+
+function buildTransactionHistoryReportHtml(data, options = { period: 'all', startDate: '', endDate: '' }) {
+  const safeTransactions = Array.isArray(data?.transactions) ? data.transactions : [];
+  const revenue = Number(data?.revenue || 0);
+  const payouts = Number(data?.payouts || 0);
+  const profit = Number(data?.profit || 0);
+  const filterLabel = options.period === 'custom' && options.startDate && options.endDate
+    ? `${options.startDate} to ${options.endDate}`
+    : options.period === 'month'
+      ? 'This Month'
+      : options.period === 'season'
+        ? 'This Season'
+        : 'All Time';
+
+  const rows = safeTransactions.map((tx) => {
+    const isCredit = isRevenueTransaction(tx.type);
+    const typeLabel = getTransactionTypeLabel(tx.type);
+    const amountValue = Number(tx.amount || 0);
+    const amountDisplay = `${isCredit ? '+' : '-'}${formatCurrency(amountValue)}`;
+    const amountClass = isCredit ? 'positive' : 'negative';
+    const userLabel = tx.user?.full_name || tx.user?.email || '';
+    return `
+      <tr>
+        <td>${typeLabel}</td>
+        <td class="${amountClass}">${amountDisplay}</td>
+        <td>${userLabel || '—'}</td>
+        <td>${tx.status || '—'}</td>
+        <td>${formatDate(tx.created_at)}</td>
+        <td>${(tx.note || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') || '—'}</td>
+      </tr>
+    `;
+  }).join('');
+
+  return `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <title>Transaction History Report</title>
+      <style>
+        body { font-family: Arial, sans-serif; color: #0f172a; margin: 0; padding: 24px; background: #f8fafc; }
+        .report { background: #ffffff; padding: 28px; border-radius: 16px; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08); }
+        .header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 16px; border-bottom: 2px solid #e2e8f0; margin-bottom: 18px; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand img { width: 56px; height: 56px; border-radius: 12px; object-fit: contain; background: #f8fafc; padding: 6px; }
+        .brand h1 { margin: 0 0 4px; font-size: 24px; color: #0f172a; }
+        .brand p { margin: 0; color: #64748b; font-size: 13px; }
+        .meta { text-align: right; font-size: 12px; color: #64748b; line-height: 1.5; }
+        .subtle { color: #64748b; margin-bottom: 18px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
+        .summary-card { background: linear-gradient(135deg, #f8fafc, #eef2ff); border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; }
+        .summary-card strong { display: block; font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+        .summary-card span { font-size: 18px; font-weight: 700; color: #0f172a; }
+        .section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #334155; margin: 16px 0 8px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+        th, td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
+        th { background: #f8fafc; color: #334155; font-weight: 700; }
+        .positive { color: #15803d; font-weight: 700; }
+        .negative { color: #dc2626; font-weight: 700; }
+        .muted { color: #64748b; }
+        .footer { margin-top: 24px; padding-top: 14px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 12px; display: flex; justify-content: space-between; gap: 12px; }
+        @media print { body { background: #ffffff; padding: 0; } .report { box-shadow: none; border-radius: 0; } }
+      </style>
+    </head>
+    <body>
+      <div class="report">
+        <div class="header">
+          <div class="brand">
+            <img src="https://fplscout.name.ng/images/logo.png" alt="FPL Scout logo" />
+            <div>
+              <h1>FPL Scout</h1>
+              <p>Transaction History Report</p>
+            </div>
+          </div>
+          <div class="meta">
+            <div>Prepared for: Admin</div>
+            <div>Generated: ${formatDate(new Date().toISOString())}</div>
+            <div>Filter: ${filterLabel}</div>
+          </div>
+        </div>
+        <div class="subtle">This report summarizes financial activity for the selected period with a professional overview of revenue, payouts, and profit.</div>
+        <div class="summary-grid">
+          <div class="summary-card"><strong>Total Revenue</strong><span>${formatCurrency(revenue)}</span></div>
+          <div class="summary-card"><strong>Total Payouts</strong><span>${formatCurrency(payouts)}</span></div>
+          <div class="summary-card"><strong>Net Profit</strong><span>${formatCurrency(profit)}</span></div>
+        </div>
+        <div class="section-title">Transaction Details</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>User</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody>${rows || '<tr><td colspan="6" class="muted">No transactions found.</td></tr>'}</tbody>
+        </table>
+        <div class="footer">
+          <span>FPL Scout • Financial Reporting</span>
+          <span>Confidential Internal Report</span>
+        </div>
+      </div>
+    </body>
+    </html>`;
+}
+
+function isRevenueTransaction(type) {
+  const normalizedType = String(type || '').trim().toLowerCase();
+  return normalizedType === 'subscription' || normalizedType === 'other_income';
+}
+
+function getTransactionTypeLabel(type) {
+  const normalizedType = String(type || '').trim().toLowerCase();
+  switch (normalizedType) {
+    case 'subscription':
+      return 'Subscription';
+    case 'other_income':
+      return 'Other Income';
+    case 'refund':
+      return 'Refund';
+    case 'affiliate_payout':
+      return 'Affiliate Payout';
+    case 'other_expense':
+      return 'Other Expense';
+    case 'manual':
+      return 'Other Expense';
+    default:
+      return 'Transaction';
+  }
+}
+
+function resetFinancialTransactionForm() {
+  if (financialTransactionFormElement) financialTransactionFormElement.reset();
+  editingTransactionId = null;
+  if (financialTransactionFormTitle) financialTransactionFormTitle.textContent = 'Add Transaction';
+  if (financialTransactionForm) financialTransactionForm.classList.add('hidden');
+}
+
+async function submitFinancialTransaction(event) {
+  event.preventDefault();
+  if (!adminAuthenticated) {
+    alert('Unlock the dashboard first.');
+    return;
+  }
+
+  const payload = {
+    type: financialTxType?.value || 'manual',
+    amount: financialTxAmount?.value,
+    user_email: financialTxUser?.value?.trim() || '',
+    status: financialTxStatus?.value || 'completed',
+    payment_reference: financialTxReference?.value?.trim() || '',
+    note: financialTxNote?.value?.trim() || ''
+  };
+
+  const method = editingTransactionId ? 'PUT' : 'POST';
+  const url = editingTransactionId
+    ? `/api/admin/transactions/${encodeURIComponent(editingTransactionId)}`
+    : '/api/admin/transactions';
+
+  try {
+    const res = await fetch(url, {
+      method,
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      alert(data?.message || 'Unable to save transaction.');
+      return;
+    }
+
+    resetFinancialTransactionForm();
+    await loadFinancialOverview({ period: financialFilter?.value || 'all' });
+  } catch (error) {
+    console.error('Save transaction failed:', error);
+    alert('Could not save transaction.');
   }
 }
 
@@ -315,14 +548,7 @@ async function loadFinancialOverview(options = { period: 'all', startDate: '', e
   if (!financialOverviewCard || !transactionHistoryBody || !financialRevenue || !financialPayouts || !financialProfit) return;
 
   try {
-    const params = new URLSearchParams();
-    params.set('period', options.period || 'all');
-    if (options.period === 'custom' && options.startDate && options.endDate) {
-      params.set('start_date', options.startDate);
-      params.set('end_date', options.endDate);
-    }
-
-    const res = await fetch(`/api/admin/profit?${params.toString()}`, {
+    const res = await fetch(`/api/admin/profit?${getFinancialFilterParams(options).toString()}`, {
       credentials: 'same-origin'
     });
     const data = await res.json();
@@ -330,16 +556,16 @@ async function loadFinancialOverview(options = { period: 'all', startDate: '', e
     financialOverviewCard.classList.remove('hidden');
 
     if (!res.ok || !data.success) {
-      financialRevenue.textContent = '₦0';
-      financialPayouts.textContent = '₦0';
-      financialProfit.textContent = '₦0';
+      updateFinancialSummaryValue(financialRevenue, 0);
+      updateFinancialSummaryValue(financialPayouts, 0, 'financial-value-negative');
+      updateFinancialSummaryValue(financialProfit, 0);
       transactionHistoryBody.innerHTML = `<tr><td colspan="6">${(data && data.message) || 'Unable to load financial overview.'}</td></tr>`;
       return;
     }
 
-    financialRevenue.textContent = formatCurrency(data.revenue);
-    financialPayouts.textContent = formatCurrency(data.payouts);
-    financialProfit.textContent = formatCurrency(data.profit);
+    updateFinancialSummaryValue(financialRevenue, data.revenue);
+    updateFinancialSummaryValue(financialPayouts, data.payouts, 'financial-value-negative');
+    updateFinancialSummaryValue(financialProfit, data.profit);
 
     if (!data.transactions || data.transactions.length === 0) {
       transactionHistoryBody.innerHTML = '<tr><td colspan="6">No transactions found.</td></tr>';
@@ -347,29 +573,148 @@ async function loadFinancialOverview(options = { period: 'all', startDate: '', e
     }
 
     transactionHistoryBody.innerHTML = data.transactions.map(tx => {
-      const isCredit = tx.type === 'subscription';
-      const typeLabel = tx.type === 'subscription' ? 'Subscription' : 'Affiliate Payout';
+      const isCredit = isRevenueTransaction(tx.type);
+      const typeLabel = getTransactionTypeLabel(tx.type);
       const amountLabel = `${isCredit ? '+' : '-'}${formatCurrency(tx.amount)}`;
       const rowClass = isCredit ? 'transaction-credit' : 'transaction-debit';
-      const userLabel = tx.user?.full_name || tx.user?.email || 'Unknown';
+      const amountClass = isCredit ? 'transaction-credit' : 'transaction-debit';
+      const userLabel = tx.user?.full_name || tx.user?.email || '';
 
       return `
         <tr class="${rowClass}">
           <td>${typeLabel}</td>
-          <td>${amountLabel}</td>
+          <td class="${amountClass}">${amountLabel}</td>
           <td>${userLabel}</td>
           <td>${tx.status || ''}</td>
           <td>${formatDate(tx.created_at)}</td>
           <td>${tx.note || ''}</td>
+          <td>
+            <button class="btn-secondary btn-sm" data-action="edit-tx" data-id="${tx.id}">Edit</button>
+            <button class="btn-secondary btn-sm" data-action="delete-tx" data-id="${tx.id}">Delete</button>
+          </td>
         </tr>
       `;
     }).join('');
+
+    transactionHistoryBody.querySelectorAll('button[data-action="edit-tx"]').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        const transactionId = event.currentTarget?.dataset?.id;
+        if (transactionId) {
+          startEditTransaction(transactionId);
+        }
+      });
+    });
+    transactionHistoryBody.querySelectorAll('button[data-action="delete-tx"]').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        const transactionId = event.currentTarget?.dataset?.id;
+        if (transactionId) {
+          deleteTransaction(transactionId);
+        }
+      });
+    });
   } catch (error) {
     console.error('Financial overview load failed:', error);
-    financialRevenue.textContent = '₦0';
-    financialPayouts.textContent = '₦0';
-    financialProfit.textContent = '₦0';
+    updateFinancialSummaryValue(financialRevenue, 0);
+    updateFinancialSummaryValue(financialPayouts, 0, 'financial-value-negative');
+    updateFinancialSummaryValue(financialProfit, 0);
     transactionHistoryBody.innerHTML = '<tr><td colspan="6">Could not load financial overview.</td></tr>';
+  }
+}
+
+async function downloadTransactionHistory() {
+  if (!adminAuthenticated) {
+    alert('Unlock the dashboard first.');
+    return;
+  }
+
+  const options = {
+    period: financialFilter?.value || 'all',
+    startDate: financialStartDate?.value || '',
+    endDate: financialEndDate?.value || ''
+  };
+
+  if (options.period === 'custom' && (!options.startDate || !options.endDate)) {
+    alert('Choose both start and end dates for the custom range before exporting.');
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/admin/profit?${getFinancialFilterParams(options).toString()}`, {
+      credentials: 'same-origin'
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      alert(data?.message || 'Unable to export transaction history.');
+      return;
+    }
+
+    const reportWindow = window.open('', '_blank', 'width=1000,height=800');
+    if (!reportWindow) {
+      alert('Please allow pop-ups to download the transaction history PDF.');
+      return;
+    }
+
+    reportWindow.document.write(buildTransactionHistoryReportHtml(data, options));
+    reportWindow.document.close();
+    reportWindow.focus();
+    reportWindow.print();
+  } catch (error) {
+    console.error('Transaction history export failed:', error);
+    alert('Could not export transaction history.');
+  }
+}
+
+async function startEditTransaction(transactionId) {
+  try {
+    const res = await fetch(`/api/admin/transactions/${encodeURIComponent(transactionId)}`, { credentials: 'same-origin' });
+    const data = await res.json();
+    if (!res.ok || !data.success || !data.transaction) {
+      alert(data?.message || 'Unable to load transaction.');
+      return;
+    }
+
+    const tx = data.transaction;
+    editingTransactionId = transactionId;
+    if (financialTransactionFormTitle) financialTransactionFormTitle.textContent = 'Edit Transaction';
+    if (financialTransactionForm) financialTransactionForm.classList.remove('hidden');
+    if (financialTxType) {
+      const supportedType = ['subscription', 'other_income', 'affiliate_payout', 'other_expense'].includes(tx.type)
+        ? tx.type
+        : 'other_expense';
+      financialTxType.value = supportedType;
+    }
+    if (financialTxAmount) financialTxAmount.value = tx.amount || 0;
+    if (financialTxUser) financialTxUser.value = tx.user?.email || tx.user_id || '';
+    if (financialTxStatus) financialTxStatus.value = tx.status || 'completed';
+    if (financialTxReference) financialTxReference.value = tx.payment_reference || '';
+    if (financialTxNote) financialTxNote.value = tx.note || '';
+    if (financialTxAmount) financialTxAmount.focus();
+  } catch (error) {
+    console.error('Failed to load transaction for edit:', error);
+    alert('Could not load transaction.');
+  }
+}
+
+async function deleteTransaction(transactionId) {
+  if (!transactionId || !confirm('Delete this transaction from the financial overview?')) return;
+
+  try {
+    const res = await fetch(`/api/admin/transactions/${encodeURIComponent(transactionId)}`, {
+      method: 'DELETE',
+      credentials: 'same-origin'
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      alert(data?.message || 'Unable to delete transaction.');
+      return;
+    }
+    await loadFinancialOverview({ period: financialFilter?.value || 'all' });
+  } catch (error) {
+    console.error('Delete transaction failed:', error);
+    alert('Could not delete transaction.');
   }
 }
 
@@ -733,6 +1078,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (signupStatusFilter) {
     signupStatusFilter.addEventListener('change', renderSignupAttempts);
   }
+  financialAddTransactionButton?.addEventListener('click', () => {
+    resetFinancialTransactionForm();
+    if (financialTransactionForm) financialTransactionForm.classList.remove('hidden');
+    financialTxType?.focus();
+  });
+  financialCancelTransaction?.addEventListener('click', () => {
+    resetFinancialTransactionForm();
+  });
+  financialDownloadHistoryButton?.addEventListener('click', downloadTransactionHistory);
   // Try to auto-unlock dashboard if admin session cookie exists
   async function tryAutoUnlock() {
     try {
@@ -779,9 +1133,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (target === 'financial-tab') {
         if (!adminAuthenticated) {
           transactionHistoryBody.innerHTML = '<tr><td colspan="6">Unlock the dashboard to view financial data.</td></tr>';
-          financialRevenue.textContent = '₦0';
-          financialPayouts.textContent = '₦0';
-          financialProfit.textContent = '₦0';
+          updateFinancialSummaryValue(financialRevenue, 0);
+          updateFinancialSummaryValue(financialPayouts, 0, 'financial-value-negative');
+          updateFinancialSummaryValue(financialProfit, 0);
           return;
         }
 

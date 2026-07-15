@@ -21,6 +21,7 @@ const {
   saveUploadToTemp,
   removeTempFile,
 } = require('./careers-utils');
+const { normalizeAdminTransactionPayload, summarizeTransactions } = require('./finance-utils');
 require('dotenv').config(); // Load environment variables
 
 const app = express();
@@ -2991,9 +2992,7 @@ app.get('/api/admin/profit', requireAdminSession, async (req, res) => {
             return res.status(500).json({ success: false, message: error.message || 'Could not calculate profit.' });
         }
 
-        const revenue = (data || []).filter(tx => tx.type === 'subscription').reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-        const payouts = (data || []).filter(tx => tx.type === 'affiliate_payout').reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-        const profit = revenue - payouts;
+        const { revenue, payouts, profit } = summarizeTransactions(data || []);
 
         return res.json({ success: true, revenue, payouts, profit, transactions: data || [] });
     } catch (error) {
@@ -3003,6 +3002,121 @@ app.get('/api/admin/profit', requireAdminSession, async (req, res) => {
 });
 
 
+app.post('/api/admin/transactions', requireAdminSession, async (req, res) => {
+    try {
+        const payload = normalizeAdminTransactionPayload(req.body || {});
+        const { type, amount, status, payment_reference, note } = payload;
+        const dbClient = supabaseAdmin || supabase;
+
+        let userId = null;
+        const userEmail = String(req.body?.user_email || '').trim();
+        if (userEmail) {
+            const { data: userData, error: userError } = await dbClient
+                .from('users')
+                .select('id')
+                .ilike('email', userEmail)
+                .maybeSingle();
+            if (!userError && userData) userId = userData.id;
+        }
+
+        const { data, error } = await dbClient
+            .from('transactions')
+            .insert([{ ...payload, user_id: userId, status: status || 'completed', payment_reference: payment_reference || null, note: note || null }])
+            .select('id,type,amount,user_id,status,payment_reference,note,created_at,user:users(full_name,email)')
+            .single();
+
+        if (error) {
+            console.error('Admin transaction insert failed:', error);
+            return res.status(500).json({ success: false, message: error.message || 'Unable to create transaction.' });
+        }
+
+        return res.json({ success: true, transaction: data });
+    } catch (error) {
+        console.error('Admin transaction create error:', error);
+        return res.status(500).json({ success: false, message: error.message || 'Unable to create transaction.' });
+    }
+});
+
+app.get('/api/admin/transactions/:id', requireAdminSession, async (req, res) => {
+    try {
+        const dbClient = supabaseAdmin || supabase;
+        const { data, error } = await dbClient
+            .from('transactions')
+            .select('id,type,amount,user_id,status,payment_reference,note,created_at,user:users(full_name,email)')
+            .eq('id', req.params.id)
+            .single();
+
+        if (error || !data) {
+            return res.status(404).json({ success: false, message: 'Transaction not found.' });
+        }
+
+        return res.json({ success: true, transaction: data });
+    } catch (error) {
+        console.error('Admin transaction fetch error:', error);
+        return res.status(500).json({ success: false, message: 'Unable to load transaction.' });
+    }
+});
+
+app.put('/api/admin/transactions/:id', requireAdminSession, async (req, res) => {
+    try {
+        const payload = normalizeAdminTransactionPayload(req.body || {});
+        const { type, amount, status, payment_reference, note } = payload;
+        const dbClient = supabaseAdmin || supabase;
+
+        let userId = null;
+        const userEmail = String(req.body?.user_email || '').trim();
+        if (userEmail) {
+            const { data: userData, error: userError } = await dbClient
+                .from('users')
+                .select('id')
+                .ilike('email', userEmail)
+                .maybeSingle();
+            if (!userError && userData) userId = userData.id;
+        }
+
+        const { data, error } = await dbClient
+            .from('transactions')
+            .update({
+                type,
+                amount,
+                user_id: userId,
+                status: status || 'completed',
+                payment_reference: payment_reference || null,
+                note: note || null
+            })
+            .eq('id', req.params.id)
+            .select('id,type,amount,user_id,status,payment_reference,note,created_at,user:users(full_name,email)')
+            .single();
+
+        if (error || !data) {
+            return res.status(404).json({ success: false, message: 'Transaction not found.' });
+        }
+
+        return res.json({ success: true, transaction: data });
+    } catch (error) {
+        console.error('Admin transaction update error:', error);
+        return res.status(500).json({ success: false, message: error.message || 'Unable to update transaction.' });
+    }
+});
+
+app.delete('/api/admin/transactions/:id', requireAdminSession, async (req, res) => {
+    try {
+        const dbClient = supabaseAdmin || supabase;
+        const { error } = await dbClient
+            .from('transactions')
+            .delete()
+            .eq('id', req.params.id);
+
+        if (error) {
+            return res.status(500).json({ success: false, message: error.message || 'Unable to delete transaction.' });
+        }
+
+        return res.json({ success: true });
+    } catch (error) {
+        console.error('Admin transaction delete error:', error);
+        return res.status(500).json({ success: false, message: 'Unable to delete transaction.' });
+    }
+});
 
 // Send Support Request
 app.post('/api/send-support-request', async (req, res) => {
