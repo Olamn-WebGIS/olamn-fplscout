@@ -7,6 +7,7 @@ const postStatus = document.getElementById('admin-post-status');
 const passwordInput = document.getElementById('admin-password');
 const loginButton = document.getElementById('admin-login');
 const logoutButton = document.getElementById('logout-admin');
+const homeLockButton = document.getElementById('home-lock-dashboard');
 const publishButton = document.getElementById('publish-post');
 const cancelEditButton = document.getElementById('cancel-edit');
 const withdrawalRequestsNote = document.getElementById('withdrawal-requests-note');
@@ -48,6 +49,9 @@ const affiliateManagementBody = document.getElementById('affiliate-management-bo
 const affiliateManagementNote = document.getElementById('affiliate-management-note');
 const affiliateManagementCard = document.getElementById('affiliate-management-card');
 const tabButtons = document.querySelectorAll('.tab-btn');
+const mobileNavToggle = document.getElementById('mobile-nav-toggle');
+const adminNav = document.getElementById('admin-nav');
+const adminBrandLink = document.getElementById('admin-brand-link');
 // Fixtures elements
 const fixturesCard = document.getElementById('fixtures-card');
 const fixturesList = document.getElementById('fixtures-list');
@@ -85,6 +89,16 @@ function normalizeUrl(url) {
   const trimmed = url.trim();
   if (/^(https?:\/\/|mailto:|tel:)/i.test(trimmed)) return trimmed;
   return `https://${trimmed}`;
+}
+
+function setActiveView(targetId) {
+  document.querySelectorAll('.tab-panel, .page-panel').forEach((panel) => {
+    panel.classList.remove('active');
+  });
+  const targetPanel = document.getElementById(targetId);
+  if (targetPanel) {
+    targetPanel.classList.add('active');
+  }
 }
 
 function initializeQuill() {
@@ -893,11 +907,11 @@ function renderFixturesList(fixtures) {
 
   fixturesList.innerHTML = uniqueFixtures.map(f => `
     <div class="admin-post-item" data-id="${f.id}">
-      <div style="display:flex;align-items:center;gap:0.75rem">
+      <div class="admin-fixture-row">
         <img class="admin-fixture-logo" src="${f.home_logo_url || f.logo_url || '/images/default-logo.png'}" alt="${f.home_team}" />
-        <div style="flex:1">
-          <h3 style="margin:0">${f.home_team} <small style="opacity:0.6">vs</small> ${f.away_team}</h3>
-          <div style="font-size:0.9rem;color:#444">${new Date(f.match_time).toLocaleString()}</div>
+        <div class="admin-fixture-meta">
+          <h3>${f.home_team} <small style="opacity:0.6">vs</small> ${f.away_team}</h3>
+          <div class="fixture-time">${new Date(f.match_time).toLocaleString()}</div>
         </div>
         <img class="admin-fixture-logo" src="${f.away_logo_url || '/images/default-logo.png'}" alt="${f.away_team}" />
       </div>
@@ -1211,13 +1225,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   tryAutoUnlock();
 
+  mobileNavToggle?.addEventListener('click', () => {
+    adminNav?.classList.toggle('open');
+  });
+
+  adminBrandLink?.addEventListener('click', (event) => {
+    event.preventDefault();
+    adminNav?.classList.remove('open');
+    tabButtons.forEach((btn) => btn.classList.remove('active'));
+    document.querySelector('[data-tab="home-tab"]')?.classList.add('active');
+    setActiveView('home-tab');
+  });
+
+  adminNav?.querySelectorAll('.tab-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+      adminNav.classList.remove('open');
+    });
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 760) {
+      adminNav?.classList.remove('open');
+    }
+  });
+
   tabButtons.forEach(button => {
     button.addEventListener('click', async () => {
       tabButtons.forEach(btn => btn.classList.remove('active'));
       button.classList.add('active');
       const target = button.dataset.tab;
-      document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
-      document.getElementById(target).classList.add('active');
+      setActiveView(target);
+
+      if (target === 'home-tab') {
+        return;
+      }
 
       if (target === 'affiliate-tab') {
         if (!adminAuthenticated) {
@@ -1374,10 +1415,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       adminTabsCard.classList.remove('hidden');
       postCard.classList.remove('hidden');
       postsListCard.classList.remove('hidden');
-      document.getElementById('blog-tab').classList.add('active');
-      document.getElementById('withdrawal-tab').classList.remove('active');
-      document.getElementById('financial-tab').classList.remove('active');
-      document.getElementById('careers-tab').classList.remove('active');
+      tabButtons.forEach((btn) => btn.classList.remove('active'));
+      document.querySelector('[data-tab="home-tab"]')?.classList.add('active');
+      setActiveView('home-tab');
       showStatus(loginStatus, 'Dashboard unlocked.', true);
       await loadAdminPosts();
       await loadSignupAttempts();
@@ -1390,7 +1430,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  logoutButton.addEventListener('click', () => {
+  const lockDashboard = () => {
     adminPassword = null;
     adminAuthenticated = false;
     passwordInput.value = '';
@@ -1405,7 +1445,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     postStatus.textContent = '';
     withdrawalRequestsNote.textContent = 'Unlock the dashboard and open this tab to load withdrawal requests.';
     resetEditorState();
-  });
+  };
+
+  logoutButton?.addEventListener('click', lockDashboard);
+  homeLockButton?.addEventListener('click', lockDashboard);
 
   cancelEditButton.addEventListener('click', () => {
     resetEditorState();

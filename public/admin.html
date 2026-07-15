@@ -17,25 +17,47 @@
     .admin-field { margin-bottom:1rem; }
     .admin-field label { display:block; margin-bottom:0.5rem; font-weight:600; }
     .admin-field input, .admin-field textarea { width:100%; padding:0.95rem 1rem; border:1px solid #ddd; border-radius:12px; font-size:1rem; }
-    .admin-actions { display:flex; gap:1rem; flex-wrap:wrap; }
-    .btn-primary { background:#22c55e; color:#031025; border:none; padding:0.95rem 1.4rem; border-radius:999px; cursor:pointer; font-weight:700; }
-    .btn-secondary { background:#22c55e; color:#031025; border:1px solid #16a34a; padding:0.75rem 1rem; border-radius:999px; cursor:pointer; }
+    .admin-actions { display:flex; gap:0.5rem; flex-wrap:nowrap; align-items:center; justify-content:flex-start; overflow-x:auto; }
+    .admin-actions > button { flex: 0 0 auto; min-width: 0; white-space: nowrap; }
+    .btn-primary { background:#22c55e; color:#031025; border:none; padding:0.55rem 0.8rem; border-radius:999px; cursor:pointer; font-weight:700; font-size:0.8rem; line-height:1; }
+    .btn-secondary { background:#22c55e; color:#031025; border:1px solid #16a34a; padding:0.5rem 0.75rem; border-radius:999px; cursor:pointer; font-size:0.8rem; line-height:1; font-weight:700; }
     .btn-secondary.active { background:#16a34a; color:#ffffff; border-color:#16a34a; }
     .tab-panel { display: none; }
     .tab-panel.active { display: block !important; }
+    .page-panel { display: none; }
+    .page-panel.active { display: block !important; }
     .tab-btn { background: transparent; border: none; }
     .tab-btn.active { background: transparent; }
     .hidden { display:none; }
     .status { margin-top:1rem; color:#4ade80; }
-    .admin-post-list { display:grid; gap:1rem; }
-    .admin-post-item { background:#031025; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:1.1rem 1.25rem; color:#f8fafc; }
+    .admin-post-list { display:grid; gap:0.85rem; }
+    .admin-post-item { background:#031025; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:0.95rem 1rem; color:#f8fafc; }
     .admin-post-item h3 { margin:0 0 0.5rem; font-size:1.05rem; color:#ffffff; text-decoration:underline; }
     .admin-post-item p { color:#e2e8f0; margin:0 0 0.85rem; }
+    .admin-fixture-row { display:flex; align-items:center; gap:0.75rem; }
+    .admin-fixture-row .admin-fixture-meta { flex:1; min-width:0; }
+    .admin-fixture-row .admin-fixture-meta h3 { margin:0; font-size:1rem; }
+    .admin-fixture-row .admin-fixture-meta .fixture-time { font-size:0.9rem; color:#cbd5e1; margin-top:0.25rem; }
     .admin-post-actions { display:flex; gap:0.75rem; flex-wrap:wrap; }
     .admin-post-actions button { min-width: 92px; }
     #post-content-editor { min-height: 260px; background: #0d172a; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; color:#f8fafc; }
-    .admin-page { max-width: 1080px; width: 100%; margin: 0 auto; padding: 2rem 1rem; box-sizing: border-box; }
+    .admin-page { max-width: 1080px; width: 100%; margin: 0 auto; padding: 6.2rem 1rem 2rem; box-sizing: border-box; }
     .admin-card { width: 100%; box-sizing: border-box; }
+    .admin-topbar { position:fixed; top:0; left:0; right:0; display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0.8rem clamp(1rem, 2.5vw, 1.6rem); border-bottom:1px solid rgba(255,255,255,0.1); background: rgba(3,16,37,0.95); backdrop-filter: blur(14px); box-shadow: 0 8px 24px rgba(2,10,24,0.2); z-index:1200; }
+    .admin-topbar-brand { display:flex; align-items:center; gap:0.8rem; min-width:0; text-decoration:none; flex:1 1 auto; }
+    .admin-brand-logo { width:40px; height:40px; border-radius:12px; object-fit:contain; background: rgba(74,222,128,0.14); padding:0.25rem; }
+    .admin-topbar-brand span { display:flex; flex-direction:column; color:#ffffff; font-weight:700; font-size:1rem; line-height:1.05; letter-spacing:-0.01em; white-space:nowrap; }
+    .admin-topbar-brand small { margin-top:0.2rem; color: rgba(255,255,255,0.72); font-size:0.78rem; font-weight:600; display:inline-block; }
+    .admin-nav { display:flex; gap:0.25rem; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+    .admin-nav .tab-btn { border-radius:999px; padding:0.6rem 0.9rem; font-weight:600; color:rgba(255,255,255,0.8); }
+    .admin-nav .tab-btn.active, .admin-nav .tab-btn:hover:not(.active) { color:#4ade80; background: rgba(74,222,128,0.12); }
+    .mobile-nav-toggle { display:none; border:none; background:#0f172a; color:#f8fafc; width:44px; height:44px; border-radius:12px; cursor:pointer; font-size:1rem; border:1px solid rgba(255,255,255,0.12); }
+    .home-grid { display:grid; gap:1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .home-card { background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:1rem 1.1rem; }
+    .home-card h3 { margin:0 0 0.4rem; color:#ffffff; }
+    .home-card p { margin:0; color:#cbd5e1; }
+    .home-hero { display:flex; gap:1rem; align-items:center; justify-content:space-between; flex-wrap:wrap; padding:1rem 0 0.5rem; }
+    .hero-pill { display:inline-flex; align-items:center; gap:0.45rem; padding:0.48rem 0.7rem; border-radius:999px; background: rgba(74, 222, 128, 0.15); color:#4ade80; font-size:0.85rem; font-weight:700; }
     .tabs { display:flex; gap:0.5rem; border-bottom: 2px solid rgba(255,255,255,0.12); margin-bottom:1.25rem; overflow-x:auto; white-space:nowrap; scroll-behavior:smooth; -webkit-overflow-scrolling:touch; padding-bottom:0.5rem; }
     .tabs::-webkit-scrollbar { height: 8px; }
     .tabs::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.16); border-radius: 999px; }
@@ -56,9 +78,10 @@
     .financial-card { background:#031025; padding:1rem 1.1rem; border-radius:16px; border:1px solid rgba(255,255,255,0.08); }
     .financial-card h3 { margin:0 0 0.35rem; font-size:0.95rem; color:#ffffff; }
     .financial-card p { margin:0; font-size:1.65rem; font-weight:700; color:#f8fafc; }
-    .financial-controls { display:flex; gap:0.75rem; flex-wrap:wrap; margin-bottom:1rem; align-items:center; }
-    .financial-controls label { font-size:0.95rem; color:#f8fafc; }
-    .financial-controls select { padding:0.7rem 0.85rem; border-radius:12px; border:1px solid rgba(255,255,255,0.12); background:#0d172a; color:#f8fafc; }
+    .financial-controls { display:flex; gap:0.85rem; flex-wrap:nowrap; margin-bottom:1rem; align-items:center; }
+    .financial-controls label { font-size:0.95rem; color:#f8fafc; white-space:nowrap; display:inline-flex; align-items:center; }
+    .financial-controls select { padding:0.45rem 0.65rem; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:#0d172a; color:#f8fafc; min-width: 0; font-size:0.85rem; }
+    .financial-controls .custom-date-range { display:flex; gap:0.5rem; flex-wrap:nowrap; align-items:center; }
     .careers-table { width:100%; border-collapse: collapse; min-width: 700px; background:#031025; color:#f8fafc; }
     .careers-table th, .careers-table td { padding: 0.75rem 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.08); text-align: left; }
     .careers-table th { background: rgba(255,255,255,0.05); color:#f8fafc; font-weight:700; }
@@ -69,20 +92,36 @@
     .custom-date-range input { padding:0.7rem 0.85rem; border-radius:12px; border:1px solid rgba(255,255,255,0.12); background:#0d172a; color:#f8fafc; }
     .admin-card { width:100%; }
     @media (max-width: 760px) {
-      .admin-page { padding: 1rem; }
+      .admin-page { padding: 5.5rem 1rem 1rem; }
       .admin-card { padding: 1rem; }
+      .admin-topbar { flex-wrap:wrap; align-items:flex-start; padding:0.75rem 1rem; }
+      .admin-topbar-brand span { font-size:0.95rem; white-space:nowrap; }
+      .admin-topbar-brand small { display:inline-block; }
+      .mobile-nav-toggle { display:inline-grid; place-items:center; }
+      .admin-nav { display:none; width:100%; flex-direction:column; align-items:stretch; margin-top:0.75rem; padding-top:0.3rem; }
+      .admin-nav.open { display:flex; }
+      .admin-nav .tab-btn { width:100%; justify-content:flex-start; border-radius:12px; }
       .admin-field input, .admin-field textarea { font-size: 0.95rem; }
-      .admin-actions { flex-direction: column; align-items: stretch; }
-      .btn-primary, .btn-secondary { width: 100%; }
-      .admin-post-item { padding: 1rem; }
+      .admin-actions { flex-wrap:nowrap; justify-content:flex-start; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+      .admin-actions > button { width:auto; min-width: fit-content; padding:0.45rem 0.7rem; font-size:0.74rem; }
+      .admin-post-item { padding: 0.9rem; }
+      .admin-fixture-row { flex-wrap:wrap; gap:0.5rem; }
+      .admin-fixture-row .admin-fixture-meta { width:100%; order:2; }
+      .admin-fixture-row .admin-fixture-meta h3 { font-size:0.95rem; }
+      .admin-fixture-row .admin-fixture-meta .fixture-time { font-size:0.85rem; }
+      .admin-fixture-row > img { width:34px; height:34px; }
       .admin-post-actions { justify-content: flex-start; }
       .tabs { gap:0.4rem; }
       .tab-btn { flex: 0 0 auto; min-width: 110px; padding: 0.55rem 0.85rem; }
       .withdrawal-table th, .withdrawal-table td, .transaction-table th, .transaction-table td { padding: 0.65rem 0.7rem; }
       .financial-grid { grid-template-columns: 1fr; }
-      .financial-controls { flex-direction: column; align-items: stretch; }
-      .financial-controls label { width: 100%; }
-      .financial-controls select { width: 100%; }
+      .home-grid { grid-template-columns: 1fr; }
+      .financial-controls { flex-wrap:wrap; align-items:stretch; gap:0.6rem; }
+      .financial-controls > label, .financial-controls > select, .financial-controls .custom-date-range { width:100%; }
+      .financial-controls select { padding:0.4rem 0.6rem; font-size:0.8rem; }
+      .financial-controls .custom-date-range { flex-wrap:wrap; }
+      .financial-controls .custom-date-range input, .financial-controls .custom-date-range button { width:100%; }
+      .financial-controls select { width:100%; }
     }
   </style>
 </head>
@@ -99,19 +138,62 @@
       <p class="status" id="admin-login-status"></p>
     </div>
 
-    <div class="admin-card hidden" id="admin-tabs-card">
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="blog-tab">Blog</button>
-        <button class="tab-btn" data-tab="financial-tab">Financial Overview</button>
-        <button class="tab-btn" data-tab="affiliate-tab">Affiliate Management</button>
-        <button class="tab-btn" data-tab="withdrawal-tab">Withdrawal Requests</button>
-        <button class="tab-btn" data-tab="signup-attempts-tab">Signups</button>
-        <button class="tab-btn" data-tab="fixtures-tab">Live Fixtures</button>
-        <button class="tab-btn" data-tab="careers-tab">Careers</button>
+    <div class="hidden" id="admin-tabs-card">
+      <div class="admin-topbar">
+        <a class="admin-topbar-brand" href="#" id="admin-brand-link" aria-label="Go to admin home">
+          <img class="admin-brand-logo" src="/images/logo.png" alt="FPL Scout logo" />
+          <span>
+            FPL Scout
+            <small>Admin</small>
+          </span>
+        </a>
+        <button class="mobile-nav-toggle" id="mobile-nav-toggle" type="button" aria-label="Toggle navigation">☰</button>
+        <nav class="admin-nav" id="admin-nav">
+          <button class="tab-btn" data-tab="blog-tab">Blog</button>
+          <button class="tab-btn" data-tab="financial-tab">Financial Overview</button>
+          <button class="tab-btn" data-tab="affiliate-tab">Affiliate Management</button>
+          <button class="tab-btn" data-tab="withdrawal-tab">Withdrawal Requests</button>
+          <button class="tab-btn" data-tab="signup-attempts-tab">Signups</button>
+          <button class="tab-btn" data-tab="fixtures-tab">Live Fixtures</button>
+          <button class="tab-btn" data-tab="careers-tab">Careers</button>
+        </nav>
       </div>
     </div>
 
-    <div id="blog-tab" class="tab-panel active">
+    <div id="home-tab" class="page-panel active">
+      <div class="admin-card">
+        <div class="home-hero">
+          <div>
+            <div class="hero-pill">● Live admin workspace</div>
+            <h2 style="margin:0.55rem 0 0.4rem; color:#ffffff;">Welcome back</h2>
+            <p style="margin:0; color:#cbd5e1;">Manage your blog, financials, affiliates, withdrawals, signups, fixtures and careers.</p>
+          </div>
+        </div>
+        <div class="home-grid" style="margin-top:1rem;">
+          <div class="home-card">
+            <h3>Blog</h3>
+            <p>Create, update, and publish content quickly.</p>
+          </div>
+          <div class="home-card">
+            <h3>Finance</h3>
+            <p>Track revenue, payouts, refunds and transaction history.</p>
+          </div>
+          <div class="home-card">
+            <h3>Affiliates</h3>
+            <p>Review affiliate balances and update payouts.</p>
+          </div>
+          <div class="home-card">
+            <h3>Careers</h3>
+            <p>Follow job applicants and their review status.</p>
+          </div>
+        </div>
+        <div class="admin-actions" style="margin-top:1rem;">
+          <button id="home-lock-dashboard" class="btn-secondary" type="button">Lock Dashboard</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="blog-tab" class="tab-panel hidden">
       <div class="admin-card hidden" id="post-card">
       <h2>Publish New Blog Post</h2>
       <div class="admin-field">
@@ -146,7 +228,6 @@
       <div class="admin-actions">
         <button id="publish-post" class="btn-primary">Publish Post</button>
         <button id="cancel-edit" class="btn-secondary hidden">Cancel Edit</button>
-        <button id="logout-admin" class="btn-primary" style="background:#555;">Lock Dashboard</button>
       </div>
       <p class="status" id="admin-post-status"></p>
       <p class="status" id="newsletter-status"></p>
@@ -161,9 +242,8 @@
   <div id="financial-tab" class="tab-panel hidden">
     <div class="admin-card hidden" id="financial-overview-card">
       <h2>Financial Overview</h2>
-      <div class="financial-controls">
-        <label for="financial-filter">Filter:</label>
-        <select id="financial-filter">
+      <div class="financial-controls" style="margin-top:0.6rem; margin-bottom:1.2rem; gap:0.55rem; align-items:center;">
+        <select id="financial-filter" style="padding:0.35rem 0.55rem; font-size:0.78rem; min-width:120px; width:auto;">
           <option value="all">All Time</option>
           <option value="month">This Month</option>
           <option value="season">This Season</option>
@@ -394,7 +474,6 @@
         <button id="create-fixture" class="btn-primary">Create Fixture</button>
         <button id="update-fixture" class="btn-primary hidden">Update Fixture</button>
         <button id="cancel-fixture" class="btn-secondary hidden">Cancel</button>
-        <button id="replace-fixtures" class="btn-secondary">Replace all fixtures</button>
       </div>
       <div style="margin-top:1rem;">
         <h3>Existing Fixtures</h3>
