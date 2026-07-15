@@ -9,6 +9,8 @@
   "background_color": "#ffffff",
   "theme_color": "#0A2540",
   "icons": [
+
+    
     {
       "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230A2540' width='192' height='192'/><text y='140' font-size='120' text-anchor='middle' x='96' fill='%23fff'>⚽</text></svg>",
       "sizes": "192x192",
@@ -58,6 +60,5 @@
         }
       ]
     }
-  ],
-  "screenshots": []
+  ]
 }
