@@ -41,8 +41,12 @@ const careersApplicantsCard = document.getElementById('careers-applicants-card')
 const adminTabsCard = document.getElementById('admin-tabs-card');
 const withdrawalTabPanel = document.getElementById('withdrawal-tab');
 const financialTabPanel = document.getElementById('financial-tab');
+const affiliateTabPanel = document.getElementById('affiliate-tab');
 const blogTabPanel = document.getElementById('blog-tab');
 const careersTabPanel = document.getElementById('careers-tab');
+const affiliateManagementBody = document.getElementById('affiliate-management-body');
+const affiliateManagementNote = document.getElementById('affiliate-management-note');
+const affiliateManagementCard = document.getElementById('affiliate-management-card');
 const tabButtons = document.querySelectorAll('.tab-btn');
 // Fixtures elements
 const fixturesCard = document.getElementById('fixtures-card');
@@ -99,6 +103,98 @@ function initializeQuill() {
   } catch (error) {
     console.warn('Quill editor failed to initialize:', error);
     quill = null;
+  }
+}
+
+async function loadAffiliateManagement() {
+  if (!affiliateManagementBody || !affiliateManagementNote) return;
+
+  if (affiliateManagementCard) {
+    affiliateManagementCard.classList.remove('hidden');
+  }
+
+  affiliateManagementNote.textContent = 'Loading affiliates...';
+  affiliateManagementBody.innerHTML = '<tr><td colspan="6">Loading affiliates...</td></tr>';
+
+  try {
+    const res = await fetch('/api/admin/affiliates', {
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' }
+    });
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data?.success) {
+      const message = data?.message || `Unable to load affiliates. (HTTP ${res.status})`;
+      affiliateManagementNote.textContent = message;
+      affiliateManagementBody.innerHTML = `<tr><td colspan="6">${message}</td></tr>`;
+      return;
+    }
+
+    const affiliates = Array.isArray(data.affiliates) ? data.affiliates : [];
+    if (!affiliates.length) {
+      affiliateManagementNote.textContent = 'No affiliates found.';
+      affiliateManagementBody.innerHTML = '<tr><td colspan="6">No affiliates found.</td></tr>';
+      return;
+    }
+
+    affiliateManagementNote.textContent = `Showing ${affiliates.length} affiliate(s).`;
+    affiliateManagementBody.innerHTML = affiliates.map((affiliate) => {
+      const user = affiliate.user || affiliate.profile || affiliate.owner || {};
+      const fullName = user.full_name || user.name || affiliate.full_name || affiliate.name || '—';
+      const email = user.email || affiliate.email || '—';
+      const refCode = affiliate.ref_code || affiliate.refCode || '—';
+      const balance = Number(affiliate.balance ?? affiliate.amount ?? 0);
+      const createdAt = affiliate.created_at || affiliate.createdAt || '';
+      return `
+        <tr>
+          <td>${fullName}</td>
+          <td>${email}</td>
+          <td>${refCode}</td>
+          <td>
+            <input type="number" min="0" step="0.01" value="${balance}" data-affiliate-id="${affiliate.id}" class="affiliate-balance-input" style="width:100%; padding:0.55rem 0.7rem; border-radius:8px; border:1px solid #d5dbe4;" />
+          </td>
+          <td>${formatDate(createdAt)}</td>
+          <td>
+            <button class="btn-secondary btn-sm" data-action="save-affiliate-balance" data-id="${affiliate.id}">Save</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    affiliateManagementBody.querySelectorAll('button[data-action="save-affiliate-balance"]').forEach((button) => {
+      button.addEventListener('click', async (event) => {
+        const affiliateId = event.currentTarget?.dataset?.id;
+        const row = event.currentTarget.closest('tr');
+        const input = row?.querySelector('.affiliate-balance-input');
+        if (!affiliateId || !input) return;
+
+        const amount = input.value;
+        try {
+          const res = await fetch(`/api/admin/affiliates/${encodeURIComponent(affiliateId)}/balance`, {
+            method: 'PUT',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+            body: JSON.stringify({ amount })
+          });
+          const result = await res.json().catch(() => null);
+          if (!res.ok || !result?.success) {
+            alert(result?.message || 'Unable to update affiliate balance.');
+            return;
+          }
+          alert('Affiliate balance updated successfully.');
+          await loadAffiliateManagement();
+        } catch (error) {
+          console.error('Affiliate balance update failed:', error);
+          alert('Could not update affiliate balance.');
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Affiliate management load failed:', error);
+    affiliateManagementNote.textContent = 'Could not load affiliates.';
+    affiliateManagementBody.innerHTML = '<tr><td colspan="6">Could not load affiliates.</td></tr>';
   }
 }
 
@@ -1123,6 +1219,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
       document.getElementById(target).classList.add('active');
 
+      if (target === 'affiliate-tab') {
+        if (!adminAuthenticated) {
+          affiliateManagementNote.textContent = 'Checking admin session...';
+          try {
+            const res = await fetch('/api/admin/withdrawal-requests', {
+              credentials: 'same-origin',
+              cache: 'no-store',
+              headers: { 'Cache-Control': 'no-cache' }
+            });
+            const data = await res.json().catch(() => null);
+            if (res.ok && data?.success) {
+              adminAuthenticated = true;
+              affiliateManagementNote.textContent = 'Loading affiliates...';
+            } else {
+              affiliateManagementNote.textContent = 'Unlock the dashboard to view affiliate data.';
+              return;
+            }
+          } catch (error) {
+            console.error('Affiliate session check failed:', error);
+            affiliateManagementNote.textContent = 'Unlock the dashboard to view affiliate data.';
+            return;
+          }
+        }
+        await loadAffiliateManagement();
+      }
       if (target === 'withdrawal-tab') {
         if (!adminAuthenticated) {
           withdrawalRequestsNote.textContent = 'Unlock the dashboard to view withdrawal requests.';

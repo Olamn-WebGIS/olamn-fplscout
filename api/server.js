@@ -22,6 +22,7 @@ const {
   removeTempFile,
 } = require('./careers-utils');
 const { normalizeAdminTransactionPayload, summarizeTransactions } = require('./finance-utils');
+const { normalizeAffiliateBalancePayload } = require('./affiliate-admin');
 require('dotenv').config(); // Load environment variables
 
 const app = express();
@@ -2938,6 +2939,82 @@ app.post('/api/affiliate/withdrawal-request', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to process withdrawal request.' });
     }
 });
+app.get('/api/admin/affiliates', requireAdminSession, async (req, res) => {
+    try {
+        const dbClient = supabaseAdmin || supabase;
+        const { data: affiliatesData, error: affiliatesError } = await dbClient
+            .from('affiliates')
+            .select('id, user_id, ref_code, balance, created_at')
+            .order('created_at', { ascending: false });
+
+        if (affiliatesError) {
+            console.error('Admin affiliates fetch failed:', affiliatesError);
+            return res.status(500).json({ success: false, message: affiliatesError.message || 'Could not load affiliates.' });
+        }
+
+        const affiliateRows = Array.isArray(affiliatesData) ? affiliatesData : [];
+        const userIds = [...new Set(affiliateRows.map((row) => row.user_id).filter(Boolean))];
+        let userMap = {};
+
+        if (userIds.length) {
+            const { data: usersData, error: usersError } = await dbClient
+                .from('users')
+                .select('id, full_name, email')
+                .in('id', userIds);
+
+            if (!usersError && Array.isArray(usersData)) {
+                userMap = Object.fromEntries(usersData.map((user) => [user.id, { full_name: user.full_name || '', email: user.email || '' }]));
+            }
+        }
+
+        const affiliates = affiliateRows.map((affiliate) => ({
+            ...affiliate,
+            user: userMap[affiliate.user_id] || null
+        }));
+
+        return res.json({ success: true, affiliates });
+    } catch (error) {
+        console.error('Admin affiliates fetch error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to load affiliates.' });
+    }
+});
+
+app.put('/api/admin/affiliates/:id/balance', requireAdminSession, async (req, res) => {
+    try {
+        const payload = normalizeAffiliateBalancePayload(req.body || {});
+        const dbClient = supabaseAdmin || supabase;
+        const { data: affiliateData, error: affiliateError } = await dbClient
+            .from('affiliates')
+            .update({ balance: payload.amount })
+            .eq('id', req.params.id)
+            .select('id, user_id, ref_code, balance, created_at')
+            .single();
+
+        if (affiliateError || !affiliateData) {
+            console.error('Admin affiliates update failed:', affiliateError);
+            return res.status(500).json({ success: false, message: affiliateError?.message || 'Unable to update affiliate balance.' });
+        }
+
+        let user = null;
+        if (affiliateData.user_id) {
+            const { data: userData, error: userError } = await dbClient
+                .from('users')
+                .select('id, full_name, email')
+                .eq('id', affiliateData.user_id)
+                .maybeSingle();
+
+            if (!userError && userData) {
+                user = { full_name: userData.full_name || '', email: userData.email || '' };
+            }
+        }
+
+        return res.json({ success: true, affiliate: { ...affiliateData, user } });
+    } catch (error) {
+        console.error('Admin affiliates update error:', error);
+        return res.status(500).json({ success: false, message: error.message || 'Unable to update affiliate balance.' });
+    }
+});
+
 app.get('/api/admin/withdrawal-requests', requireAdminSession, async (req, res) => {
     try {
         const dbClient = supabaseAdmin || supabase;
