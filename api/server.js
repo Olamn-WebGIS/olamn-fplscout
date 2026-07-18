@@ -1475,6 +1475,13 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
         .replace(/'/g, '&#039;');
     }
 
+    function stripEmbeddedMediaFromContent(content) {
+      if (!content || typeof content !== 'string') return '';
+      return content
+        .replace(/<(iframe|video|embed|object)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
+        .replace(/<(iframe|video|embed|object)\b[^>]*\/?\>/gi, '');
+    }
+
     function buildVideoEmbedMarkup(url, title, fallbackImageUrl) {
       if (!url || typeof url !== 'string') return '';
       const trimmedUrl = url.trim();
@@ -1578,12 +1585,13 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
     }
 
     const videoEmbedMarkup = buildVideoEmbedMarkup(post.reel_link, post.title, post.image_url);
+    const safeContent = stripEmbeddedMediaFromContent(post.content || '').replace(/\n/g, '<br>');
     const staticContent = `
       <div class="blog-post" id="blog-article">
         <h1>${post.title}</h1>
         <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span></div>
         <p style="font-size:1rem;color:#555;">${post.summary}</p>
-        <div>${post.content.replace(/\n/g, '<br>')}</div>
+        <div>${safeContent}</div>
         ${videoEmbedMarkup}
         <div class="blog-actions blog-actions-minimal">
           <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">🔗<span>Share</span></button>

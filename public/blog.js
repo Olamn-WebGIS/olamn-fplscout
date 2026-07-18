@@ -25,6 +25,13 @@ function escapeHtml(text) {
     .replace(/'/g, '&#039;');
 }
 
+function stripEmbeddedMediaFromContent(content) {
+  if (!content || typeof content !== 'string') return '';
+  return content
+    .replace(/<(iframe|video|embed|object)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<(iframe|video|embed|object)\b[^>]*\/?\>/gi, '');
+}
+
 function getVideoEmbedMarkup(url, title, fallbackImageUrl) {
   if (!url || typeof url !== 'string') return '';
   const trimmedUrl = url.trim();
@@ -211,7 +218,7 @@ function renderPost(post) {
   const videoEmbedMarkup = getVideoEmbedMarkup(post.reel_link, post.title, post.image_url);
   const safeTitle = escapeHtml(post.title || 'Blog post');
   const safeSummary = escapeHtml(post.summary || '');
-  const safeContent = post.content || '';
+  const safeContent = stripEmbeddedMediaFromContent(post.content || '');
 
   postContainer.innerHTML = `
     <div class="blog-post" id="blog-article">
