@@ -1466,14 +1466,116 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
       return `https://${trimmed}`;
     }
 
-    const normalizedReelLink = normalizeUrlForRendering(post.reel_link);
+    function escapeHtml(text) {
+      return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function buildVideoEmbedMarkup(url, title, fallbackImageUrl) {
+      if (!url) return '';
+      const normalizedUrl = normalizeUrlForRendering(url);
+      if (!normalizedUrl) return '';
+
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(normalizedUrl);
+      } catch (error) {
+        return '';
+      }
+
+      const hostname = parsedUrl.hostname.replace(/^www\./i, '');
+      const safeTitle = escapeHtml(title || 'Embedded video');
+
+      if (hostname.includes('facebook.com')) {
+        const facebookHref = encodeURIComponent(normalizedUrl);
+        return `
+          <div class="blog-embed-section">
+            <div class="blog-video-embed-wrapper">
+              <iframe class="blog-video-embed" src="https://www.facebook.com/plugins/video.php?href=${facebookHref}&show_text=0&width=560" title="${safeTitle}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+            </div>
+          </div>
+        `;
+      }
+
+      if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+        let videoId = '';
+        if (parsedUrl.searchParams.get('v')) {
+          videoId = parsedUrl.searchParams.get('v');
+        } else if (parsedUrl.pathname.includes('/shorts/')) {
+          videoId = parsedUrl.pathname.split('/shorts/')[1]?.split('/')[0] || '';
+        } else if (parsedUrl.pathname.startsWith('/embed/')) {
+          videoId = parsedUrl.pathname.split('/embed/')[1] || '';
+        } else if (hostname === 'youtu.be') {
+          videoId = parsedUrl.pathname.replace(/^\//, '');
+        }
+
+        if (videoId) {
+          return `
+            <div class="blog-embed-section">
+              <div class="blog-video-embed-wrapper">
+                <iframe class="blog-video-embed" src="https://www.youtube.com/embed/${encodeURIComponent(videoId)}" title="${safeTitle}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      if (hostname.includes('vimeo.com')) {
+        const videoId = parsedUrl.pathname.split('/').filter(Boolean)[0];
+        if (videoId) {
+          return `
+            <div class="blog-embed-section">
+              <div class="blog-video-embed-wrapper">
+                <iframe class="blog-video-embed" src="https://player.vimeo.com/video/${encodeURIComponent(videoId)}" title="${safeTitle}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      if (hostname.includes('streamable.com')) {
+        const streamablePath = parsedUrl.pathname.replace(/^\/+|\/+$/g, '');
+        const embedPath = streamablePath.startsWith('e/') ? streamablePath : `e/${streamablePath}`;
+        return `
+          <div class="blog-embed-section">
+            <div class="blog-video-embed-wrapper">
+              <iframe class="blog-video-embed" src="https://streamable.com/${embedPath}" title="${safeTitle}" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>
+            </div>
+          </div>
+        `;
+      }
+
+      if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(parsedUrl.pathname)) {
+        return `
+          <div class="blog-embed-section">
+            <div class="blog-video-embed-wrapper">
+              <video class="blog-video-embed" controls preload="metadata" playsinline>
+                <source src="${escapeHtml(normalizedUrl)}" />
+              </video>
+            </div>
+          </div>
+        `;
+      }
+
+      return '';
+    }
+
+    const videoEmbedMarkup = buildVideoEmbedMarkup(post.reel_link, post.title, post.image_url);
+    const fallbackImageMarkup = post.image_url && !videoEmbedMarkup
+      ? `<div style="text-align:center;margin:1.5rem 0;"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g,'')}" loading="lazy" style="max-width:100%;height:auto;border-radius:14px;" /></div>`
+      : '';
     const staticContent = `
       <div class="blog-post" id="blog-article">
         <h1>${post.title}</h1>
         <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span></div>
         <p style="font-size:1rem;color:#555;">${post.summary}</p>
         <div>${post.content.replace(/\n/g, '<br>')}</div>
-        ${post.image_url ? `<div style="text-align:center;margin:1.5rem 0;"><a href="${normalizedReelLink || '#'}" target="_blank" rel="noopener noreferrer"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g,'')}" loading="lazy" style="max-width:100%;height:auto;border-radius:14px;" /></a></div>` : ''}
+        ${videoEmbedMarkup}
+        ${fallbackImageMarkup}
         <div class="blog-actions blog-actions-minimal">
           <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">🔗<span>Share</span></button>
           <button class="btn-icon" id="like-button" onclick="toggleLike('${post.slug}')">❤️<span id="like-count">${typeof post.likes === 'number' ? post.likes : 0}</span></button>

@@ -16,6 +16,104 @@ function normalizeUrl(url) {
   return `https://${trimmed}`;
 }
 
+function escapeHtml(text) {
+  return String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function getVideoEmbedMarkup(url, title, fallbackImageUrl) {
+  if (!url) return '';
+  const normalizedUrl = normalizeUrl(url);
+  if (!normalizedUrl) return '';
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(normalizedUrl);
+  } catch (error) {
+    return '';
+  }
+
+  const hostname = parsedUrl.hostname.replace(/^www\./i, '');
+  const safeTitle = escapeHtml(title || 'Embedded video');
+  const fallbackPoster = fallbackImageUrl ? `poster="${escapeHtml(fallbackImageUrl)}"` : '';
+
+  if (hostname.includes('facebook.com')) {
+    const facebookHref = encodeURIComponent(normalizedUrl);
+    return `
+      <div class="blog-embed-section">
+        <div class="blog-video-embed-wrapper">
+          <iframe class="blog-video-embed" src="https://www.facebook.com/plugins/video.php?href=${facebookHref}&show_text=0&width=560" title="${safeTitle}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+        </div>
+      </div>
+    `;
+  }
+
+  if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+    let videoId = '';
+    if (parsedUrl.searchParams.get('v')) {
+      videoId = parsedUrl.searchParams.get('v');
+    } else if (parsedUrl.pathname.includes('/shorts/')) {
+      videoId = parsedUrl.pathname.split('/shorts/')[1]?.split('/')[0] || '';
+    } else if (parsedUrl.pathname.startsWith('/embed/')) {
+      videoId = parsedUrl.pathname.split('/embed/')[1] || '';
+    } else if (hostname === 'youtu.be') {
+      videoId = parsedUrl.pathname.replace(/^\//, '');
+    }
+
+    if (videoId) {
+      return `
+        <div class="blog-embed-section">
+          <div class="blog-video-embed-wrapper">
+            <iframe class="blog-video-embed" src="https://www.youtube.com/embed/${encodeURIComponent(videoId)}" title="${safeTitle}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  if (hostname.includes('vimeo.com')) {
+    const videoId = parsedUrl.pathname.split('/').filter(Boolean)[0];
+    if (videoId) {
+      return `
+        <div class="blog-embed-section">
+          <div class="blog-video-embed-wrapper">
+            <iframe class="blog-video-embed" src="https://player.vimeo.com/video/${encodeURIComponent(videoId)}" title="${safeTitle}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  if (hostname.includes('streamable.com')) {
+    const streamablePath = parsedUrl.pathname.replace(/^\/+|\/+$/g, '');
+    const embedPath = streamablePath.startsWith('e/') ? streamablePath : `e/${streamablePath}`;
+    return `
+      <div class="blog-embed-section">
+        <div class="blog-video-embed-wrapper">
+          <iframe class="blog-video-embed" src="https://streamable.com/${embedPath}" title="${safeTitle}" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>
+        </div>
+      </div>
+    `;
+  }
+
+  if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(parsedUrl.pathname)) {
+    return `
+      <div class="blog-embed-section">
+        <div class="blog-video-embed-wrapper">
+          <video class="blog-video-embed" controls preload="metadata" playsinline ${fallbackPoster}>
+            <source src="${escapeHtml(normalizedUrl)}" />
+          </video>
+        </div>
+      </div>
+    `;
+  }
+
+  return '';
+}
 
 async function fetchPosts() {
   const res = await fetch('/api/posts');
@@ -95,13 +193,22 @@ function renderList(posts) {
 function renderPost(post) {
   postContainer.style.display = 'block';
   blogContainer.style.display = 'none';
+  const videoEmbedMarkup = getVideoEmbedMarkup(post.reel_link, post.title, post.image_url);
+  const fallbackImageMarkup = post.image_url && !videoEmbedMarkup
+    ? `<div style="text-align:center;margin:1rem 0;"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g, '')}" loading="lazy" style="max-width:100%;height:auto;" /></div>`
+    : '';
+  const safeTitle = escapeHtml(post.title || 'Blog post');
+  const safeSummary = escapeHtml(post.summary || '');
+  const safeContent = post.content || '';
+
   postContainer.innerHTML = `
     <div class="blog-post" id="blog-article">
-      <h1>${post.title}</h1>
-      <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${post.author || 'FPL Scout'}</span></div>
-      <p style="font-size:1rem;color:#555;">${post.summary}</p>
-      <div>${post.content}</div>
-      ${post.image_url ? `<div style="text-align:center;margin:1rem 0;"><a href="${normalizeUrl(post.reel_link) || '#'}" target="_blank" rel="noopener noreferrer"><img src="${post.image_url}" alt="${(post.image_alt||post.title||'Featured image').replace(/"/g,'') }" loading="lazy" style="max-width:100%;height:auto;" /></a></div>` : ''}
+      <h1>${safeTitle}</h1>
+      <div class="blog-meta"><span>${new Date(post.published_at).toLocaleDateString()}</span><span>${escapeHtml(post.author || 'FPL Scout')}</span></div>
+      <p style="font-size:1rem;color:#555;">${safeSummary}</p>
+      <div>${safeContent}</div>
+      ${videoEmbedMarkup}
+      ${fallbackImageMarkup}
       <div class="blog-actions blog-actions-minimal">
         <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}','${encodeURIComponent(post.image_url || '')}')">🔗<span>Share</span></button>
         <button class="btn-icon" id="like-button" onclick="toggleLike('${post.slug}')">❤️<span id="like-count">${post.likes || 0}</span></button>
@@ -312,14 +419,16 @@ window.sharePost = sharePost;
   setupSubscribeModal();
   try {
     if (isPostPage) {
-      if (postContainer.innerHTML.trim()) {
-        postContainer.style.display = 'block';
-        blogContainer.style.display = 'none';
-        renderComments(slug);
-      } else {
+      try {
         const post = await fetchPost(slug);
         renderPost(post);
+      } catch (error) {
+        if (postContainer.innerHTML.trim()) {
+          postContainer.style.display = 'block';
+          blogContainer.style.display = 'none';
+        }
       }
+      renderComments(slug);
 
       if (!hasSubscribedNewsletter()) {
         setTimeout(() => subscribeModal.classList.add('active'), 15000);
