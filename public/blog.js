@@ -40,12 +40,14 @@ function getVideoEmbedMarkup(url, title, fallbackImageUrl) {
   const hostname = parsedUrl.hostname.replace(/^www\./i, '');
   const safeTitle = escapeHtml(title || 'Embedded video');
   const fallbackPoster = fallbackImageUrl ? `poster="${escapeHtml(fallbackImageUrl)}"` : '';
+  const isPortrait = /facebook\.com|reels|shorts|tiktok|instagram|snapchat|streamable/i.test(normalizedUrl) || parsedUrl.searchParams.get('t') || parsedUrl.pathname.includes('/shorts/');
+  const wrapperClass = isPortrait ? 'blog-video-embed-wrapper blog-video-embed-wrapper--vertical' : 'blog-video-embed-wrapper';
 
   if (hostname.includes('facebook.com')) {
     const facebookHref = encodeURIComponent(normalizedUrl);
     return `
       <div class="blog-embed-section">
-        <div class="blog-video-embed-wrapper">
+        <div class="${wrapperClass}">
           <iframe class="blog-video-embed" src="https://www.facebook.com/plugins/video.php?href=${facebookHref}&show_text=0&width=560" title="${safeTitle}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>
         </div>
       </div>
@@ -67,7 +69,7 @@ function getVideoEmbedMarkup(url, title, fallbackImageUrl) {
     if (videoId) {
       return `
         <div class="blog-embed-section">
-          <div class="blog-video-embed-wrapper">
+          <div class="${wrapperClass}">
             <iframe class="blog-video-embed" src="https://www.youtube.com/embed/${encodeURIComponent(videoId)}" title="${safeTitle}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>
           </div>
         </div>
@@ -80,7 +82,7 @@ function getVideoEmbedMarkup(url, title, fallbackImageUrl) {
     if (videoId) {
       return `
         <div class="blog-embed-section">
-          <div class="blog-video-embed-wrapper">
+          <div class="${wrapperClass}">
             <iframe class="blog-video-embed" src="https://player.vimeo.com/video/${encodeURIComponent(videoId)}" title="${safeTitle}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>
           </div>
         </div>
@@ -93,7 +95,7 @@ function getVideoEmbedMarkup(url, title, fallbackImageUrl) {
     const embedPath = streamablePath.startsWith('e/') ? streamablePath : `e/${streamablePath}`;
     return `
       <div class="blog-embed-section">
-        <div class="blog-video-embed-wrapper">
+        <div class="${wrapperClass}">
           <iframe class="blog-video-embed" src="https://streamable.com/${embedPath}" title="${safeTitle}" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>
         </div>
       </div>
@@ -103,7 +105,7 @@ function getVideoEmbedMarkup(url, title, fallbackImageUrl) {
   if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(parsedUrl.pathname)) {
     return `
       <div class="blog-embed-section">
-        <div class="blog-video-embed-wrapper">
+        <div class="${wrapperClass}">
           <video class="blog-video-embed" controls preload="metadata" playsinline ${fallbackPoster}>
             <source src="${escapeHtml(normalizedUrl)}" />
           </video>
@@ -194,9 +196,6 @@ function renderPost(post) {
   postContainer.style.display = 'block';
   blogContainer.style.display = 'none';
   const videoEmbedMarkup = getVideoEmbedMarkup(post.reel_link, post.title, post.image_url);
-  const fallbackImageMarkup = post.image_url && !videoEmbedMarkup
-    ? `<div style="text-align:center;margin:1rem 0;"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g, '')}" loading="lazy" style="max-width:100%;height:auto;" /></div>`
-    : '';
   const safeTitle = escapeHtml(post.title || 'Blog post');
   const safeSummary = escapeHtml(post.summary || '');
   const safeContent = post.content || '';
@@ -208,7 +207,6 @@ function renderPost(post) {
       <p style="font-size:1rem;color:#555;">${safeSummary}</p>
       <div>${safeContent}</div>
       ${videoEmbedMarkup}
-      ${fallbackImageMarkup}
       <div class="blog-actions blog-actions-minimal">
         <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}','${encodeURIComponent(post.image_url || '')}')">🔗<span>Share</span></button>
         <button class="btn-icon" id="like-button" onclick="toggleLike('${post.slug}')">❤️<span id="like-count">${post.likes || 0}</span></button>

@@ -1565,9 +1565,6 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
     }
 
     const videoEmbedMarkup = buildVideoEmbedMarkup(post.reel_link, post.title, post.image_url);
-    const fallbackImageMarkup = post.image_url && !videoEmbedMarkup
-      ? `<div style="text-align:center;margin:1.5rem 0;"><img src="${post.image_url}" alt="${(post.image_alt || post.title || 'Featured image').replace(/"/g,'')}" loading="lazy" style="max-width:100%;height:auto;border-radius:14px;" /></div>`
-      : '';
     const staticContent = `
       <div class="blog-post" id="blog-article">
         <h1>${post.title}</h1>
@@ -1575,7 +1572,6 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
         <p style="font-size:1rem;color:#555;">${post.summary}</p>
         <div>${post.content.replace(/\n/g, '<br>')}</div>
         ${videoEmbedMarkup}
-        ${fallbackImageMarkup}
         <div class="blog-actions blog-actions-minimal">
           <button class="btn-icon" onclick="sharePost('${encodeURIComponent(post.title)}','${encodeURIComponent(post.summary)}','/blog/${post.slug}')">🔗<span>Share</span></button>
           <button class="btn-icon" id="like-button" onclick="toggleLike('${post.slug}')">❤️<span id="like-count">${typeof post.likes === 'number' ? post.likes : 0}</span></button>
