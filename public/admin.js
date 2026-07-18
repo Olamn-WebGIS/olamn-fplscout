@@ -1188,6 +1188,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (signupStatusFilter) {
     signupStatusFilter.addEventListener('change', renderSignupAttempts);
   }
+  financialTransactionFormElement?.addEventListener('submit', submitFinancialTransaction);
   financialAddTransactionButton?.addEventListener('click', () => {
     resetFinancialTransactionForm();
     if (financialTransactionForm) financialTransactionForm.classList.remove('hidden');
