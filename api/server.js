@@ -1476,8 +1476,10 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
     }
 
     function buildVideoEmbedMarkup(url, title, fallbackImageUrl) {
-      if (!url) return '';
-      const normalizedUrl = normalizeUrlForRendering(url);
+      if (!url || typeof url !== 'string') return '';
+      const trimmedUrl = url.trim();
+      if (!trimmedUrl) return '';
+      const normalizedUrl = normalizeUrlForRendering(trimmedUrl);
       if (!normalizedUrl) return '';
 
       let parsedUrl;
@@ -1488,7 +1490,18 @@ app.get(['/blog/:slug', '/blog/:slug/'], async (req, res) => {
       }
 
       const hostname = parsedUrl.hostname.replace(/^www\./i, '');
+      const pathname = parsedUrl.pathname || '';
       const safeTitle = escapeHtml(title || 'Embedded video');
+      const isSupportedVideoUrl = hostname.includes('facebook.com')
+        || hostname.includes('youtube.com')
+        || hostname.includes('youtu.be')
+        || hostname.includes('vimeo.com')
+        || hostname.includes('streamable.com')
+        || /\.(mp4|webm|ogg)(\?.*)?$/i.test(pathname);
+
+      if (!isSupportedVideoUrl) {
+        return '';
+      }
 
       if (hostname.includes('facebook.com')) {
         const facebookHref = encodeURIComponent(normalizedUrl);

@@ -26,8 +26,10 @@ function escapeHtml(text) {
 }
 
 function getVideoEmbedMarkup(url, title, fallbackImageUrl) {
-  if (!url) return '';
-  const normalizedUrl = normalizeUrl(url);
+  if (!url || typeof url !== 'string') return '';
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl) return '';
+  const normalizedUrl = normalizeUrl(trimmedUrl);
   if (!normalizedUrl) return '';
 
   let parsedUrl;
@@ -38,10 +40,21 @@ function getVideoEmbedMarkup(url, title, fallbackImageUrl) {
   }
 
   const hostname = parsedUrl.hostname.replace(/^www\./i, '');
+  const pathname = parsedUrl.pathname || '';
   const safeTitle = escapeHtml(title || 'Embedded video');
   const fallbackPoster = fallbackImageUrl ? `poster="${escapeHtml(fallbackImageUrl)}"` : '';
-  const isPortrait = /facebook\.com|reels|shorts|tiktok|instagram|snapchat|streamable/i.test(normalizedUrl) || parsedUrl.searchParams.get('t') || parsedUrl.pathname.includes('/shorts/');
+  const isPortrait = /facebook\.com|reels|shorts|tiktok|instagram|snapchat|streamable/i.test(normalizedUrl) || parsedUrl.searchParams.get('t') || pathname.includes('/shorts/');
   const wrapperClass = isPortrait ? 'blog-video-embed-wrapper blog-video-embed-wrapper--vertical' : 'blog-video-embed-wrapper';
+  const isSupportedVideoUrl = hostname.includes('facebook.com')
+    || hostname.includes('youtube.com')
+    || hostname.includes('youtu.be')
+    || hostname.includes('vimeo.com')
+    || hostname.includes('streamable.com')
+    || /\.(mp4|webm|ogg)(\?.*)?$/i.test(pathname);
+
+  if (!isSupportedVideoUrl) {
+    return '';
+  }
 
   if (hostname.includes('facebook.com')) {
     const facebookHref = encodeURIComponent(normalizedUrl);
