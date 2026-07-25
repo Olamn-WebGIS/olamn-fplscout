@@ -532,6 +532,41 @@ async function loadLeague() {
   }
 }
 
+// Auto-refresh league data every 60 seconds
+function startAutoRefresh() {
+  setInterval(async () => {
+    if (!leagueData) return; // Only refresh if a league is loaded
+    
+    try {
+      const leagueId = document.getElementById('league-id-input').value.trim();
+      if (!leagueId) return;
+      
+      // Fetch fresh data
+      await bootstrap();
+      const data = await API.league(leagueId, 1);
+      
+      const oldGw = currentGW;
+      leagueData = data;
+      
+      // Update GW and banner if it changed
+      const newGw = bsData.events.find(e => e.is_current)?.id || bsData.events[bsData.events.length - 1]?.id || 1;
+      if (newGw !== oldGw) {
+        currentGW = newGw;
+        document.getElementById('current-gw').textContent = `GW ${currentGW}`;
+      }
+      
+      // Update league stats
+      const avgPts = Math.round(data.standings.results.reduce((sum, r) => sum + ((r.total_points || r.total) || 0), 0) / data.standings.results.length);
+      document.getElementById('league-avg-pts').textContent = avgPts;
+      
+      // Re-render rivals with updated standings
+      renderRivals(data.standings.results.slice(0, 10));
+    } catch (e) {
+      console.error('Auto-refresh error:', e);
+    }
+  }, 60000);
+}
+
 // Search managers in the loaded league
 async function searchManagers() {
   if (!leagueData) {
@@ -1242,6 +1277,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
   }
+
+  // 🚀 Start auto-refresh to keep data synchronized
+  startAutoRefresh();
 
   // 3. Load logged-in user from Store safely
   try {

@@ -312,6 +312,38 @@ async function boot() {
   }
 }
 
+function startAutoRefresh() {
+  setInterval(async () => {
+    try {
+      const newBsData = await API.bootstrap();
+      if (!newBsData) return;
+      
+      const oldGw = bsData?.events?.find(e => e.is_current)?.id || bsData?.events?.[bsData.events.length - 1]?.id;
+      const newGw = newBsData.events.find(e => e.is_current)?.id || newBsData.events[newBsData.events.length - 1]?.id;
+      
+      bsData = newBsData;
+      
+      // Re-render all sections
+      const cur = bsData.events.find(e => e.is_current) || bsData.events[bsData.events.length - 1];
+      
+      document.getElementById('cur-gw-label').textContent = `Gameweek ${cur.id}`;
+      document.getElementById('cap-gw').textContent = cur.id;
+      document.getElementById('cur-deadline').textContent = cur.deadline_time ? new Date(cur.deadline_time).toLocaleString('en-GB', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+      document.getElementById('cur-avg').textContent = cur.average_entry_score || '—';
+      document.getElementById('cur-top').textContent = cur.highest_score || '—';
+      
+      renderCaptainPicks();
+      renderTransfers(0);
+      renderDifferentials();
+      renderChipGuide(cur);
+      renderFormList();
+      renderPriceChanges();
+    } catch (e) {
+      console.error('Auto-refresh error:', e);
+    }
+  }, 60000);
+}
+
 function playerCard(p, teams, showOwn = true, extra = '') {
   const team = teams.find(t => t.id === p.team);
   return `<div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);margin-bottom:8px;color:#ffffff;">
@@ -445,6 +477,7 @@ function renderPriceChanges() {
 /* ── Tab switching ────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   boot();
+  startAutoRefresh();
 
   document.querySelectorAll('#rec-tabs .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {

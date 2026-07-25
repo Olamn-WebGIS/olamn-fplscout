@@ -46,7 +46,7 @@
 
 <!-- ── Hero ──────────────────────────────────────────────────── -->
 <section class="hero">
-  <div class="hero-eyebrow">Live FPL Season 2025/26</div>
+  <div class="hero-eyebrow">Live FPL Season 2026/27</div>
   <h1 class="display">The <em>Intelligence Edge</em><br>Every FPL Manager Needs</h1>
   <p>Real-time player stats, predictive scoring, differential picks, and deep league spy tools — all in one place.</p>
   <div class="hero-cta">
@@ -168,6 +168,7 @@
           <div class="row"><span>Manager:</span><span id="sm-name">—</span></div>
           <div class="row"><span>Overall rank:</span><span id="sm-rank">—</span></div>
           <div class="row"><span>Total pts:</span><span id="sm-pts">—</span></div>
+          <div class="row"><span>Transfers available:</span><span id="sm-transfers">—</span></div>
           <div id="sm-chips" style="margin-top:8px;font-size:0.8rem;color:var(--text-muted);"></div>
         </div>
       </div>
@@ -543,6 +544,9 @@ async function boot() {
     updateHeroStats(data);
     applyFilters();
     restoreManager();
+    
+    // Set up auto-refresh for gameweek updates
+    startAutoRefresh();
   } catch (e) {
     console.error(e);
     document.getElementById('players-tbody').innerHTML =
@@ -550,12 +554,92 @@ async function boot() {
   }
 }
 
+// Auto-refresh mechanism to check for gameweek updates
+let autoRefreshInterval = null;
+async function startAutoRefresh() {
+  // Clear any existing interval
+  if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+  
+  // Check for updates every 60 seconds
+  autoRefreshInterval = setInterval(async () => {
+    try {
+      const data = await API.bootstrap();
+      const currentGW = data.events.find(e => e.is_current);
+      const lastGW = allEvents.find(e => e.is_current);
+      
+      // If gameweek has changed, update everything
+      if (currentGW && lastGW && currentGW.id !== lastGW.id) {
+        console.log(`Gameweek updated: ${lastGW.id} -> ${currentGW.id}`);
+        allPlayers = data.elements;
+        allTeams = data.teams;
+        allEvents = data.events;
+        
+        updateHeroStats(data);
+        applyFilters();
+        
+        // Refresh manager info if a manager is synced (transfers available will update)
+        const managerId = Store.getManagerId();
+        if (managerId) {
+          try {
+            const managerData = await API.manager(managerId);
+            renderManagerInfo(managerData);
+            loadSquad(managerId);
+          } catch (e) {
+            console.warn('Failed to refresh manager info during auto-refresh:', e);
+          }
+        }
+      } else if (currentGW) {
+        // Even if gameweek hasn't changed, update stats in case scores have been populated
+        updateHeroStats(data);
+        
+        // Always refresh manager transfers available every 60 seconds
+        const managerId = Store.getManagerId();
+        if (managerId) {
+          try {
+            const managerData = await API.manager(managerId);
+            renderManagerInfo(managerData);
+            
+            // Refresh recommendations with updated transfers
+            const analysis = await API.analyzeTransfers(managerId, currentGW.id);
+            renderTransferRecommendations(analysis, managerData.transfers_balance || 1);
+          } catch (e) {
+            console.warn('Failed to refresh transfers during auto-refresh:', e);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Auto-refresh failed:', e);
+    }
+  }, 60000); // Refresh every 60 seconds
+}
+
 function updateHeroStats(data) {
-  const cur = data.events.find(e => e.is_current) || data.events[data.events.length - 1];
+  // Try to find current gameweek
+  let cur = data.events.find(e => e.is_current);
+  
+  // If no current gameweek, find the first upcoming one (not finished)
+  if (!cur) {
+    const now = new Date();
+    cur = data.events.find(e => {
+      const deadline = e.deadline_time ? new Date(e.deadline_time) : null;
+      return deadline && deadline > now && !e.finished;
+    });
+  }
+  
+  // If still no match, find the first gameweek that hasn't finished yet
+  if (!cur) {
+    cur = data.events.find(e => !e.finished);
+  }
+  
+  // Last resort: get the most recent gameweek
+  if (!cur) {
+    cur = data.events[data.events.length - 1];
+  }
+  
   document.getElementById('stat-players').textContent = fmt(data.elements.length);
   document.getElementById('stat-gw').textContent = cur ? cur.id : '—';
-  document.getElementById('stat-avg').textContent = cur ? cur.average_entry_score : '—';
-  document.getElementById('stat-top').textContent = cur ? cur.highest_score : '—';
+  document.getElementById('stat-avg').textContent = cur && cur.average_entry_score ? cur.average_entry_score : '—';
+  document.getElementById('stat-top').textContent = cur && cur.highest_score ? cur.highest_score : '—';
 }
 
 function populateTeamFilter() {
@@ -625,8 +709,8 @@ function getPlayerMetrics(player) {
   };
 }
 
-/* ── Transfer Recommendations ───────────────────────────────── */
-function renderTransferRecommendations(analysis) {
+/* ── Transfer Recommendations with Smart Logic ──────────────── */
+function renderTransferRecommendations(analysis, transfersAvailable = 1) {
   if (!analysis || !analysis.starting_xi) {
     document.getElementById('transfer-recommendations-sidebar').style.display = 'none';
     return;
@@ -634,38 +718,166 @@ function renderTransferRecommendations(analysis) {
   
   document.getElementById('transfer-recommendations-sidebar').style.display = 'block';
   
-  const recs = analysis.transfer_recommendations || {};
-  
-  // 1. PLAYERS TO SELL: Weak starters from the squad
-  if (recs.players_to_sell && recs.players_to_sell.length > 0) {
-    const sellHtml = recs.players_to_sell.map(p => `
-      <div style="padding:10px;background:rgba(211,47,47,0.08);border-radius:8px;margin-bottom:8px;border-left:4px solid var(--fwd);">
-        <div style="font-weight:700;font-size:0.85rem;color:var(--text-primary);">${p.name}</div>
-        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">${p.position} • ${p.team} • £${p.price}m</div>
-        <div style="font-size:0.7rem;color:var(--fwd);margin-top:6px;font-weight:600;">⚠️ Form: ${p.form} | Score: ${p.score}</div>
-      </div>
-    `).join('');
+  // Early exit: No transfers available
+  if (transfersAvailable <= 0) {
+    document.getElementById('players-to-sell-section').style.display = 'none';
+    document.getElementById('players-to-buy-section').style.display = 'none';
+    document.getElementById('recommended-captain-section').style.display = 'block';
     
-    document.getElementById('players-to-sell-container').innerHTML = sellHtml;
+    const noTransfersMsg = `
+      <div style="padding:12px;background:rgba(255,193,7,0.15);border-radius:8px;border-left:4px solid #ffc107;color:#fff;">
+        <div style="font-weight:700;margin-bottom:4px;">⏳ You've used up your Available Transfers</div>
+        <div style="font-size:0.85rem;color:#f3f4f6;">You have no transfers available for this gameweek. Build your budget for next week!</div>
+      </div>
+    `;
+    
+    document.getElementById('players-to-sell-container').innerHTML = noTransfersMsg;
     document.getElementById('players-to-sell-section').style.display = 'block';
+    document.getElementById('players-to-buy-section').style.display = 'none';
+    return;
   }
   
-  // 2. PLAYERS TO BUY: Best market players (not in squad)
-  if (recs.players_to_buy && recs.players_to_buy.length > 0) {
-    const buyHtml = recs.players_to_buy.map(p => `
-      <div style="padding:10px;background:rgba(76,175,80,0.08);border-radius:8px;margin-bottom:8px;border-left:4px solid var(--green);">
-        <div style="font-weight:700;font-size:0.85rem;color:var(--text-primary);">${p.name}</div>
-        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">${p.position} • ${p.team} • £${p.price}m</div>
-        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;">Form: ${p.form} | Goals: ${p.goals} | Assists: ${p.assists} | CS: ${p.clean_sheets}</div>
-        <div style="font-size:0.7rem;color:var(--green);margin-top:4px;font-weight:600;">✅ FDR: ${p.fdr} | Score: ${p.score}</div>
-      </div>
-    `).join('');
+  const recs = analysis.transfer_recommendations || {};
+  const squad = analysis.starting_xi || [];
+  const bench = analysis.bench || [];
+  
+  // Helper: Get position type
+  const getPositionType = (pos) => {
+    const map = { 'GKP': 1, 'DEF': 2, 'MID': 3, 'FWD': 4 };
+    return map[pos] || 0;
+  };
+  
+  // Helper: Convert element_type to position code
+  const elementTypeToPos = (type) => {
+    const map = { 1: 'GKP', 2: 'DEF', 3: 'MID', 4: 'FWD' };
+    return map[type] || 'UNK';
+  };
+  
+  // 1. CHECK FOR BENCH REPLACEMENTS (Players in bench better than starters at same position)
+  const benchRecommendations = [];
+  if (bench && bench.length > 0 && squad && squad.length > 0) {
+    const benchByPos = {};
+    const startersByPos = {};
     
-    document.getElementById('players-to-buy-container').innerHTML = buyHtml;
-    document.getElementById('players-to-buy-section').style.display = 'block';
+    // Group by position
+    bench.forEach(p => {
+      const pos = elementTypeToPos(p.element_type);
+      if (!benchByPos[pos]) benchByPos[pos] = [];
+      benchByPos[pos].push({...p, score: calculatePlayerScore(p, p.element_type <= 2)});
+    });
+    
+    squad.forEach(p => {
+      const pos = elementTypeToPos(p.element_type);
+      if (!startersByPos[pos]) startersByPos[pos] = [];
+      startersByPos[pos].push({...p, score: calculatePlayerScore(p, p.element_type <= 2)});
+    });
+    
+    // Find underperforming starters that could be replaced by bench
+    for (const pos in benchByPos) {
+      if (startersByPos[pos]) {
+        const topBench = benchByPos[pos].sort((a, b) => b.score - a.score)[0];
+        const worstStarter = startersByPos[pos].sort((a, b) => a.score - b.score)[0];
+        
+        if (topBench && worstStarter && topBench.score > worstStarter.score * 1.15) {
+          benchRecommendations.push({
+            out: worstStarter,
+            in: topBench,
+            type: 'bench_swap',
+            scoreDiff: (topBench.score - worstStarter.score).toFixed(1)
+          });
+        }
+      }
+    }
   }
   
-  // 3. RECOMMENDED CAPTAIN
+  // 2. PLAYER SELL RECOMMENDATIONS (Limited by transfers available)
+  const playersToSell = (recs.players_to_sell || []).slice(0, transfersAvailable);
+  
+  if (playersToSell.length > 0) {
+    let sellHtml = '';
+    
+    if (benchRecommendations.length > 0) {
+      // Show bench swaps first
+      const benchSwaps = benchRecommendations.slice(0, transfersAvailable);
+      sellHtml += benchSwaps.map(r => `
+        <div style="padding:10px;background:rgba(76,175,80,0.15);border-radius:8px;margin-bottom:8px;border-left:4px solid var(--green);">
+          <div style="font-weight:700;font-size:0.85rem;color:var(--text-primary);">🔄 Bench Upgrade Available</div>
+          <div style="margin-top:6px;padding:6px;background:rgba(211,47,47,0.15);border-radius:4px;font-size:0.75rem;">
+            <strong>Replace:</strong> ${r.out.web_name} (${elementTypeToPos(r.out.element_type)}) - Score: ${r.out.score}
+          </div>
+          <div style="margin-top:6px;padding:6px;background:rgba(76,175,80,0.15);border-radius:4px;font-size:0.75rem;">
+            <strong>With:</strong> ${r.in.web_name} (${elementTypeToPos(r.in.element_type)}) - Score: ${r.in.score}
+          </div>
+          <div style="margin-top:6px;font-size:0.7rem;color:var(--green);font-weight:600;">+${r.scoreDiff} points better</div>
+        </div>
+      `).join('');
+      
+      // Show remaining traditional recommendations
+      const remaining = transfersAvailable - benchSwaps.length;
+      if (remaining > 0) {
+        const remainingSell = playersToSell.slice(benchSwaps.length, remaining + benchSwaps.length);
+        sellHtml += remainingSell.map(p => `
+          <div style="padding:10px;background:rgba(211,47,47,0.08);border-radius:8px;margin-bottom:8px;border-left:4px solid var(--fwd);">
+            <div style="font-weight:700;font-size:0.85rem;color:var(--text-primary);">❌ ${p.name}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">${p.position} • ${p.team} • £${p.price}m</div>
+            <div style="font-size:0.7rem;color:var(--fwd);margin-top:6px;font-weight:600;">⚠️ Form: ${p.form} | Score: ${p.score}</div>
+          </div>
+        `).join('');
+      }
+    } else {
+      sellHtml = playersToSell.map(p => `
+        <div style="padding:10px;background:rgba(211,47,47,0.08);border-radius:8px;margin-bottom:8px;border-left:4px solid var(--fwd);">
+          <div style="font-weight:700;font-size:0.85rem;color:var(--text-primary);">❌ ${p.name}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">${p.position} • ${p.team} • £${p.price}m</div>
+          <div style="font-size:0.7rem;color:var(--fwd);margin-top:6px;font-weight:600;">⚠️ Form: ${p.form} | Score: ${p.score}</div>
+        </div>
+      `).join('');
+    }
+    
+    if (sellHtml) {
+      document.getElementById('players-to-sell-container').innerHTML = sellHtml;
+      document.getElementById('players-to-sell-section').style.display = 'block';
+    }
+  } else if (benchRecommendations.length === 0) {
+    // Squad is good - no recommendations needed
+    document.getElementById('players-to-sell-section').style.display = 'block';
+    document.getElementById('players-to-sell-container').innerHTML = `
+      <div style="padding:12px;background:rgba(76,175,80,0.15);border-radius:8px;border-left:4px solid var(--green);color:#fff;">
+        <div style="font-weight:700;margin-bottom:4px;">✅ Squad in Good Form</div>
+        <div style="font-size:0.85rem;color:#f3f4f6;">Your current squad is performing well. No urgent transfers recommended at the moment.</div>
+      </div>
+    `;
+  }
+  
+  // 3. PLAYERS TO BUY: Match position restrictions & limit by transfers
+  if (playersToSell.length > 0 && recs.players_to_buy) {
+    const filteredBuy = [];
+    playersToSell.forEach(sell => {
+      // Find matching position replacement
+      const samePos = recs.players_to_buy.find(buy => buy.position === sell.position && buy.score > sell.score);
+      if (samePos) filteredBuy.push(samePos);
+    });
+    
+    if (filteredBuy.length > 0) {
+      const buyHtml = filteredBuy.map(p => `
+        <div style="padding:10px;background:rgba(76,175,80,0.08);border-radius:8px;margin-bottom:8px;border-left:4px solid var(--green);">
+          <div style="font-weight:700;font-size:0.85rem;color:var(--text-primary);">✅ ${p.name}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">${p.position} • ${p.team} • £${p.price}m</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;">Form: ${p.form} | Goals: ${p.goals} | Assists: ${p.assists} | CS: ${p.clean_sheets}</div>
+          <div style="font-size:0.7rem;color:var(--green);margin-top:4px;font-weight:600;">✨ Score: ${p.score}</div>
+        </div>
+      `).join('');
+      
+      document.getElementById('players-to-buy-container').innerHTML = buyHtml;
+      document.getElementById('players-to-buy-section').style.display = 'block';
+    } else {
+      document.getElementById('players-to-buy-section').style.display = 'none';
+    }
+  } else {
+    document.getElementById('players-to-buy-section').style.display = 'none';
+  }
+  
+  // 4. CAPTAIN RECOMMENDATION
   if (recs.best_captain) {
     const cap = recs.best_captain;
     const capHtml = `
@@ -758,18 +970,23 @@ async function showPlayerStats(playerId) {
 
   // Try to fetch detailed element-summary to compute accurate appearances
   let computedAppearances = 0;
+  let benchAppearances = 0;
   try {
     const details = await API.player(playerId);
     // appearances this season: count of history entries with minutes > 0
     const thisSeason = Array.isArray(details.history) ? details.history.filter(h => (h.minutes || 0) > 0).length : 0;
+    // bench appearances this season: count of history entries with 0 minutes (in squad but didn't play)
+    const benchThisSeason = Array.isArray(details.history) ? details.history.filter(h => (h.minutes || 0) === 0 && h.event).length : 0;
     // past seasons appearances (history_past entries have `appearances`)
     const past = Array.isArray(details.history_past) ? details.history_past.reduce((a, b) => a + (b.appearances || 0), 0) : 0;
     computedAppearances = thisSeason + past;
+    benchAppearances = benchThisSeason;
   } catch (e) {
     console.warn('Failed to fetch player details for appearances:', e);
   }
 
   const appearances = (player.appearances ?? computedAppearances) || 0;
+  const apparanceDisplay = benchAppearances > 0 ? `${appearances}(${benchAppearances})` : appearances;
 
   const statsHtml = `
 <div style="display:grid;grid-template-columns:1fr;gap:10px;font-size:0.9rem;text-align:left;color:#f8fafc;">
@@ -791,7 +1008,7 @@ async function showPlayerStats(playerId) {
   </div>
   <div style="padding:8px;background:rgba(255,255,255,0.08);border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #757575;">
     <strong style="color:#fff;">Appearances:</strong>
-    <span style="color:#fff;">${appearances}</span>
+    <span style="color:#fff;">${apparanceDisplay}</span>
   </div>
   <div style="padding:8px;background:rgba(255,255,255,0.08);border-radius:6px;display:flex;justify-content:space-between;border-left:3px solid #00c853;">
     <strong style="color:#fff;">Bonus Points:</strong>
@@ -841,6 +1058,12 @@ function renderManagerInfo(data) {
   document.getElementById('sm-name').textContent = `${data.player_first_name} ${data.player_last_name}`;
   document.getElementById('sm-rank').textContent = data.summary_overall_rank ? fmt(data.summary_overall_rank) : '—';
   document.getElementById('sm-pts').textContent  = data.summary_overall_points || '—';
+  
+  // Display transfers available for next gameweek
+  const transfersAvailable = data.transfers_balance !== undefined ? data.transfers_balance : '—';
+  const transfersUsed = data.transfers !== undefined ? data.transfers : 0;
+  document.getElementById('sm-transfers').textContent = `${transfersAvailable} available (${transfersUsed} used)`;
+  
   const chips = data.chips || [];
   const used  = chips.map(c => c.name);
   const all   = ['wildcard','bboost','freehit','3xc'];
@@ -854,11 +1077,15 @@ async function loadSquad(id) {
     const cur = bs.events.find(e => e.is_current) || bs.events[bs.events.length - 1];
     if (!cur) return;
     
+    // Refresh manager info (includes transfers available)
+    const managerData = await API.manager(id);
+    renderManagerInfo(managerData);
+    
     // Call the new transfer analysis API
     const analysis = await API.analyzeTransfers(id, cur.id);
     
     renderTransferAnalysis(analysis);
-    renderTransferRecommendations(analysis);
+    renderTransferRecommendations(analysis, managerData.transfers_balance || 1);
     document.getElementById('squad-card').style.display = 'block';
   } catch (e) {
     console.error('Transfer analysis error:', e);
@@ -868,7 +1095,7 @@ async function loadSquad(id) {
       const cur = bs.events.find(e => e.is_current) || bs.events[bs.events.length - 1];
       const picks = await API.managerPicks(id, cur.id);
       renderSquad(picks.picks, bs.elements);
-      renderTransferRecommendations(picks);
+      renderTransferRecommendations(picks, 1);
       document.getElementById('squad-card').style.display = 'block';
     } catch (e2) {
       document.getElementById('squad-card').style.display = 'block';
@@ -992,6 +1219,38 @@ function restoreManager() {
 /* ── Event listeners ───────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   boot();
+
+  // PWA Install prompt setup
+  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    setTimeout(() => {
+      if (deferredPrompt) {
+        const modal = document.getElementById('pwa-install-modal');
+        if (modal) modal.style.display = 'flex';
+      }
+    }, 20000);
+  }
+
+  const pwaInstallBtn = document.getElementById('pwa-install-btn');
+  if (pwaInstallBtn) {
+    pwaInstallBtn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response: ${outcome}`);
+        deferredPrompt = null;
+        const modal = document.getElementById('pwa-install-modal');
+        if (modal) modal.style.display = 'none';
+      }
+    });
+  }
+
+  const pwaDismissBtn = document.getElementById('pwa-dismiss-btn');
+  if (pwaDismissBtn) {
+    pwaDismissBtn.addEventListener('click', () => {
+      const modal = document.getElementById('pwa-install-modal');
+      if (modal) modal.style.display = 'none';
+    });
+  }
 
   document.getElementById('sync-btn').addEventListener('click', syncManager);
   document.getElementById('manager-id-input').addEventListener('keydown', e => { if (e.key === 'Enter') syncManager(); });
@@ -1129,28 +1388,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
   deferredPrompt = e;
 });
 
-// Show install prompt after 20 seconds on mobile
-if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-  setTimeout(() => {
-    if (deferredPrompt) {
-      document.getElementById('pwa-install-modal').style.display = 'flex';
-    }
-  }, 20000);
-}
-
-document.getElementById('pwa-install-btn').addEventListener('click', async () => {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User response: ${outcome}`);
-    deferredPrompt = null;
-    document.getElementById('pwa-install-modal').style.display = 'none';
-  }
-});
-
-document.getElementById('pwa-dismiss-btn').addEventListener('click', () => {
-  document.getElementById('pwa-install-modal').style.display = 'none';
-});
+// PWA setup will be initialized in DOMContentLoaded
 
 // Register Service Worker
 if ('serviceWorker' in navigator) {
@@ -1161,6 +1399,18 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<!-- PWA Install Modal -->
+<div id="pwa-install-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 9999; justify-content: center; align-items: center;">
+  <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 400px; text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);">
+    <h2 style="margin: 0 0 1rem 0; color: #0A2540;">Install FPL Scout</h2>
+    <p style="color: #666; margin: 0 0 1.5rem 0; font-size: 0.95rem;">Get instant access to live FPL analytics right on your home screen.</p>
+    <div style="display: flex; gap: 1rem; justify-content: center;">
+      <button id="pwa-install-btn" style="background: #0070f3; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem;">Install</button>
+      <button id="pwa-dismiss-btn" style="background: #e5e7eb; color: #333; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem;">Later</button>
+    </div>
+  </div>
+</div>
 
 <!-- Authentication & OTP Master Modal Overlay -->
 <div id="auth-modal" class="modal-hidden">
