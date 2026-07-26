@@ -191,13 +191,22 @@
         <!-- Starting XI Section (Football Formation) -->
         <div id="starting-xi-section">
           <h4 class="card-title" style="font-size:0.95rem;margin-bottom:1.5rem;color:var(--text-primary);">⚽ Starting XI (11 Players)</h4>
-          <div id="starting-xi-display" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
+          <div id="starting-xi-display" class="loading-block" style="min-height:110px;justify-content:center;text-align:center;">
+            <div style="font-size:0.92rem;color:var(--text-muted);line-height:1.5;">
+              Line-up will display as soon as Gameweek 1 starts.<br>
+              Once the data is available, it will appear automatically.
+            </div>
+          </div>
         </div>
         
         <!-- Bench Section (Horizontal line) -->
         <div id="bench-section" style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid #e2e8f0;">
           <h4 class="card-title" style="font-size:0.95rem;margin-bottom:1rem;color:var(--text-muted);">🔄 Bench Substitutes</h4>
-          <div id="bench-display" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
+          <div id="bench-display" class="loading-block" style="min-height:90px;justify-content:center;text-align:center;">
+            <div style="font-size:0.9rem;color:var(--text-muted);line-height:1.5;">
+              Bench details will appear automatically once the gameweek data is ready.
+            </div>
+          </div>
         </div>
         
         <!-- Squad Stats -->
@@ -1105,6 +1114,10 @@ async function loadSquad(id) {
 }
 
 function renderTransferAnalysis(analysis) {
+  // Clear any waiting placeholder content before rendering live data
+  document.getElementById('starting-xi-display').innerHTML = '<div style="font-size:0.92rem;color:var(--text-muted);line-height:1.5;">Loading your live line-up…</div>';
+  document.getElementById('bench-display').innerHTML = '<div style="font-size:0.9rem;color:var(--text-muted);line-height:1.5;">Loading bench details…</div>';
+
   // Show squad validation status
   if (analysis.squad_valid) {
     document.getElementById('squad-validation').style.display = 'block';
@@ -1174,7 +1187,7 @@ function renderTransferAnalysis(analysis) {
   
   formationHtml += `</div>`;
   
-  document.getElementById('starting-xi-display').innerHTML = formationHtml || '<p style="text-align:center;color:var(--text-muted);">No starting XI data</p>';
+  document.getElementById('starting-xi-display').innerHTML = formationHtml || '<div style="font-size:0.92rem;color:var(--text-muted);text-align:center;line-height:1.5;">Line-up will appear once the gameweek data is available.</div>';
   
   // Bench horizontal line
   const benchHtml = bench.length > 0 ? `<div style="display:flex;gap:10px;overflow-x:auto;padding:10px 0;">
