@@ -271,5 +271,35 @@
   <script src="/layout.js"></script>
   <script src="/app.js"></script>
   <script src="/affiliate.js"></script>
+  <script>
+    (function () {
+      const stored = localStorage.getItem('fpl_user_session');
+      const currentUser = stored ? JSON.parse(stored) : null;
+
+      function isPremiumUser(user) {
+        if (!user) return false;
+        if (user.isPremium === true || user.is_premium === true) return true;
+        const status = user.subscription_status ? String(user.subscription_status).toLowerCase().trim() : '';
+        if (['premium member', 'premium', 'premium subscription'].includes(status)) return true;
+        if (user.premium_expiry) {
+          const expiryDate = new Date(user.premium_expiry);
+          return !Number.isNaN(expiryDate.getTime()) && expiryDate > new Date();
+        }
+        return false;
+      }
+
+      if (!isPremiumUser(currentUser)) {
+        const boil = document.createElement('script');
+        boil.async = true;
+        boil.src = 'https://sidewalkboiling.com/56/e2/ab/56e2ab4abf6078cce6ce40441e6f6b7c.js';
+        document.body.appendChild(boil);
+
+        const s = document.createElement('script');
+        s.dataset.zone = '11469316';
+        s.src = 'https://n6wxm.com/vignette.min.js';
+        document.body.appendChild(s);
+      }
+    })();
+  </script>
 </body>
 </html>

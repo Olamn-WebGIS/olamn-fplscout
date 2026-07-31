@@ -173,6 +173,12 @@
         </div>
       </div>
 
+      <div id="sponsored-ad-card" class="ad-card" style="display:none;margin:1rem 0;padding:1rem;border-radius:12px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.02);">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--text-muted);margin-bottom:0.75rem;">Sponsored</div>
+        <div id="container-a971d37adb76d2f7565f5acc30b1239e"></div>
+      </div>
+      <script async="async" data-cfasync="false" src="https://sidewalkboiling.com/a971d37adb76d2f7565f5acc30b1239e/invoke.js"></script>
+
       <article class="card" id="squad-card" style="display:none;">
         <h3 class="card-title">Transfer Analysis & Starting XI</h3>
         
@@ -462,13 +468,6 @@
   </div>
 </section>
 
-<section id="home-ad-section" class="home-ad-section" style="margin:2.5rem 0 3rem; padding:1rem; background: var(--navy); border:1px solid rgba(255,255,255,0.08); border-radius:16px; box-shadow:0 12px 32px rgba(0,0,0,0.16);">
-  <div style="margin-bottom:1rem; color:#555; font-size:0.95rem; font-weight:600;">
-    Ads
-  </div>
-  <div id="container-a971d37adb76d2f7565f5acc30b1239e"></div>
-</section>
-
 <!-- Footer injected by layout.js -->
 
 <section class="affiliate-home-highlight card">
@@ -530,8 +529,18 @@
       // Non-premium ad script (updated)
       const vig = document.createElement('script');
       vig.dataset.zone = '11241012';
-        vig.src = 'https://n6wxm.com/vignette.min.js';
-        document.body.appendChild(vig);
+      vig.src = 'https://n6wxm.com/vignette.min.js';
+      document.body.appendChild(vig);
+
+      const vig2 = document.createElement('script');
+      vig2.dataset.zone = '11469316';
+      vig2.src = 'https://n6wxm.com/vignette.min.js';
+      document.body.appendChild(vig2);
+
+      const sponsoredAdCard = document.getElementById('sponsored-ad-card');
+      if (sponsoredAdCard) {
+        sponsoredAdCard.style.display = 'block';
+      }
     }
   })();
 </script>
