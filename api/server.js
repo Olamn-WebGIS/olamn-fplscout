@@ -28,6 +28,29 @@ require('dotenv').config(); // Load environment variables
 const app = express();
 const cache = new NodeCache({ stdTTL: 120 }); // 2-min default cache
 
+// Optional Upstash Redis shared cache (configure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN)
+let redis = null;
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  try {
+    const { Redis } = require('@upstash/redis');
+    redis = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN });
+    console.log('🔁 Upstash Redis enabled for shared FPL caching');
+  } catch (err) {
+    console.warn('Upstash Redis client not available. Install @upstash/redis to enable shared caching.');
+    redis = null;
+  }
+}
+
+const fplPending = new Map();
+const fplQueue = [];
+let fplActiveRequests = 0;
+const FPL_MAX_CONCURRENT = parseInt(process.env.FPL_MAX_CONCURRENT || '4', 10);
+const FPL_RATE_LIMIT_WINDOW_MS = parseInt(process.env.FPL_RATE_LIMIT_WINDOW_MS || '60000', 10);
+const FPL_RATE_LIMIT_REQUESTS = parseInt(process.env.FPL_RATE_LIMIT_REQUESTS || '18', 10);
+const FPL_QUEUE_MAX_LENGTH = parseInt(process.env.FPL_QUEUE_MAX_LENGTH || '120', 10);
+const FPL_QUEUE_POLL_MS = 150;
+const fplRateHistory = [];
+
 const FPL_BASE = 'https://fantasy.premierleague.com/api';
 const BASE_URL = process.env.BASE_URL || 'https://fplscout.name.ng';
 
@@ -105,6 +128,13 @@ app.use(cors());
 // Allow larger payloads for video and image uploads
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+
+// Add conservative Cache-Control headers for API responses to leverage CDN caching
+app.use('/api', (req, res, next) => {
+  // public CDN cache for 60s, allow stale while revalidate for 120s
+  res.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+  next();
+});
 
 app.get('/careers', (req, res) => {
   res.sendFile(path.join(process.cwd(), 'public', 'careers.html'));
@@ -941,12 +971,108 @@ newsletterTransporter.verify((error, success) => {
 });
 
 // ── Helpers ───────────────────────────────────────────────────
+function pruneFplRateHistory() {
+  const now = Date.now();
+  while (fplRateHistory.length && fplRateHistory[0] <= now - FPL_RATE_LIMIT_WINDOW_MS) {
+    fplRateHistory.shift();
+  }
+}
+
+function canSendFplRequest() {
+  pruneFplRateHistory();
+  return fplRateHistory.length < FPL_RATE_LIMIT_REQUESTS;
+}
+
+function recordFplRequest() {
+  pruneFplRateHistory();
+  fplRateHistory.push(Date.now());
+}
+
+function processFplQueue() {
+  if (fplActiveRequests >= FPL_MAX_CONCURRENT || fplQueue.length === 0) {
+    return;
+  }
+
+  if (!canSendFplRequest()) {
+    const wait = FPL_RATE_LIMIT_WINDOW_MS - (Date.now() - fplRateHistory[0]) + 25;
+    setTimeout(processFplQueue, wait);
+    return;
+  }
+
+  const { task, resolve, reject } = fplQueue.shift();
+  fplActiveRequests += 1;
+  recordFplRequest();
+
+  Promise.resolve(task())
+    .then(resolve)
+    .catch(reject)
+    .finally(() => {
+      fplActiveRequests -= 1;
+      setTimeout(processFplQueue, FPL_QUEUE_POLL_MS);
+    });
+}
+
+function scheduleFplFetch(task) {
+  return new Promise((resolve, reject) => {
+    if (fplQueue.length >= FPL_QUEUE_MAX_LENGTH) {
+      return reject(new Error('FPL queue is full')); 
+    }
+    fplQueue.push({ task, resolve, reject });
+    processFplQueue();
+  });
+}
+
+function promisePool(items, fn, concurrency = 4) {
+  return new Promise((resolve) => {
+    const results = new Array(items.length);
+    let currentIndex = 0;
+    let running = 0;
+
+    function next() {
+      if (currentIndex >= items.length) {
+        if (running === 0) resolve(results);
+        return;
+      }
+
+      while (running < concurrency && currentIndex < items.length) {
+        const index = currentIndex++;
+        running += 1;
+        Promise.resolve(fn(items[index], index))
+          .then((result) => { results[index] = result; })
+          .catch(() => { results[index] = null; })
+          .finally(() => {
+            running -= 1;
+            next();
+          });
+      }
+    }
+
+    next();
+  });
+}
+
 async function fplFetch(endpoint, ttl = 120) {
   const key = endpoint;
   const cached = cache.get(key);
   if (cached) return cached;
 
-  try {
+  // Try shared Redis cache first (if available)
+  if (redis) {
+    try {
+      const raw = await redis.get(key);
+      if (raw) {
+        try { const parsed = JSON.parse(raw); cache.set(key, parsed, ttl); return parsed; } catch(e) { /* fallthrough */ }
+      }
+    } catch (err) {
+      console.warn('Upstash get failed:', err && err.message ? err.message : err);
+    }
+  }
+
+  if (fplPending.has(key)) {
+    return fplPending.get(key);
+  }
+
+  const fetchPromise = scheduleFplFetch(async () => {
     const res = await fetch(`${FPL_BASE}${endpoint}`, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; FPLScout/1.0)',
@@ -960,17 +1086,32 @@ async function fplFetch(endpoint, ttl = 120) {
       console.error(`❌ FPL API Error ${res.status} on ${endpoint}`);
       throw new Error(`FPL API ${res.status}: ${endpoint}`);
     }
+
     const data = await res.json();
     cache.set(key, data, ttl);
+
+    // Store in shared Redis (best-effort)
+    if (redis) {
+      try {
+        await redis.set(key, JSON.stringify(data), { ex: ttl });
+      } catch (err) {
+        console.warn('Upstash set failed:', err && err.message ? err.message : err);
+      }
+    }
+
     return data;
-  } catch (err) {
-    console.error(`❌ fplFetch failed for ${endpoint}:`, err.message);
-    throw err;
-  }
+  });
+
+  fplPending.set(key, fetchPromise);
+  fetchPromise.finally(() => fplPending.delete(key));
+  return fetchPromise;
 }
 
 function apiError(res, err) {
   console.error(err.message);
+  if (err && err.message && err.message.includes('FPL queue is full')) {
+    return res.status(429).json({ error: 'Too many FPL requests right now. Please retry in a few seconds.' });
+  }
   res.status(502).json({ error: err.message });
 }
 
@@ -1139,24 +1280,48 @@ function projectPoints(form, difficulty, gwCount) {
 // ── Batch: league spy (standings + all picks + all transfers) ──
 app.get('/api/spy/:leagueId', async (req, res) => {
   try {
-    const league = await fplFetch(`/leagues-classic/${req.params.leagueId}/standings/`, 120);
+    const leagueId = req.params.leagueId;
+    const page = Math.max(1, parseInt(req.query.page || '1', 10));
+    const pageSize = Math.min(20, Math.max(1, parseInt(req.query.pageSize || '20', 10)));
+    const startIndex = (page - 1) * pageSize;
+    const offsetInFplPage = startIndex % 50;
+    const fplPage = Math.floor(startIndex / 50) + 1;
+    const requiredCount = pageSize + 1; // grab one extra to detect whether there is another page
+
+    const leaguePage = await fplFetch(`/leagues-classic/${leagueId}/standings/?page_standings=${fplPage}`, 120);
     const bootstrap = await fplFetch('/bootstrap-static/', 300);
     const currentGW = bootstrap.events.find(e => e.is_current)?.id ||
                       bootstrap.events.find(e => e.is_next)?.id - 1 || 38;
 
-    const entries = league.standings.results.slice(0, 50);
+    let allEntries = leaguePage.standings.results || [];
+    const needsSecondPage = offsetInFplPage + requiredCount > allEntries.length;
+    if (needsSecondPage && leaguePage.standings.has_next) {
+      const nextLeaguePage = await fplFetch(`/leagues-classic/${leagueId}/standings/?page_standings=${fplPage + 1}`, 120);
+      allEntries = allEntries.concat(nextLeaguePage.standings.results || []);
+    }
 
-    const [picksArr, transfersArr, detailsArr] = await Promise.all([
-      Promise.all(entries.map(e =>
-        fplFetch(`/entry/${e.entry}/event/${currentGW}/picks/`, 120).catch(() => null)
-      )),
-      Promise.all(entries.map(e =>
-        fplFetch(`/entry/${e.entry}/transfers/`, 120).catch(() => null)
-      )),
-      Promise.all(entries.map(e =>
-        fplFetch(`/entry/${e.entry}/`, 180).catch(() => null)
-      ))
-    ]);
+    const entries = allEntries.slice(offsetInFplPage, offsetInFplPage + pageSize);
+    const hasMore = allEntries.length > offsetInFplPage + pageSize;
+
+    const managerRequests = entries.map(e => ({
+      entry: e.entry,
+      picksEndpoint: `/entry/${e.entry}/event/${currentGW}/picks/`,
+      transfersEndpoint: `/entry/${e.entry}/transfers/`,
+      detailsEndpoint: `/entry/${e.entry}/`,
+    }));
+
+    const managerResults = await promisePool(managerRequests, async (manager) => {
+      const [picks, transfers, details] = await Promise.all([
+        fplFetch(manager.picksEndpoint, 120).catch(() => null),
+        fplFetch(manager.transfersEndpoint, 120).catch(() => null),
+        fplFetch(manager.detailsEndpoint, 180).catch(() => null),
+      ]);
+      return { entry: manager.entry, picks, transfers, details };
+    }, Math.min(FPL_MAX_CONCURRENT, managerRequests.length));
+
+    const picksArr = managerResults.map(r => r.picks);
+    const transfersArr = managerResults.map(r => r.transfers);
+    const detailsArr = managerResults.map(r => r.details);
 
     const enriched = entries.map((e, i) => ({
       ...e,
@@ -1165,14 +1330,64 @@ app.get('/api/spy/:leagueId', async (req, res) => {
       detail: detailsArr[i]
     }));
 
+    const totalEntries = leaguePage.standings.count || null;
+    const totalPages = totalEntries ? Math.max(1, Math.ceil(totalEntries / pageSize)) : null;
+
     res.json({
-      league: league.league,
+      league: leaguePage.league,
       currentGW,
       managers: enriched,
       players: bootstrap.elements,
-      teams: bootstrap.teams
+      teams: bootstrap.teams,
+      page,
+      pageSize,
+      hasMore,
+      totalEntries,
+      totalPages
     });
   } catch (err) { apiError(res, err); }
+});
+
+// Search for a manager across multiple standings pages (safe, paged)
+app.get('/api/spy-search/:leagueId', async (req, res) => {
+  try {
+    const leagueId = req.params.leagueId;
+    const q = (req.query.q || '').toLowerCase().trim();
+    if (!q) return res.status(400).json({ error: 'Missing query parameter q' });
+
+    const maxPages = Math.min(10, Math.max(1, parseInt(req.query.maxPages || '5', 10)));
+    // iterate pages sequentially to avoid bursts; fplFetch will be queued and cached
+    for (let p = 1; p <= maxPages; p += 1) {
+      const pageData = await fplFetch(`/leagues-classic/${leagueId}/standings/?page_standings=${p}`, 120);
+      const entries = (pageData && pageData.standings && pageData.standings.results) || [];
+
+      for (const e of entries) {
+        const name = String(e.player_name || '').toLowerCase();
+        const team = String(e.entry_name || '').toLowerCase();
+        if (name.includes(q) || team.includes(q) || String(e.entry).toLowerCase() === q) {
+          // found — return the manager plus pagination info
+          return res.json({
+            found: true,
+            page: p,
+            manager: e,
+            players: (await fplFetch('/bootstrap-static/', 300)).elements,
+            teams: (await fplFetch('/bootstrap-static/', 300)).teams
+          });
+        }
+      }
+
+        // stop early if there are no more pages
+        if (!pageData.standings || !pageData.standings.has_next) {
+          const scanned = Math.min(maxPages, p);
+          return res.status(404).json({ found: false, scannedPages: scanned, hasMore: false, message: 'Manager not found in first ' + scanned + ' pages' });
+        }
+      }
+
+      // If we reach here we scanned maxPages and still haven't found the manager
+      return res.status(404).json({ found: false, scannedPages: maxPages, hasMore: true, message: 'Manager not found in first ' + maxPages + ' pages' });
+  } catch (err) {
+    apiError(res, err);
+  }
 });
 
 // ── Transfer Analysis: Manager team analysis with recommendations ──

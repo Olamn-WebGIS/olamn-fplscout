@@ -366,7 +366,7 @@
           <input type="text" id="manager-search-input" placeholder="Search by manager name or team name..." style="width:100%;padding:0.7rem;border:1.5px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);font-size:0.95rem;background:#15223a;color:#f8fafc;">
         </div>
         <button class="btn btn-blue" id="search-btn" style="font-weight:700;">Search</button>
-        <button class="btn btn-outline" id="clear-search-btn" style="font-weight:700;">Show Top 10</button>
+        <button class="btn btn-outline" id="clear-search-btn" style="font-weight:700;">Show Top 20</button>
       </div>
       <div id="search-results" style="margin-top:1.5rem;display:none;">
         <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1rem;" id="search-info">Found X managers</p>
@@ -381,6 +381,11 @@
       <div style="font-size:1.5rem;margin-bottom:0.5rem;">🔍</div>
       <p>Enter a league ID to start tracking rivals and analyzing their teams.</p>
     </div>
+  </div>
+  <div id="spy-pagination" style="display:none;margin-top:1.5rem;text-align:center;">
+    <button class="btn btn-outline" id="spy-prev-page" style="margin-right:0.75rem;">← Previous</button>
+    <span id="spy-page-info" style="color:var(--text-muted);font-size:0.95rem;"></span>
+    <button class="btn btn-outline" id="spy-next-page" style="margin-left:0.75rem;">Next →</button>
   </div>
 
   <!-- Alerts & Transfers -->
@@ -480,6 +485,13 @@ let allPlayers = [];
 let allTeams = [];
 let currentGW = 1;
 let bsData = null;
+let spyPageSize = 20;
+let spyCurrentPage = 1;
+let spyTotalPages = 1;
+let spyHasMore = false;
+let spyFplPageCache = {};
+let spyFplPageHasNext = {};
+let spyLoadedLeagueId = null;
 const STORAGE_KEYS = {
   savedLeagueId: 'fpl_saved_league_id'
 };
@@ -504,12 +516,17 @@ async function loadLeague() {
     await bootstrap();
     const data = await API.league(leagueId, 1);
     leagueData = data;
-    
+    spyLoadedLeagueId = leagueId;
+    spyCurrentPage = 1;
+    spyHasMore = true;
+    spyFplPageCache = {};
+    spyFplPageHasNext = {};
+
     // Show banner
     document.getElementById('league-banner').style.display = 'flex';
     document.getElementById('current-gw').textContent = `GW ${currentGW}`;
     document.getElementById('league-name').textContent = data.league.name;
-    document.getElementById('league-managers').textContent = data.standings.results.length;
+    document.getElementById('league-managers').textContent = data.standings.count || data.standings.results.length;
     
     // Calculate avg points
     const avgPts = Math.round(data.standings.results.reduce((sum, r) => sum + ((r.total_points || r.total) || 0), 0) / data.standings.results.length);
@@ -517,11 +534,14 @@ async function loadLeague() {
     
     // Show search section
     document.getElementById('search-section').style.display = 'block';
-    
-    renderRivals(data.standings.results.slice(0, 10)); // Show top 10
+
+    const spyResponse = await loadSpyPage(1);
+
     // Load recent activity for top rivals (limited to 5 to avoid rate limits)
     try {
-      loadRecentActivity(data.standings.results.slice(0, 5));
+      if (spyResponse && spyResponse.managers) {
+        loadRecentActivity(spyResponse.managers.slice(0, 5));
+      }
     } catch (e) {
       console.warn('Recent activity preload failed:', e);
     }
@@ -559,8 +579,8 @@ function startAutoRefresh() {
       const avgPts = Math.round(data.standings.results.reduce((sum, r) => sum + ((r.total_points || r.total) || 0), 0) / data.standings.results.length);
       document.getElementById('league-avg-pts').textContent = avgPts;
       
-      // Re-render rivals with updated standings
-      renderRivals(data.standings.results.slice(0, 10));
+      // Re-render the current spy page
+      await loadSpyPage(spyCurrentPage);
     } catch (e) {
       console.error('Auto-refresh error:', e);
     }
@@ -588,9 +608,65 @@ async function searchManagers() {
   );
   
   if (results.length === 0) {
-    showToast('No managers found matching your search', 'error');
-    document.getElementById('search-results').style.display = 'none';
-    return;
+    // Not found in the loaded page — fall back to server-side paged search
+    const searchBtnEl = document.getElementById('search-btn');
+    const searchInputEl = document.getElementById('manager-search-input');
+    try {
+      const leagueId = spyLoadedLeagueId || document.getElementById('league-id-input').value.trim();
+      if (!leagueId) {
+        showToast('Please load a league first', 'error');
+        return;
+      }
+
+      // UI: disable inputs and show progress
+      if (searchBtnEl) searchBtnEl.disabled = true;
+      if (searchInputEl) searchInputEl.disabled = true;
+      showToast('Searching league pages…', 'info');
+      document.getElementById('search-results').style.display = 'block';
+      document.getElementById('search-results-container').innerHTML = '<div class="loading-block"><div class="spinner"></div><span>Searching for manager…</span></div>';
+
+      // Iteratively expand scanned pages if needed (6 -> 12 -> 24 -> 48)
+      let currentMax = 6;
+      const CAP = 48;
+      let found = false;
+      while (true) {
+        showToast(`Searching pages 1-${currentMax}…`, 'info');
+        document.getElementById('search-results-container').innerHTML = `<div class="loading-block"><div class="spinner"></div><span>Searching pages 1-${currentMax}…</span></div>`;
+        const resp = await API.spySearch(leagueId, searchTerm, currentMax).catch(() => null);
+        if (!resp) break; // network/server error
+        if (resp.found) {
+          renderSearchResults([resp.manager]);
+          document.getElementById('search-results').style.display = 'block';
+          showToast('Manager found', 'success');
+          found = true;
+          break;
+        }
+
+        // not found in scanned range
+        if (!resp.hasMore) {
+          // no more pages available on FPL
+          break;
+        }
+
+        if (currentMax >= CAP) break;
+        // increase search window and try again
+        const nextMax = Math.min(CAP, currentMax * 2);
+        currentMax = nextMax;
+      }
+
+      if (!found) {
+        showToast('No managers found matching your search', 'error');
+        document.getElementById('search-results').style.display = 'none';
+      }
+      return;
+    } catch (err) {
+      console.error('Server-side search failed:', err);
+      showToast('Search failed. Please try again later.', 'error');
+      return;
+    } finally {
+      if (searchBtnEl) searchBtnEl.disabled = false;
+      if (searchInputEl) searchInputEl.disabled = false;
+    }
   }
   
   // Display search results
@@ -641,7 +717,25 @@ function renderSearchResults(results) {
 function clearSearch() {
   document.getElementById('manager-search-input').value = '';
   document.getElementById('search-results').style.display = 'none';
-  renderRivals(leagueData.standings.results.slice(0, 10));
+  loadSpyPage(1);
+}
+
+async function loadSpyPage(page) {
+  if (!spyLoadedLeagueId) return null;
+  try {
+    const response = await API.spy(spyLoadedLeagueId, page, spyPageSize);
+    spyCurrentPage = response.page || page;
+    spyTotalPages = response.totalPages || Math.max(1, Math.ceil((response.totalEntries || spyPageSize) / spyPageSize));
+    spyHasMore = response.hasMore !== false;
+    leagueData = { standings: { results: response.managers || [] } };
+    renderRivals(response.managers || []);
+    updateSpyPagination();
+    return response;
+  } catch (e) {
+    console.error('Failed to load spy page:', e);
+    showToast('Unable to load spy page. Please try again shortly.', 'error');
+    return null;
+  }
 }
 
 async function loadRecentActivity(rivals) {
@@ -774,6 +868,68 @@ function renderRivals(rivals) {
   }).join('');
   document.getElementById('rivals-container').innerHTML = html;
   document.getElementById('alerts-section').style.display = 'block';
+}
+
+async function getLeaguePage(pageNumber) {
+  if (spyFplPageCache[pageNumber]) {
+    return spyFplPageCache[pageNumber];
+  }
+
+  const leagueId = spyLoadedLeagueId || document.getElementById('league-id-input').value.trim();
+  if (!leagueId) return [];
+
+  try {
+    const data = await API.league(leagueId, pageNumber);
+    spyFplPageCache[pageNumber] = data.standings.results || [];
+    spyFplPageHasNext[pageNumber] = Boolean(data.standings.has_next);
+    return spyFplPageCache[pageNumber];
+  } catch (e) {
+    console.error(`Failed to fetch league page ${pageNumber}:`, e);
+    return [];
+  }
+}
+
+async function renderRivalsPage(page) {
+  if (!leagueData) return;
+  spyCurrentPage = Math.max(1, page);
+  const startIndex = (spyCurrentPage - 1) * spyPageSize;
+  const endIndex = startIndex + spyPageSize;
+
+  const firstFplPage = Math.floor(startIndex / 50) + 1;
+  const lastFplPage = Math.floor((endIndex - 1) / 50) + 1;
+
+  const pageChunks = [];
+  for (let fplPage = firstFplPage; fplPage <= lastFplPage; fplPage += 1) {
+    const chunk = await getLeaguePage(fplPage);
+    pageChunks.push(...chunk);
+  }
+
+  const sliceStart = startIndex % 50;
+  const pageItems = pageChunks.slice(sliceStart, sliceStart + spyPageSize);
+  renderRivals(pageItems);
+
+  const currentFplPageHasNext = spyFplPageHasNext[lastFplPage];
+  spyHasMore = pageItems.length === spyPageSize && (currentFplPageHasNext || pageItems.length + sliceStart < pageChunks.length);
+  updateSpyPagination();
+}
+
+function updateSpyPagination() {
+  const pagination = document.getElementById('spy-pagination');
+  const info = document.getElementById('spy-page-info');
+  const prev = document.getElementById('spy-prev-page');
+  const next = document.getElementById('spy-next-page');
+  if (!pagination || !info || !prev || !next) return;
+
+  pagination.style.display = 'flex';
+  info.textContent = `Page ${spyCurrentPage} of ${spyTotalPages}`;
+  prev.disabled = spyCurrentPage <= 1;
+  next.disabled = !spyHasMore;
+}
+
+async function goToSpyPage(page) {
+  if (!spyLoadedLeagueId) return;
+  spyCurrentPage = Math.max(1, page);
+  await loadSpyPage(spyCurrentPage);
 }
 
 async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
@@ -1202,10 +1358,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   
   // Search button listeners
-  if (searchBtn) searchBtn.addEventListener('click', searchManagers);
+  const debouncedSearch = debounce(searchManagers, 350);
+  if (searchBtn) searchBtn.addEventListener('click', debouncedSearch);
   if (clearSearchBtn) clearSearchBtn.addEventListener('click', clearSearch);
   if (searchInput) searchInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') searchManagers();
+    if (e.key === 'Enter') debouncedSearch();
+  });
+
+  const spyPrev = document.getElementById('spy-prev-page');
+  const spyNext = document.getElementById('spy-next-page');
+  if (spyPrev) spyPrev.addEventListener('click', async () => {
+    if (spyCurrentPage > 1) await goToSpyPage(spyCurrentPage - 1);
+  });
+  if (spyNext) spyNext.addEventListener('click', async () => {
+    await goToSpyPage(spyCurrentPage + 1);
   });
   
   // Tab switcher for modal - USE EVENT DELEGATION

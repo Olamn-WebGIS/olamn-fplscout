@@ -1,5 +1,21 @@
 /* ── FPL Scout — Shared JS utilities ────────────────────────── */
 
+// Coalesce identical in-flight requests to avoid duplicate network calls
+const _pendingRequests = new Map();
+function coalescedFetch(url, opts = {}, parseJson = true) {
+  const key = `${opts.method || 'GET'}::${url}`;
+  if (_pendingRequests.has(key)) return _pendingRequests.get(key);
+
+  const p = fetch(url, opts).then(async (r) => {
+    if (!r.ok) throw new Error(`API Error: ${r.status}`);
+    if (parseJson) return r.json();
+    return r;
+  }).finally(() => _pendingRequests.delete(key));
+
+  _pendingRequests.set(key, p);
+  return p;
+}
+
 const API = {
   bootstrap:       ()     => fetch('/api/bootstrap').then(r => {
     if (!r.ok) throw new Error(`API Error: ${r.status}`);
@@ -19,76 +35,17 @@ const API = {
     } catch (err) { /* ignore */ }
     throw e;
   }),
-  manager:         (id)   => fetch(`/api/manager/${id}`).then(r => {
-    if (!r.ok) throw new Error(`API Error: ${r.status}`);
-    return r.json();
-  }).catch(e => {
-    console.error(`Manager ${id} fetch failed:`, e);
-    throw e;
-  }),
-  managerHistory:  (id)   => fetch(`/api/manager/${id}/history`).then(r => {
-    if (!r.ok) throw new Error(`API Error: ${r.status}`);
-    return r.json();
-  }).catch(e => {
-    console.error(`Manager history ${id} fetch failed:`, e);
-    throw e;
-  }),
-  managerPicks:    (id,gw)=> fetch(`/api/manager/${id}/picks/${gw}`).then(r => {
-    if (!r.ok) throw new Error(`API Error: ${r.status}`);
-    return r.json();
-  }).catch(e => {
-    console.error(`Manager picks ${id} GW${gw} fetch failed:`, e);
-    throw e;
-  }),
-  managerTransfers:(id)   => fetch(`/api/manager/${id}/transfers`).then(r => {
-    if (!r.ok) throw new Error(`API Error: ${r.status}`);
-    return r.json();
-  }).catch(e => {
-    console.error(`Manager transfers ${id} fetch failed:`, e);
-    throw e;
-  }),
-  analyzeTransfers:(id,gw)=> fetch(`/api/analyze-transfers/${id}/${gw}`).then(r => {
-    if (!r.ok) throw new Error(`API Error: ${r.status}`);
-    return r.json();
-  }).catch(e => {
-    console.error(`Analyze transfers ${id} GW${gw} fetch failed:`, e);
-    throw e;
-  }),
-  league:          (id,p) => fetch(`/api/league/${id}?page=${p||1}`).then(r => {
-    if (!r.ok) throw new Error(`API Error: ${r.status}`);
-    return r.json();
-  }).catch(e => {
-    console.error(`League ${id} fetch failed:`, e);
-    throw e;
-  }),
-  spy:             (id)   => fetch(`/api/spy/${id}`).then(r => {
-    if (!r.ok) throw new Error(`API Error: ${r.status}`);
-    return r.json();
-  }).catch(e => {
-    console.error(`Spy ${id} fetch failed:`, e);
-    throw e;
-  }),
-  live:            (gw)   => fetch(`/api/live/${gw}`).then(r => {
-    if (!r.ok) throw new Error(`API Error: ${r.status}`);
-    return r.json();
-  }).catch(e => {
-    console.error(`Live GW${gw} fetch failed:`, e);
-    throw e;
-  }),
-  player:          (id)   => fetch(`/api/player/${id}`).then(r => {
-    if (!r.ok) throw new Error(`API Error: ${r.status}`);
-    return r.json();
-  }).catch(e => {
-    console.error(`Player ${id} fetch failed:`, e);
-    throw e;
-  }),
-  fixtures:        (gw)   => fetch(`/api/fixtures${gw?`?gw=${gw}`:''}`).then(r => {
-    if (!r.ok) throw new Error(`API Error: ${r.status}`);
-    return r.json();
-  }).catch(e => {
-    console.error(`Fixtures fetch failed:`, e);
-    throw e;
-  }),
+  manager:         (id)   => coalescedFetch(`/api/manager/${id}`),
+  managerHistory:  (id)   => coalescedFetch(`/api/manager/${id}/history`),
+  managerPicks:    (id,gw)=> coalescedFetch(`/api/manager/${id}/picks/${gw}`),
+  managerTransfers:(id)   => coalescedFetch(`/api/manager/${id}/transfers`),
+  analyzeTransfers:(id,gw)=> coalescedFetch(`/api/analyze-transfers/${id}/${gw}`),
+  league:          (id,p) => coalescedFetch(`/api/league/${id}?page=${p||1}`),
+  spy:             (id, page = 1, pageSize = 20) => coalescedFetch(`/api/spy/${id}?page=${page}&pageSize=${pageSize}`),
+  spySearch:       (id, q, maxPages = 5) => coalescedFetch(`/api/spy-search/${id}?q=${encodeURIComponent(q)}&maxPages=${maxPages}`).catch(e => { console.error(`Spy search ${id} query '${q}' failed:`, e); throw e; }),
+  live:            (gw)   => coalescedFetch(`/api/live/${gw}`),
+  player:          (id)   => coalescedFetch(`/api/player/${id}`),
+  fixtures:        (gw)   => coalescedFetch(`/api/fixtures${gw?`?gw=${gw}`:''}`),
 };
 
 /* ── LocalStorage helpers ────────────────────────────────────── */

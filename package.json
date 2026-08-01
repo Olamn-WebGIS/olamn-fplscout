@@ -5,12 +5,14 @@
   "main": "server.js",
   "scripts": {
     "start": "node api/server.js",
+    "check:upstash": "node scripts/check-upstash.js",
     "dev": "nodemon api/server.js",
     "run:migrations": "node scripts/run-migrations.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.1",
     "axios": "^1.4.0",
+    "@upstash/redis": "^1.27.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",

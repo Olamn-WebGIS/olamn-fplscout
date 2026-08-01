@@ -277,6 +277,13 @@ async function fetchSpyData(leagueId) {
     
     try {
         const response = await fetch(`/api/spy/${leagueId}`);
+        if (!response.ok) {
+            if (response.status === 429) {
+                container.innerHTML = 'Too many requests. Please wait a few seconds and try again.';
+                return;
+            }
+            throw new Error(`API Error ${response.status}`);
+        }
         const data = await response.json();
         
         container.innerHTML = `
@@ -292,7 +299,7 @@ async function fetchSpyData(leagueId) {
             </table>
         `;
     } catch (err) {
-        container.innerHTML = 'Failed to load league data.';
+        container.innerHTML = 'Failed to load league data. Try refreshing in a moment.';
         console.error(err);
     }
 }
