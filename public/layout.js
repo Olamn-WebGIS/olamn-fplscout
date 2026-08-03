@@ -86,8 +86,8 @@
     if (!installButton) return;
 
     const showInstallUi = () => {
-      const canPromptInstall = isAndroidDevice() && !isInstalledAsPwa() && Boolean(window.__fplPwaDeferredPrompt);
-      installButton.style.display = canPromptInstall ? '' : 'none';
+      const canShowInstall = isAndroidDevice() && !isInstalledAsPwa();
+      installButton.style.display = canShowInstall ? '' : 'none';
     };
 
     const handleInstallClick = async () => {
