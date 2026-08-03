@@ -15,7 +15,10 @@
       <li><a href="/blog">Blog</a></li>
       <li><a href="/recommendations" class="spy-lock">Recommendations</a></li>
       <li><a href="/spy" class="spy-lock">League Spy</a></li>
-      <li id="account-nav-item" class="account-hidden"><a href="/account"> Account</a></li>
+      <li id="pwa-install-nav-item" class="pwa-install-item" style="display:none;">
+        <button type="button" class="pwa-install-btn" id="pwa-install-trigger" aria-label="Install app">Install App</button>
+      </li>
+      <li id="account-nav-item" class="account-hidden"><a href="/account">Account</a></li>
     </ul>
 
     <button class="hamburger" aria-label="Open menu" aria-expanded="false">
@@ -46,6 +49,78 @@
     const accountNavItem = document.getElementById('account-nav-item');
     if (currentUser && accountNavItem) {
       accountNavItem.classList.remove('account-hidden');
+    }
+  }
+
+  function isAndroidDevice() {
+    if (typeof navigator === 'undefined') return false;
+    return /Android/i.test(navigator.userAgent) && !/Windows Phone|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
+  function isInstalledAsPwa() {
+    if (typeof window === 'undefined' || typeof window.matchMedia === 'undefined') return false;
+    return window.matchMedia('(display-mode: standalone)').matches || Boolean(window.navigator.standalone);
+  }
+
+  function setInstallButtonVisibility(visible) {
+    const installItem = document.getElementById('pwa-install-nav-item');
+    if (installItem) {
+      installItem.style.display = visible ? '' : 'none';
+    }
+  }
+
+  function attachPwaInstallHandler() {
+    const installButton = document.getElementById('pwa-install-trigger');
+    if (!installButton) return;
+
+    installButton.addEventListener('click', async () => {
+      const deferredPrompt = window.__fplPwaDeferredPrompt;
+
+      if (!deferredPrompt) {
+        installButton.textContent = 'Use browser menu';
+        installButton.setAttribute('aria-label', 'Open the browser menu to install');
+        window.setTimeout(() => {
+          if (installButton) {
+            installButton.textContent = 'Install App';
+            installButton.removeAttribute('aria-label');
+          }
+        }, 1800);
+        return;
+      }
+
+      installButton.disabled = true;
+      installButton.textContent = 'Installing...';
+
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          setInstallButtonVisibility(false);
+        }
+      } catch (error) {
+        console.warn('PWA install failed:', error);
+      } finally {
+        window.__fplPwaDeferredPrompt = null;
+        installButton.disabled = false;
+        installButton.textContent = 'Install App';
+      }
+    });
+
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      window.__fplPwaDeferredPrompt = event;
+      if (isAndroidDevice() && !isInstalledAsPwa()) {
+        setInstallButtonVisibility(true);
+      }
+    });
+
+    window.addEventListener('appinstalled', () => {
+      window.__fplPwaDeferredPrompt = null;
+      setInstallButtonVisibility(false);
+    });
+
+    if (isAndroidDevice() && !isInstalledAsPwa()) {
+      setInstallButtonVisibility(true);
     }
   }
 
@@ -574,6 +649,7 @@
     }
 
     revealAccountLinkIfLoggedIn();
+    attachPwaInstallHandler();
 
     // Active Tab Navigation Link Highlighting Style Engine
     const path = location.pathname.replace(/\/$/, '') || '/';

@@ -1,6 +1,7 @@
 {
   "name": "FPL Scout",
   "short_name": "FPL Scout",
+  "id": "/",
   "description": "Advanced Fantasy Premier League Analytics and Transfer Recommendations",
   "start_url": "/",
   "scope": "/",

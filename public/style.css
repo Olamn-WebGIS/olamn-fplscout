@@ -118,6 +118,31 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 .nav-links a:hover,
 .nav-links a.active { color: #fff; background: rgba(255,255,255,0.08); }
 
+.pwa-install-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.pwa-install-btn {
+  background: linear-gradient(135deg, #00c853, #16a34a);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 8px 20px rgba(0, 200, 83, 0.2);
+}
+
+.pwa-install-btn:hover {
+  transform: translateY(-1px);
+}
+
+.pwa-install-btn:disabled {
+  opacity: 0.75;
+  cursor: wait;
+}
+
 .account-hidden {
   display: none;
 }
