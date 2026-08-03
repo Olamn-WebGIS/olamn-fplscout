@@ -107,6 +107,9 @@ h4 { font-size: 0.95rem; font-weight: 600; }
   display: flex; align-items: center; gap: 0.15rem;
   list-style: none;
 }
+.nav-actions {
+  display: flex; align-items: center; gap: 0.6rem;
+}
 .nav-links a {
   color: var(--text-on-dark-2);
   font-size: 0.8rem; font-weight: 500;
@@ -118,12 +121,10 @@ h4 { font-size: 0.95rem; font-weight: 600; }
 .nav-links a:hover,
 .nav-links a.active { color: #fff; background: rgba(255,255,255,0.08); }
 
-.pwa-install-item {
+.pwa-install-btn {
   display: inline-flex;
   align-items: center;
-}
-
-.pwa-install-btn {
+  justify-content: center;
   background: linear-gradient(135deg, #00c853, #16a34a);
   color: #fff;
   border-radius: 999px;
@@ -134,13 +135,29 @@ h4 { font-size: 0.95rem; font-weight: 600; }
   box-shadow: 0 8px 20px rgba(0, 200, 83, 0.2);
 }
 
-.pwa-install-btn:hover {
+.pwa-install-btn:hover,
+.pwa-install-fab:hover {
   transform: translateY(-1px);
 }
 
-.pwa-install-btn:disabled {
+.pwa-install-btn:disabled,
+.pwa-install-fab:disabled {
   opacity: 0.75;
   cursor: wait;
+}
+
+.pwa-install-fab {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1200;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #00c853, #16a34a);
+  color: #fff;
+  padding: 0.8rem 1rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 }
 
 .account-hidden {
@@ -2094,6 +2111,7 @@ main { max-width: 100%; overflow-x: hidden; }
   .navbar { padding: 0 1rem; }
   .nav-links { display: none; position: absolute; top: var(--nav-h); left: 0; right: 0; background: var(--navy); flex-direction: column; padding: 1rem; gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 999; }
   .nav-links.open { display: flex; }
+  .nav-actions { gap: 0.4rem; }
   .hamburger { display: flex; }
   
   /* Hero Section */

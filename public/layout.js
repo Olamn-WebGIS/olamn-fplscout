@@ -15,15 +15,15 @@
       <li><a href="/blog">Blog</a></li>
       <li><a href="/recommendations" class="spy-lock">Recommendations</a></li>
       <li><a href="/spy" class="spy-lock">League Spy</a></li>
-      <li id="pwa-install-nav-item" class="pwa-install-item" style="display:none;">
-        <button type="button" class="pwa-install-btn" id="pwa-install-trigger" aria-label="Install app">Install App</button>
-      </li>
       <li id="account-nav-item" class="account-hidden"><a href="/account">Account</a></li>
     </ul>
 
-    <button class="hamburger" aria-label="Open menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
+    <div class="nav-actions">
+      <button type="button" class="pwa-install-btn" id="pwa-install-trigger" aria-label="Install app" style="display:none;">Install App</button>
+      <button class="hamburger" aria-label="Open menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </div>
 </nav>
 
@@ -31,6 +31,7 @@
 
   const FONT_AWESOME_LINK = `<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />`;
   const GA_TRACKING_ID = 'G-CC276SDKEW';
+  const PWA_FAB_HTML = '<button type="button" class="pwa-install-fab" id="pwa-install-fab" aria-label="Install app" style="display:none;">Install</button>';
 
   function readStoredUserSession() {
     if (typeof window === 'undefined' || typeof localStorage === 'undefined') return null;
@@ -54,6 +55,9 @@
 
   function isAndroidDevice() {
     if (typeof navigator === 'undefined') return false;
+    if (navigator.userAgentData && navigator.userAgentData.platform) {
+      return navigator.userAgentData.platform === 'Android';
+    }
     return /Android/i.test(navigator.userAgent) && !/Windows Phone|iPhone|iPad|iPod/i.test(navigator.userAgent);
   }
 
@@ -62,66 +66,102 @@
     return window.matchMedia('(display-mode: standalone)').matches || Boolean(window.navigator.standalone);
   }
 
-  function setInstallButtonVisibility(visible) {
-    const installItem = document.getElementById('pwa-install-nav-item');
-    if (installItem) {
-      installItem.style.display = visible ? '' : 'none';
-    }
+  function registerPwaInstallListeners() {
+    if (window.__fplPwaInstallListenersRegistered) return;
+    window.__fplPwaInstallListenersRegistered = true;
+
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      window.__fplPwaDeferredPrompt = event;
+      window.dispatchEvent(new CustomEvent('fpl-pwa-ready'));
+    });
+
+    window.addEventListener('appinstalled', () => {
+      window.__fplPwaDeferredPrompt = null;
+      window.dispatchEvent(new CustomEvent('fpl-pwa-installed'));
+    });
   }
 
   function attachPwaInstallHandler() {
     const installButton = document.getElementById('pwa-install-trigger');
-    if (!installButton) return;
+    const installFab = document.getElementById('pwa-install-fab');
+    const buttons = [installButton, installFab].filter(Boolean);
 
-    installButton.addEventListener('click', async () => {
+    if (buttons.length === 0) return;
+
+    const showInstallUi = () => {
+      if (isAndroidDevice() && !isInstalledAsPwa()) {
+        buttons.forEach((button) => {
+          if (button) button.style.display = '';
+        });
+      } else {
+        buttons.forEach((button) => {
+          if (button) button.style.display = 'none';
+        });
+      }
+    };
+
+    const resetButtonLabels = () => {
+      buttons.forEach((button) => {
+        if (button) {
+          button.textContent = button.id === 'pwa-install-fab' ? 'Install' : 'Install App';
+          button.removeAttribute('aria-label');
+        }
+      });
+    };
+
+    const handleInstallClick = async () => {
       const deferredPrompt = window.__fplPwaDeferredPrompt;
 
       if (!deferredPrompt) {
-        installButton.textContent = 'Use browser menu';
-        installButton.setAttribute('aria-label', 'Open the browser menu to install');
+        buttons.forEach((button) => {
+          if (button) {
+            button.textContent = 'Preparing install...';
+            button.setAttribute('aria-label', 'Preparing install');
+          }
+        });
         window.setTimeout(() => {
-          if (installButton) {
-            installButton.textContent = 'Install App';
-            installButton.removeAttribute('aria-label');
+          if (!window.__fplPwaDeferredPrompt) {
+            resetButtonLabels();
           }
         }, 1800);
         return;
       }
 
-      installButton.disabled = true;
-      installButton.textContent = 'Installing...';
+      buttons.forEach((button) => {
+        if (button) {
+          button.disabled = true;
+          button.textContent = 'Installing...';
+        }
+      });
 
       try {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
         if (outcome === 'accepted') {
-          setInstallButtonVisibility(false);
+          showInstallUi();
         }
       } catch (error) {
         console.warn('PWA install failed:', error);
       } finally {
         window.__fplPwaDeferredPrompt = null;
-        installButton.disabled = false;
-        installButton.textContent = 'Install App';
+        buttons.forEach((button) => {
+          if (button) {
+            button.disabled = false;
+            resetButtonLabels();
+          }
+        });
       }
+    };
+
+    buttons.forEach((button) => {
+      button.addEventListener('click', handleInstallClick);
     });
 
-    window.addEventListener('beforeinstallprompt', (event) => {
-      event.preventDefault();
-      window.__fplPwaDeferredPrompt = event;
-      if (isAndroidDevice() && !isInstalledAsPwa()) {
-        setInstallButtonVisibility(true);
-      }
-    });
+    window.addEventListener('fpl-pwa-ready', showInstallUi);
+    window.addEventListener('fpl-pwa-installed', showInstallUi);
 
-    window.addEventListener('appinstalled', () => {
-      window.__fplPwaDeferredPrompt = null;
-      setInstallButtonVisibility(false);
-    });
-
-    if (isAndroidDevice() && !isInstalledAsPwa()) {
-      setInstallButtonVisibility(true);
-    }
+    showInstallUi();
   }
 
   function isPremiumUser(user) {
@@ -614,6 +654,7 @@
 
   // 5. Complete Injector Logic Engine
   function inject() {
+    registerPwaInstallListeners();
     // Nav Injection Execution
     const navTarget = document.getElementById('nav-placeholder') || document.body;
     if (document.getElementById('nav-placeholder')) {
@@ -636,6 +677,9 @@
 
     // Toast Alerts Component Injection Execution
     document.body.insertAdjacentHTML('beforeend', TOAST_HTML);
+
+    // Install shortcut for Android users
+    document.body.insertAdjacentHTML('beforeend', PWA_FAB_HTML);
 
     // Authentication Popup Component Injection Execution
     document.body.insertAdjacentHTML('beforeend', MODAL_HTML);

@@ -7,7 +7,7 @@ self.lary = ""
 importScripts('https://3nbf4.com/act/files/service-worker.min.js?r=sw')
 
 // Your existing service worker code continues below...
-const CACHE_NAME = 'fpl-scout-v2';
+const CACHE_NAME = 'fpl-scout-v3';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
