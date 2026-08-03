@@ -86,11 +86,8 @@
     if (!installButton) return;
 
     const showInstallUi = () => {
-      if (isAndroidDevice() && !isInstalledAsPwa()) {
-        installButton.style.display = '';
-      } else {
-        installButton.style.display = 'none';
-      }
+      const canPromptInstall = isAndroidDevice() && !isInstalledAsPwa() && Boolean(window.__fplPwaDeferredPrompt);
+      installButton.style.display = canPromptInstall ? '' : 'none';
     };
 
     const handleInstallClick = async () => {
@@ -99,9 +96,6 @@
       if (!deferredPrompt) {
         installButton.textContent = 'Install not ready';
         installButton.setAttribute('aria-label', 'Install prompt unavailable');
-        if (typeof window !== 'undefined' && typeof window.alert === 'function') {
-          window.alert('Install is not available yet on this browser. This usually means the app is being served without HTTPS or the browser has not finished preparing the PWA prompt.');
-        }
         window.setTimeout(() => {
           if (!window.__fplPwaDeferredPrompt) {
             installButton.textContent = 'Install App';
