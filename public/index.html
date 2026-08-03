@@ -1404,17 +1404,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 <script>
-// ── PWA Setup ──────────────────────────────────────────────
-let deferredPrompt;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-});
-
-// PWA setup will be initialized in DOMContentLoaded
-
-// Register Service Worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').then(reg => {
     console.log('Service Worker registered:', reg);
@@ -1423,18 +1412,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-
-<!-- PWA Install Modal -->
-<div id="pwa-install-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 9999; justify-content: center; align-items: center;">
-  <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 400px; text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);">
-    <h2 style="margin: 0 0 1rem 0; color: #0A2540;">Install FPL Scout</h2>
-    <p style="color: #666; margin: 0 0 1.5rem 0; font-size: 0.95rem;">Get instant access to live FPL analytics right on your home screen.</p>
-    <div style="display: flex; gap: 1rem; justify-content: center;">
-      <button id="pwa-install-btn" style="background: #0070f3; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem;">Install</button>
-      <button id="pwa-dismiss-btn" style="background: #e5e7eb; color: #333; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem;">Later</button>
-    </div>
-  </div>
-</div>
 
 <!-- Authentication & OTP Master Modal Overlay -->
 <div id="auth-modal" class="modal-hidden">

@@ -31,7 +31,6 @@
 
   const FONT_AWESOME_LINK = `<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />`;
   const GA_TRACKING_ID = 'G-CC276SDKEW';
-  const PWA_FAB_HTML = '<button type="button" class="pwa-install-fab" id="pwa-install-fab" aria-label="Install app" style="display:none;">Install</button>';
 
   function readStoredUserSession() {
     if (typeof window === 'undefined' || typeof localStorage === 'undefined') return null;
@@ -84,56 +83,33 @@
 
   function attachPwaInstallHandler() {
     const installButton = document.getElementById('pwa-install-trigger');
-    const installFab = document.getElementById('pwa-install-fab');
-    const buttons = [installButton, installFab].filter(Boolean);
-
-    if (buttons.length === 0) return;
+    if (!installButton) return;
 
     const showInstallUi = () => {
       if (isAndroidDevice() && !isInstalledAsPwa()) {
-        buttons.forEach((button) => {
-          if (button) button.style.display = '';
-        });
+        installButton.style.display = '';
       } else {
-        buttons.forEach((button) => {
-          if (button) button.style.display = 'none';
-        });
+        installButton.style.display = 'none';
       }
-    };
-
-    const resetButtonLabels = () => {
-      buttons.forEach((button) => {
-        if (button) {
-          button.textContent = button.id === 'pwa-install-fab' ? 'Install' : 'Install App';
-          button.removeAttribute('aria-label');
-        }
-      });
     };
 
     const handleInstallClick = async () => {
       const deferredPrompt = window.__fplPwaDeferredPrompt;
 
       if (!deferredPrompt) {
-        buttons.forEach((button) => {
-          if (button) {
-            button.textContent = 'Preparing install...';
-            button.setAttribute('aria-label', 'Preparing install');
-          }
-        });
+        installButton.textContent = 'Preparing install...';
+        installButton.setAttribute('aria-label', 'Preparing install');
         window.setTimeout(() => {
           if (!window.__fplPwaDeferredPrompt) {
-            resetButtonLabels();
+            installButton.textContent = 'Install App';
+            installButton.removeAttribute('aria-label');
           }
         }, 1800);
         return;
       }
 
-      buttons.forEach((button) => {
-        if (button) {
-          button.disabled = true;
-          button.textContent = 'Installing...';
-        }
-      });
+      installButton.disabled = true;
+      installButton.textContent = 'Installing...';
 
       try {
         deferredPrompt.prompt();
@@ -145,19 +121,13 @@
         console.warn('PWA install failed:', error);
       } finally {
         window.__fplPwaDeferredPrompt = null;
-        buttons.forEach((button) => {
-          if (button) {
-            button.disabled = false;
-            resetButtonLabels();
-          }
-        });
+        installButton.disabled = false;
+        installButton.textContent = 'Install App';
+        installButton.removeAttribute('aria-label');
       }
     };
 
-    buttons.forEach((button) => {
-      button.addEventListener('click', handleInstallClick);
-    });
-
+    installButton.addEventListener('click', handleInstallClick);
     window.addEventListener('fpl-pwa-ready', showInstallUi);
     window.addEventListener('fpl-pwa-installed', showInstallUi);
 
@@ -677,9 +647,6 @@
 
     // Toast Alerts Component Injection Execution
     document.body.insertAdjacentHTML('beforeend', TOAST_HTML);
-
-    // Install shortcut for Android users
-    document.body.insertAdjacentHTML('beforeend', PWA_FAB_HTML);
 
     // Authentication Popup Component Injection Execution
     document.body.insertAdjacentHTML('beforeend', MODAL_HTML);
