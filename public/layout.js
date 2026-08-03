@@ -97,14 +97,17 @@
       const deferredPrompt = window.__fplPwaDeferredPrompt;
 
       if (!deferredPrompt) {
-        installButton.textContent = 'Preparing install...';
-        installButton.setAttribute('aria-label', 'Preparing install');
+        installButton.textContent = 'Install not ready';
+        installButton.setAttribute('aria-label', 'Install prompt unavailable');
+        if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+          window.alert('Install is not available yet on this browser. This usually means the app is being served without HTTPS or the browser has not finished preparing the PWA prompt.');
+        }
         window.setTimeout(() => {
           if (!window.__fplPwaDeferredPrompt) {
             installButton.textContent = 'Install App';
             installButton.removeAttribute('aria-label');
           }
-        }, 1800);
+        }, 2200);
         return;
       }
 
