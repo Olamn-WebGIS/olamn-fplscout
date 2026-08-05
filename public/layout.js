@@ -304,7 +304,7 @@
       </div>
     </div>
     <div class="footer-copy" style="max-width:var(--max-w);margin:0 auto;">
-      <span>© 2026 Olamn WebGIS. All rights reserved. | Built for Fantasy Premier League Managers.</span>
+      <span>© 2026 OLAMN Technologies. All rights reserved. | Built for Fantasy Premier League Managers.</span>
       <span>
         <a href="mailto:info@fplscout.name.ng">✉ info@fplscout.name.ng</a>
         &nbsp;|&nbsp;
