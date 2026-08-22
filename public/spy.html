@@ -363,7 +363,7 @@
       <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
         <div style="flex:1;min-width:200px;">
           <label style="display:block;font-size:0.85rem;font-weight:600;color:#f8fafc;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Manager Name or Team</label>
-          <input type="text" id="manager-search-input" placeholder="Search by manager name or team name..." style="width:100%;padding:0.7rem;border:1.5px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);font-size:0.95rem;background:#15223a;color:#f8fafc;">
+          <input type="text" id="manager-search-input" placeholder="Search or copy&paste manager name or team name..." style="width:100%;padding:0.7rem;border:1.5px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);font-size:0.95rem;background:#15223a;color:#f8fafc;">
         </div>
         <button class="btn btn-blue" id="search-btn" style="font-weight:700;">Search</button>
         <button class="btn btn-outline" id="clear-search-btn" style="font-weight:700;">Show Top 20</button>
@@ -375,39 +375,12 @@
     </div>
   </div>
 
-  <!-- Rivals List -->
-  <div id="rivals-container">
-    <div style="background:var(--navy);border:1.5px dashed rgba(255,255,255,0.12);border-radius:var(--radius-md);padding:3rem 1.5rem;text-align:center;color:#f8fafc;">
-      <div style="font-size:1.5rem;margin-bottom:0.5rem;">🔍</div>
-      <p>Enter a league ID to start tracking rivals and analyzing their teams.</p>
-    </div>
   </div>
   <div id="spy-pagination" style="display:none;margin-top:1.5rem;text-align:center;">
     <button class="btn btn-outline" id="spy-prev-page" style="margin-right:0.75rem;">← Previous</button>
     <span id="spy-page-info" style="color:var(--text-muted);font-size:0.95rem;"></span>
     <button class="btn btn-outline" id="spy-next-page" style="margin-left:0.75rem;">Next →</button>
   </div>
-
-  <!-- Alerts & Transfers -->
-  <div id="alerts-section" style="margin-top:3rem;display:none;">
-    <h2 class="card-title">⚡ Recent Activity</h2>
-    <div class="three-col" style="gap:1.5rem;">
-      <!-- Captain Alerts -->
-      <div class="card">
-        <h3 class="card-title">🎖 Captain Changes</h3>
-        <div id="captain-alerts" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
-      </div>
-      <!-- Transfer Alerts -->
-      <div class="card">
-        <h3 class="card-title">🔄 Recent Transfers</h3>
-        <div id="transfer-alerts" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
-      </div>
-      <!-- Chip Usage -->
-      <div class="card">
-        <h3 class="card-title">🃏 Chip Usage</h3>
-        <div id="chip-alerts" class="loading-block"><div class="spinner"></div><span>Loading…</span></div>
-      </div>
-    </div>
   </div>
 
   <!-- Team View Modal -->
@@ -496,6 +469,12 @@ const STORAGE_KEYS = {
   savedLeagueId: 'fpl_saved_league_id'
 };
 
+// Escape string for safe single-quoted inline JS insertion
+function escapeForJs(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n|\r/g, ' ');
+}
+
 async function bootstrap() {
   const data = await API.bootstrap();
   allPlayers = data.elements;
@@ -513,39 +492,38 @@ async function loadLeague() {
   }
   Store.setSavedLeagueId(leagueId);
   try {
-    await bootstrap();
-    const data = await API.league(leagueId, 1);
-    leagueData = data;
+    // Lightweight summary fetch to improve initial load speed
+    const data = await API.leagueSummary(leagueId);
+    leagueData = { league: data.league || {}, standings: { results: [] } };
     spyLoadedLeagueId = leagueId;
-    spyCurrentPage = 1;
-    spyHasMore = true;
-    spyFplPageCache = {};
-    spyFplPageHasNext = {};
 
-    // Show banner
+    // Show banner with minimal data
     document.getElementById('league-banner').style.display = 'flex';
     document.getElementById('current-gw').textContent = `GW ${currentGW}`;
-    document.getElementById('league-name').textContent = data.league.name;
-    document.getElementById('league-managers').textContent = data.standings.count || data.standings.results.length;
-    
-    // Calculate avg points
-    const avgPts = Math.round(data.standings.results.reduce((sum, r) => sum + ((r.total_points || r.total) || 0), 0) / data.standings.results.length);
-    document.getElementById('league-avg-pts').textContent = avgPts;
-    
-    // Show search section
-    document.getElementById('search-section').style.display = 'block';
+    document.getElementById('league-name').textContent = (data.league && data.league.name) || '—';
+    // Format managers display: show '20+' when league has more than 20 managers to indicate larger size
+    const rawManagers = (data && data.managersCount) ? Number(data.managersCount) : null;
+    document.getElementById('league-managers').textContent = rawManagers && rawManagers > 20 ? '20+' : (rawManagers !== null ? String(rawManagers) : (data.managersCount || '—'));
+    document.getElementById('league-avg-pts').textContent = data.avgPoints || '—';
 
-    const spyResponse = await loadSpyPage(1);
-
-    // Load recent activity for top rivals (limited to 5 to avoid rate limits)
-    try {
-      if (spyResponse && spyResponse.managers) {
-        loadRecentActivity(spyResponse.managers.slice(0, 5));
-      }
-    } catch (e) {
-      console.warn('Recent activity preload failed:', e);
+    // If the summary looks capped (e.g., 50), attempt a lightweight fallback to get an accurate count
+    if (!data.managersCount || Number(data.managersCount) <= 50) {
+      (async () => {
+        try {
+          const full = await API.league(leagueId, 1).catch(() => null);
+          if (full && full.standings && (full.standings.count || full.standings.results.length)) {
+            const count = full.standings.count || full.standings.results.length;
+            document.getElementById('league-managers').textContent = count > 20 ? '20+' : String(count);
+          }
+        } catch (e) {
+          // ignore fallback errors
+        }
+      })();
     }
-    showToast('League loaded successfully! 🎯', 'success');
+
+    // Show search section and avoid heavy background fetches until the user requests a manager
+    document.getElementById('search-section').style.display = 'block';
+    showToast('League loaded (summary) — search a manager to view details.', 'success');
   } catch (e) {
     showToast('Failed to load league. Check the ID and try again.', 'error');
     console.error(e);
@@ -561,26 +539,13 @@ function startAutoRefresh() {
       const leagueId = document.getElementById('league-id-input').value.trim();
       if (!leagueId) return;
       
-      // Fetch fresh data
-      await bootstrap();
-      const data = await API.league(leagueId, 1);
-      
-      const oldGw = currentGW;
-      leagueData = data;
-      
-      // Update GW and banner if it changed
-      const newGw = bsData.events.find(e => e.is_current)?.id || bsData.events[bsData.events.length - 1]?.id || 1;
-      if (newGw !== oldGw) {
-        currentGW = newGw;
-        document.getElementById('current-gw').textContent = `GW ${currentGW}`;
+      // Fetch lightweight summary only to update banner stats
+      const summary = await API.leagueSummary(leagueId).catch(() => null);
+      if (summary) {
+        const m = (summary && summary.managersCount) ? Number(summary.managersCount) : null;
+        document.getElementById('league-managers').textContent = m && m > 20 ? '20+' : (m !== null ? String(m) : (summary.managersCount || '—'));
+        document.getElementById('league-avg-pts').textContent = summary.avgPoints || '—';
       }
-      
-      // Update league stats
-      const avgPts = Math.round(data.standings.results.reduce((sum, r) => sum + ((r.total_points || r.total) || 0), 0) / data.standings.results.length);
-      document.getElementById('league-avg-pts').textContent = avgPts;
-      
-      // Re-render the current spy page
-      await loadSpyPage(spyCurrentPage);
     } catch (e) {
       console.error('Auto-refresh error:', e);
     }
@@ -601,13 +566,16 @@ async function searchManagers() {
     return;
   }
   
-  // Filter managers by name or team name
-  const results = leagueData.standings.results.filter(r => 
-    r.player_name.toLowerCase().includes(searchTerm) ||
-    (r.entry_name && r.entry_name.toLowerCase().includes(searchTerm))
-  );
-  
-  if (results.length === 0) {
+  // If we have local standings loaded, try fast local filter first
+  let results = [];
+  if (leagueData.standings && Array.isArray(leagueData.standings.results) && leagueData.standings.results.length > 0) {
+    results = leagueData.standings.results.filter(r => 
+      (String(r.player_name || '').toLowerCase().includes(searchTerm)) ||
+      (r.entry_name && String(r.entry_name || '').toLowerCase().includes(searchTerm))
+    );
+  }
+
+  if (!results || results.length === 0) {
     // Not found in the loaded page — fall back to server-side paged search
     const searchBtnEl = document.getElementById('search-btn');
     const searchInputEl = document.getElementById('manager-search-input');
@@ -636,6 +604,8 @@ async function searchManagers() {
         if (!resp) break; // network/server error
         if (resp.found) {
           renderSearchResults([resp.manager]);
+          const infoEl = document.getElementById('search-info');
+          if (infoEl) infoEl.textContent = `Found 1 manager`;
           document.getElementById('search-results').style.display = 'block';
           showToast('Manager found', 'success');
           found = true;
@@ -673,6 +643,11 @@ async function searchManagers() {
   document.getElementById('search-info').textContent = `Found ${results.length} manager${results.length !== 1 ? 's' : ''}`;
   renderSearchResults(results);
   document.getElementById('search-results').style.display = 'block';
+  // Hide main rivals list while showing search results to avoid duplicate cards/icons
+  const rivalsContainer = document.getElementById('rivals-container');
+  if (rivalsContainer) rivalsContainer.style.display = 'none';
+  const alertsSection = document.getElementById('alerts-section');
+  if (alertsSection) alertsSection.style.display = 'none';
 }
 
 function renderSearchResults(results) {
@@ -681,7 +656,7 @@ function renderSearchResults(results) {
     const totalPts = r.total_points ?? r.total ?? 0;
     const gwPts = r.event_points ?? r.event_total ?? 0;
     
-    return `<div class="card spy-rival-card" style="margin-bottom:1rem;cursor:pointer;" onclick="location.href='/manager.html?id=${r.entry}&name=${encodeURIComponent(r.player_name)}'">
+    return `<div class="card spy-rival-card" style="margin-bottom:1rem;cursor:pointer;display:block;text-decoration:none;" onclick="location.href='/manager.html?id=${r.entry}&name=${encodeURIComponent(r.player_name)}'">
       <div class="rival-header">
         <div class="rival-info" style="flex:1;">
           <div class="rival-name">
@@ -695,7 +670,7 @@ function renderSearchResults(results) {
           <small>total</small>
         </div>
         <div class="rival-actions">
-          <button class="icon-btn" title="View Squad" style="background:var(--blue-light);color:#fff;" onclick="event.stopPropagation(); location.href='/manager.html?id=${r.entry}&name=${encodeURIComponent(r.player_name)}'">👁️</button>
+          <a class="icon-btn" title="View Squad" style="background:var(--blue-light);color:#fff;display:inline-flex;align-items:center;justify-content:center;" href="/manager.html?id=${r.entry}&name=${encodeURIComponent(r.player_name)}">👁️</a>
         </div>
       </div>
       <div class="h2h-comp">
@@ -717,7 +692,36 @@ function renderSearchResults(results) {
 function clearSearch() {
   document.getElementById('manager-search-input').value = '';
   document.getElementById('search-results').style.display = 'none';
-  loadSpyPage(1);
+  // Show top 20 managers from the league (first standings page)
+  const leagueId = spyLoadedLeagueId || document.getElementById('league-id-input').value.trim();
+  if (!leagueId) {
+    showToast('Please load a league first', 'error');
+    return;
+  }
+  (async () => {
+    try {
+      showToast('Loading top 20 managers…', 'info');
+      const data = await API.league(leagueId, 1).catch(() => null);
+      if (!data || !data.standings || !Array.isArray(data.standings.results)) {
+        showToast('Unable to fetch league standings', 'error');
+        return;
+      }
+      const top20 = data.standings.results.slice(0, 20);
+      renderRivals(top20);
+      const rivalsContainer = document.getElementById('rivals-container');
+      if (rivalsContainer) rivalsContainer.style.display = 'block';
+      // Update pagination state for UI consistency
+      const total = data.standings.count || top20.length;
+      spyCurrentPage = 1;
+      spyTotalPages = Math.max(1, Math.ceil(total / spyPageSize));
+      spyHasMore = total > spyPageSize;
+      updateSpyPagination();
+      showToast('Top 20 displayed', 'success');
+    } catch (e) {
+      console.error('Failed to load top 20:', e);
+      showToast('Failed to load top 20 managers', 'error');
+    }
+  })();
 }
 
 async function loadSpyPage(page) {
@@ -738,92 +742,7 @@ async function loadSpyPage(page) {
   }
 }
 
-async function loadRecentActivity(rivals) {
-  try {
-    // Fetch captain changes from top rivals
-    const captainChanges = [];
-    const transfers = [];
-    
-    for (const rival of rivals.slice(0, 5)) {
-      try {
-        const picks = await API.managerPicks(rival.entry, currentGW);
-        const captain = picks.picks.find(p => p.is_captain);
-        if (captain) {
-          const player = bsData.elements.find(e => e.id === captain.element);
-          if (player) {
-            captainChanges.push({
-              manager: rival.player_name,
-              player: player.web_name,
-              team: bsData.teams.find(t => t.id === player.team)?.name,
-              photo: player.photo ? player.photo.replace(/\.(jpg|png)$/i, '').replace(/^p/i, '') : String(player.code).padStart(5, '0')
-            });
-          }
-        }
-        
-        const trans = await API.managerTransfers(rival.entry);
-        if (trans.length > 0) {
-          const lastTransfer = trans[0];
-          const playerIn = bsData.elements.find(e => e.id === lastTransfer.element_in);
-          const playerOut = bsData.elements.find(e => e.id === lastTransfer.element_out);
-          if (playerIn && playerOut) {
-            transfers.push({
-              manager: rival.player_name,
-              in: playerIn.web_name,
-              out: playerOut.web_name,
-              gw: lastTransfer.event
-            });
-          }
-        }
-      } catch (e) {
-        console.error(`Failed to load data for ${rival.player_name}`);
-      }
-    }
-    
-    // Render captain changes
-    if (captainChanges.length > 0) {
-      const captainHtml = captainChanges.map(c => `
-        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;margin-bottom:8px;color:#f8fafc;">
-          <div class="player-avatar" style="position:relative;width:44px;height:44px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.08);border-radius:50%;overflow:hidden;">
-            <img src="${photoUrl(c.photo)}" alt="${c.player}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;" onerror="this.parentElement.textContent='${c.player.slice(0,2)}'" />
-          </div>
-          <div style="flex:1;font-size:0.85rem;">
-            <strong>${c.player}</strong> · ${c.team}
-          </div>
-          <div style="font-size:0.75rem;color:rgba(248,250,252,0.75);">${c.manager}</div>
-        </div>
-      `).join('');
-      document.getElementById('captain-alerts').innerHTML = captainHtml;
-    } else {
-      document.getElementById('captain-alerts').innerHTML = '<p style="color:rgba(248,250,252,0.75);font-size:0.85rem;">No captain changes this GW</p>';
-    }
-    
-    // Render transfers
-    if (transfers.length > 0) {
-      const transferHtml = transfers.map(t => `
-        <div style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;margin-bottom:8px;font-size:0.85rem;color:#f8fafc;">
-          <div style="flex:1;">
-            <strong>${t.out}</strong>
-            <span class="transfer-arrow" style="color:var(--fwd);">→</span>
-            <strong>${t.in}</strong>
-          </div>
-          <div style="font-size:0.7rem;color:rgba(248,250,252,0.75);">${t.manager}</div>
-        </div>
-      `).join('');
-      document.getElementById('transfer-alerts').innerHTML = transferHtml;
-    } else {
-      document.getElementById('transfer-alerts').innerHTML = '<p style="color:rgba(248,250,252,0.75);font-size:0.85rem;">No recent transfers</p>';
-    }
-    
-    // Chip usage
-    document.getElementById('chip-alerts').innerHTML = '<p style="color:rgba(248,250,252,0.75);font-size:0.85rem;">Chip data coming soon</p>';
-    
-  } catch (e) {
-    console.error('Failed to load recent activity:', e);
-    document.getElementById('captain-alerts').innerHTML = '<p style="color:var(--text-muted);">Failed to load data</p>';
-    document.getElementById('transfer-alerts').innerHTML = '<p style="color:var(--text-muted);">Failed to load data</p>';
-    document.getElementById('chip-alerts').innerHTML = '<p style="color:var(--text-muted);">Failed to load data</p>';
-  }
-}
+// Recent activity removed from spy page to improve performance.
 
 function renderRivals(rivals) {
   const html = rivals.map((r, idx) => {
@@ -832,7 +751,7 @@ function renderRivals(rivals) {
     const gwPts = r.event_points ?? r.event_total ?? 0;
     const gwRank = r.last_rank || '—';
     
-    return `<div class="card spy-rival-card" style="margin-bottom:1.5rem;">
+    return `<div class="card spy-rival-card" style="margin-bottom:1.5rem;display:block;text-decoration:none;cursor:pointer;" onclick="location.href='/manager.html?id=${r.entry}&name=${encodeURIComponent(r.player_name)}'">
       <div class="rival-header">
         <div class="rival-info">
           <div class="rival-name">
@@ -846,7 +765,7 @@ function renderRivals(rivals) {
           <small>total pts</small>
         </div>
         <div class="rival-actions">
-          <button class="icon-btn" onclick="location.href='/manager.html?id=${r.entry}&name=${encodeURIComponent(r.player_name)}'" title="View Squad">👁️</button>
+          <a class="icon-btn" title="View Squad" style="background:var(--blue-light);color:#fff;display:inline-flex;align-items:center;justify-content:center;" href="/manager.html?id=${r.entry}&name=${encodeURIComponent(r.player_name)}">👁️</a>
         </div>
       </div>
       
@@ -866,8 +785,17 @@ function renderRivals(rivals) {
       </div>
     </div>`;
   }).join('');
-  document.getElementById('rivals-container').innerHTML = html;
-  document.getElementById('alerts-section').style.display = 'block';
+  let container = document.getElementById('rivals-container');
+  if (!container) {
+    // Create a lightweight container if it was removed or not present
+    container = document.createElement('div');
+    container.id = 'rivals-container';
+    // insert before pagination if available, otherwise append to main
+    const pagination = document.getElementById('spy-pagination');
+    if (pagination && pagination.parentNode) pagination.parentNode.insertBefore(container, pagination);
+    else document.body.appendChild(container);
+  }
+  container.innerHTML = html;
 }
 
 async function getLeaguePage(pageNumber) {
@@ -964,9 +892,27 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
       targetContentBox.innerHTML = '<div class="loading-block"><div class="spinner"></div><span>Loading squad…</span></div>';
     }
     
-    // Fetch manager picks
-    const picks = await API.managerPicks(managerId, currentGW);
-    console.log('Manager picks loaded:', picks);
+    // Fetch manager picks (squad only) - keep picks because modal shows squad
+    const picks = await API.managerPicks(managerId, currentGW).catch(() => null);
+    console.log('Manager picks loaded:', !!picks);
+    if (!picks || !Array.isArray(picks.picks)) {
+      const targetContentBox = document.getElementById('modal-team-content');
+      if (targetContentBox) targetContentBox.innerHTML = '<p style="color:var(--text-muted);font-size:0.95rem;">Failed to load squad picks for this manager.</p>';
+      return;
+    }
+
+    // Ensure bootstrap data (players list) is available before using it
+    if (!bsData || !bsData.elements) {
+      try {
+        await bootstrap();
+      } catch (e) {
+        console.error('Failed to load bootstrap data for squad rendering:', e);
+        const targetContentBox = document.getElementById('modal-team-content');
+        if (targetContentBox) targetContentBox.innerHTML = '<p style="color:var(--text-muted);font-size:0.95rem;">Failed to load player data. Please try again.</p>';
+        return;
+      }
+    }
+
     const squad = picks.picks;
     
     // Separate starting XI (first 11) and bench (remaining)
@@ -1042,9 +988,7 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
       console.log('Squad HTML rendered successfully');
     }
 
-    // Load recent activity for this manager (populate modal activity tabs)
-    await loadManagerActivity(managerId, playerName);
-    console.log('Activity loaded successfully');
+    // Activity data removed for spy page to improve performance
   } catch (e) {
     console.error('Error in viewTeam:', e);
     showToast('Failed to load team squad', 'error');
@@ -1052,104 +996,7 @@ async function viewTeam(managerId, playerName, totalPts = '—', rank = '—') {
 }
 
 // Load recent activity for a specific manager
-async function loadManagerActivity(managerId, playerName) {
-  try {
-    console.log(`🔄 Loading activity for manager ${managerId}...`);
-    
-    // Ensure bootstrap data is available
-    if (!bsData) {
-      console.warn('⚠️ Bootstrap data not available, attempting to reload...');
-      try {
-        await bootstrap();
-        console.log('✅ Bootstrap data reloaded successfully');
-      } catch (err) {
-        console.error('❌ Failed to reload bootstrap data:', err);
-        throw new Error('Unable to load bootstrap data for activity');
-      }
-    }
-    
-    // Verify modal elements exist
-    console.log('🔍 Checking for modal activity elements...');
-    const captainEl = document.getElementById('modal-captain-activity');
-    const transferEl = document.getElementById('modal-transfer-activity');
-    const chipEl = document.getElementById('modal-chip-activity');
-    console.log('✓ Captain element:', captainEl ? 'FOUND' : 'NOT FOUND');
-    console.log('✓ Transfer element:', transferEl ? 'FOUND' : 'NOT FOUND');
-    console.log('✓ Chip element:', chipEl ? 'FOUND' : 'NOT FOUND');
-    
-    // If elements not found, warn user
-    if (!captainEl || !transferEl || !chipEl) {
-      console.error('❌ Missing modal elements - cannot display activity data');
-      throw new Error('Activity elements not found in page');
-    }
-    
-    // Captain picks
-    try {
-      console.log('📥 Loading captain picks...');
-      const captainHtml = await Promise.race([
-        loadManagerCaptainPicks(managerId, playerName),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Captain picks request timeout')), 10000))
-      ]);
-      console.log('📄 Captain HTML generated:', captainHtml ? captainHtml.length : 0, 'chars');
-      if (captainEl) {
-        captainEl.innerHTML = captainHtml;
-        console.log('✅ Captain picks displayed');
-      }
-    } catch (e) {
-      console.error('❌ Failed to load captain picks:', e.message);
-      if (captainEl) {
-        captainEl.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem;">⚠️ ${e.message}</p>`;
-      }
-    }
-    
-    // Recent transfers
-    try {
-      console.log('📥 Loading transfers...');
-      const transferHtml = await Promise.race([
-        loadManagerTransfers(managerId, playerName),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Transfers request timeout')), 10000))
-      ]);
-      console.log('📄 Transfer HTML generated:', transferHtml ? transferHtml.length : 0, 'chars');
-      if (transferEl) {
-        transferEl.innerHTML = transferHtml;
-        console.log('✅ Transfers displayed');
-      }
-    } catch (e) {
-      console.error('❌ Failed to load transfers:', e.message);
-      if (transferEl) {
-        transferEl.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem;">⚠️ ${e.message}</p>`;
-      }
-    }
-    
-    // Chip usage
-    try {
-      console.log('📥 Loading chip usage...');
-      const chipHtml = await Promise.race([
-        loadManagerChipUsage(managerId),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Chip usage request timeout')), 10000))
-      ]);
-      console.log('📄 Chip HTML generated:', chipHtml ? chipHtml.length : 0, 'chars');
-      if (chipEl) {
-        chipEl.innerHTML = chipHtml;
-        console.log('✅ Chip usage displayed');
-      }
-    } catch (e) {
-      console.error('❌ Failed to load chip usage:', e.message);
-      if (chipEl) {
-        chipEl.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem;">⚠️ ${e.message}</p>`;
-      }
-    }
-  } catch (e) {
-    console.error('❌ Failed to load manager activity:', e);
-    showToast(`Activity loading failed: ${e.message}`, 'error');
-    // Show error in all activity elements
-    [captainEl, transferEl, chipEl].forEach(el => {
-      if (el) {
-        el.innerHTML = `<p style="color:#ff4444;font-size:0.85rem;">⚠️ ${e.message}</p>`;
-      }
-    });
-  }
-}
+// Manager activity functions removed from spy page to avoid extra API calls.
 
 // Load captain picks for manager (last 5 gameweeks)
 async function loadManagerCaptainPicks(managerId, playerName) {

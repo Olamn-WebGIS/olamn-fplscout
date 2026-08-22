@@ -41,6 +41,7 @@ const API = {
   managerTransfers:(id)   => coalescedFetch(`/api/manager/${id}/transfers`),
   analyzeTransfers:(id,gw)=> coalescedFetch(`/api/analyze-transfers/${id}/${gw}`),
   league:          (id,p) => coalescedFetch(`/api/league/${id}?page=${p||1}`),
+  leagueSummary:   (id)   => coalescedFetch(`/api/league-summary/${id}`),
   spy:             (id, page = 1, pageSize = 20) => coalescedFetch(`/api/spy/${id}?page=${page}&pageSize=${pageSize}`),
   spySearch:       (id, q, maxPages = 5) => coalescedFetch(`/api/spy-search/${id}?q=${encodeURIComponent(q)}&maxPages=${maxPages}`).catch(e => { console.error(`Spy search ${id} query '${q}' failed:`, e); throw e; }),
   live:            (gw)   => coalescedFetch(`/api/live/${gw}`),

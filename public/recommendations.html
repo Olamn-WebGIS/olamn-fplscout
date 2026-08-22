@@ -265,6 +265,7 @@
 
 <script src="/utils.js"></script>
 <script src="/layout.js"></script>
+<script src="/transfer-analyzer.js"></script>
 <script>
 
 // ── PREMIUM PAGE ACCESS CHECK ──
@@ -291,6 +292,11 @@ async function boot() {
       console.error('Bootstrap data is null');
       return;
     }
+    try {
+      console.log('BOOT:', 'elements:', bsData.elements?.length, 'teams:', bsData.teams?.length, 'events:', bsData.events?.length);
+      if (bsData.elements && bsData.elements.length) console.log('BOOT sample players:', bsData.elements.slice(0,3).map(p => ({n:p.web_name, form:p.form, ep_next:p.ep_next})));
+      console.log('TransferAnalyzer available?', typeof TransferAnalyzer !== 'undefined');
+    } catch (e) { console.error('BOOT-LOG error', e); }
     
     const cur = bsData.events.find(e => e.is_current) || bsData.events[bsData.events.length - 1];
 
@@ -301,12 +307,12 @@ async function boot() {
     document.getElementById('cur-avg').textContent = cur.average_entry_score || '—';
     document.getElementById('cur-top').textContent = cur.highest_score || '—';
 
-    renderCaptainPicks();
-    renderTransfers(0);
-    renderDifferentials();
-    renderChipGuide(cur);
-    renderFormList();
-    renderPriceChanges();
+    if (typeof renderCaptainPicks === 'function') renderCaptainPicks();
+    if (typeof renderTransfers === 'function') renderTransfers(0);
+    if (typeof renderDifferentials === 'function') renderDifferentials();
+    if (typeof renderChipGuide === 'function') renderChipGuide(cur);
+    if (typeof renderFormList === 'function') renderFormList();
+    if (typeof renderPriceChanges === 'function') renderPriceChanges();
   } catch (e) {
     console.error(e);
   }
@@ -332,12 +338,12 @@ function startAutoRefresh() {
       document.getElementById('cur-avg').textContent = cur.average_entry_score || '—';
       document.getElementById('cur-top').textContent = cur.highest_score || '—';
       
-      renderCaptainPicks();
-      renderTransfers(0);
-      renderDifferentials();
-      renderChipGuide(cur);
-      renderFormList();
-      renderPriceChanges();
+      if (typeof renderCaptainPicks === 'function') renderCaptainPicks();
+      if (typeof renderTransfers === 'function') renderTransfers(0);
+      if (typeof renderDifferentials === 'function') renderDifferentials();
+      if (typeof renderChipGuide === 'function') renderChipGuide(cur);
+      if (typeof renderFormList === 'function') renderFormList();
+      if (typeof renderPriceChanges === 'function') renderPriceChanges();
     } catch (e) {
       console.error('Auto-refresh error:', e);
     }
@@ -371,7 +377,59 @@ function renderCaptainPicks() {
     .slice(0, 6);
 
   document.getElementById('captain-cards').innerHTML = sorted.map((p, i) => {
-    const score = (Number(p.form) * 1.8 + p.ep_next * 1.5).toFixed(1);
+    // Use advanced projection from TransferAnalyzer when available
+    let scoreVal;
+    try {
+      if (typeof TransferAnalyzer !== 'undefined' && TransferAnalyzer.projectPoints && TransferAnalyzer.calculatePlayerScore) {
+        const fixture_difficulty = p.fixture_difficulty || (p.fixtures ? TransferAnalyzer.getAverageFixtureDifficulty(p.fixtures) : 2);
+        // Defensive: clamp form to avoid single-week spikes (e.g. form:11)
+        const safeForm = Math.min(10, Math.max(0, Number(p.form || 0)));
+        const playerForScore = { ...p, form: safeForm, fixture_difficulty };
+        const baseScoreRaw = TransferAnalyzer.calculatePlayerScore(playerForScore);
+        // Convert raw performance score to a points-like scale (rough heuristic)
+        const baseScore = Math.min(12, baseScoreRaw / 3.5);
+        // Project for the next gameweek (gwCount = 1) — returns per-game expected points
+        const projected = TransferAnalyzer.projectPoints(safeForm, fixture_difficulty, 1, p);
+        // Blend: favour projection (70%) and keep performance as a small modifier (30%)
+        scoreVal = (baseScore * 0.3) + (projected * 0.7);
+      } else {
+        // Fallback defensive clamp
+        const rawForm = Number(p.form) || 0;
+        const rawEp = Number(p.ep_next) || 0;
+        const form = Math.min(10, Math.max(0, rawForm));
+        const ep = Math.min(6, Math.max(0, rawEp));
+        scoreVal = (form * 1.6 + ep * 2.2);
+      }
+    } catch (e) {
+      console.error('Projection error for', p.web_name, e);
+      const rawForm = Number(p.form) || 0;
+      const rawEp = Number(p.ep_next) || 0;
+      const form = Math.min(10, Math.max(0, rawForm));
+      const ep = Math.min(6, Math.max(0, rawEp));
+      scoreVal = (form * 1.6 + ep * 2.2);
+    }
+
+    // Debugging: log when predicted score remains unusually high or raw form is out-of-range
+    try {
+      const debugSafeForm = (typeof safeForm !== 'undefined') ? safeForm : ((typeof form !== 'undefined') ? form : Number(p.form) || 0);
+      const debugBase = (typeof baseScore !== 'undefined') ? baseScore : debugSafeForm;
+      const debugProjected = (typeof projected !== 'undefined') ? projected : ((typeof ep !== 'undefined') ? ep : Number(p.ep_next) || 0);
+      if (Number(scoreVal) > 15 || Number(p.form) > 10) {
+        console.log('PRED-DEBUG', p.web_name, {
+          rawForm: p.form,
+          safeForm: debugSafeForm,
+          ep_next: p.ep_next,
+          fixture_difficulty: (typeof fixture_difficulty !== 'undefined') ? fixture_difficulty : null,
+          baseScore: debugBase,
+          projected: debugProjected,
+          scoreVal: Number(scoreVal)
+        });
+      }
+    } catch (ee) {
+      console.error('PRED-DEBUG error', ee);
+    }
+
+    const score = Number(scoreVal).toFixed(1);
     const medals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--radius-md);background:${i===0?'rgba(0,200,83,0.12)':'rgba(255,255,255,0.05)'};border:${i===0?'1.5px solid rgba(0,200,83,0.25)':'1px solid rgba(255,255,255,0.12)'};margin-bottom:10px;color:#ffffff;">
       <div style="font-size:1.6rem;flex-shrink:0;">${medals[i]}</div>
@@ -390,7 +448,7 @@ function renderCaptainPicks() {
       </div>
       <div style="text-align:right;flex-shrink:0;">
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:800;color:#7ef3b9;">${score}</div>
-        <div style="font-size:0.7rem;color:#ffffff;">pred. score</div>
+        <div style="font-size:0.7rem;color:#ffffff;">pred. (next GW)</div>
         <div style="font-size:0.72rem;margin-top:3px;color:#ffffff;">${p.selected_by_percent}% own</div>
       </div>
     </div>`;
@@ -407,11 +465,28 @@ function renderTransfers(pos) {
   list = list
     .sort((a,b) => Number(b.ep_next) - Number(a.ep_next))
     .slice(0, 12);
+  document.getElementById('transfers-list').innerHTML = list.map(p => {
+    // compute projected next-gameweek points using TransferAnalyzer when available
+    let proj = null;
+    try {
+      if (typeof TransferAnalyzer !== 'undefined' && TransferAnalyzer.projectPoints && TransferAnalyzer.calculatePlayerScore) {
+        const fixture_difficulty = p.fixture_difficulty || (p.fixtures ? TransferAnalyzer.getAverageFixtureDifficulty(p.fixtures) : 2);
+        const safeForm = Math.min(10, Math.max(0, Number(p.form || 0)));
+        const playerForScore = { ...p, form: safeForm, fixture_difficulty };
+        const baseScoreRaw = TransferAnalyzer.calculatePlayerScore(playerForScore);
+        const baseScore = Math.min(12, baseScoreRaw / 3.5);
+        const projected = TransferAnalyzer.projectPoints(safeForm, fixture_difficulty, 1, p);
+        const blended = (baseScore * 0.3) + (projected * 0.7);
+        proj = Number(blended.toFixed(2));
+      }
+    } catch (e) { console.error('Transfer projection error', e); }
 
-  document.getElementById('transfers-list').innerHTML = list.map(p =>
-    playerCard(p, bsData.teams, true,
-      `<div style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;color:#96caff;">${Number(p.ep_next).toFixed(1)}</div><div style="font-size:0.7rem;color:#ffffff;">ep next</div>`)
-  ).join('');
+    const displayVal = (proj !== null && !Number.isNaN(proj)) ? Number(proj).toFixed(1) : Number(p.ep_next || 0).toFixed(1);
+    const label = (proj !== null && !Number.isNaN(proj)) ? 'pred. (next GW)' : 'ep next';
+
+    return playerCard(p, bsData.teams, true,
+      `<div style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;color:#96caff;">${displayVal}</div><div style="font-size:0.7rem;color:#ffffff;">${label}</div>`);
+  }).join('');
 }
 
 function renderDifferentials() {

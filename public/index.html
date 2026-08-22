@@ -194,7 +194,7 @@
       <script async="async" data-cfasync="false" src="https://sidewalkboiling.com/a971d37adb76d2f7565f5acc30b1239e/invoke.js"></script>
 
       <article class="card" id="squad-card" style="display:none;">
-        <h3 class="card-title">Transfer Analysis & Starting XI</h3>
+        <h3 class="card-title">Transfer Analysis & Best XI</h3>
         
         <!-- Squad Validation Status -->
         <div id="squad-validation" style="display:none;margin-bottom:1.5rem;padding:1rem;border-radius:8px;border-left:4px solid var(--green);">
@@ -208,9 +208,10 @@
           <div id="squad-errors-list" style="font-size:0.85rem;color:var(--text-muted);"></div>
         </div>
         
-        <!-- Starting XI Section (Football Formation) -->
+        <!-- Recommended Best XI Section -->
         <div id="starting-xi-section">
-          <h4 class="card-title" style="font-size:0.95rem;margin-bottom:1.5rem;color:var(--text-primary);">⚽ Starting XI (11 Players)</h4>
+          <h4 class="card-title" style="font-size:0.95rem;margin-bottom:0.75rem;color:var(--text-primary);">⚽ Recommended Best XI</h4>
+          <p style="font-size:0.75rem;color:rgba(255,255,255,0.72);margin:0 0 1rem;line-height:1.5;">This is the site’s suggested lineup for your squad. Use it to compare and adjust before finalising your team.</p>
           <div id="starting-xi-display" class="loading-block" style="min-height:110px;justify-content:center;text-align:center;">
             <div style="font-size:0.92rem;color:var(--text-muted);line-height:1.5;">
               Line-up will display as soon as Gameweek 1 starts.<br>
@@ -633,7 +634,7 @@ async function startAutoRefresh() {
             
             // Refresh recommendations with updated transfers
             const analysis = await API.analyzeTransfers(managerId, currentGW.id);
-            renderTransferRecommendations(analysis, managerData.transfers_balance || 1);
+            renderTransferRecommendations(analysis, Number(managerData.transfers_balance ?? 0));
           } catch (e) {
             console.warn('Failed to refresh transfers during auto-refresh:', e);
           }
@@ -742,7 +743,9 @@ function getPlayerMetrics(player) {
 }
 
 /* ── Transfer Recommendations with Smart Logic ──────────────── */
-function renderTransferRecommendations(analysis, transfersAvailable = 1) {
+function renderTransferRecommendations(analysis, transfersAvailable = 0) {
+  const availableTransfers = Number.isFinite(Number(transfersAvailable)) ? Number(transfersAvailable) : 0;
+
   if (!analysis || !analysis.starting_xi) {
     document.getElementById('transfer-recommendations-sidebar').style.display = 'none';
     return;
@@ -751,7 +754,7 @@ function renderTransferRecommendations(analysis, transfersAvailable = 1) {
   document.getElementById('transfer-recommendations-sidebar').style.display = 'block';
   
   // Early exit: No transfers available
-  if (transfersAvailable <= 0) {
+  if (availableTransfers <= 0) {
     document.getElementById('players-to-sell-section').style.display = 'none';
     document.getElementById('players-to-buy-section').style.display = 'none';
     document.getElementById('recommended-captain-section').style.display = 'block';
@@ -823,7 +826,7 @@ function renderTransferRecommendations(analysis, transfersAvailable = 1) {
   }
   
   // 2. PLAYER SELL RECOMMENDATIONS (Limited by transfers available)
-  const playersToSell = (recs.players_to_sell || []).slice(0, transfersAvailable);
+  const playersToSell = availableTransfers > 0 ? (recs.players_to_sell || []).slice(0, availableTransfers) : [];
   
   if (playersToSell.length > 0) {
     let sellHtml = '';
@@ -1117,7 +1120,7 @@ async function loadSquad(id) {
     const analysis = await API.analyzeTransfers(id, cur.id);
     
     renderTransferAnalysis(analysis);
-    renderTransferRecommendations(analysis, managerData.transfers_balance || 1);
+    renderTransferRecommendations(analysis, Number(managerData.transfers_balance ?? 0));
     document.getElementById('squad-card').style.display = 'block';
   } catch (e) {
     console.error('Transfer analysis error:', e);

@@ -1229,6 +1229,48 @@ app.get('/api/league/:id', async (req, res) => {
   } catch (e) { apiError(res, e); }
 });
 
+// Lightweight league summary (name, managers count, average points on first page)
+app.get('/api/league-summary/:id', async (req, res) => {
+  try {
+    const leagueId = req.params.id;
+    const page = 1;
+    const leaguePage = await fplFetch(`/leagues-classic/${leagueId}/standings/?page_standings=${page}`, 120);
+    let results = (leaguePage && leaguePage.standings && leaguePage.standings.results) || [];
+    let managersCount = (leaguePage && leaguePage.standings && leaguePage.standings.count) || 0;
+    let avgPoints = results.length ? Math.round(results.reduce((sum, r) => sum + ((r.total_points || r.total) || 0), 0) / results.length) : 0;
+
+    // If the API doesn't provide a reliable total count, fetch subsequent pages until there's no next page.
+    try {
+      if (!managersCount || managersCount <= results.length) {
+        let totalPtsSum = results.reduce((s, r) => s + ((r.total_points || r.total) || 0), 0);
+        let totalCount = results.length;
+
+        // Fetch pages sequentially until FPL indicates no more pages or until a safety cap.
+        const MAX_PAGES = 50;
+        let nextPage = 2;
+        while (nextPage <= MAX_PAGES) {
+          const pg = await fplFetch(`/leagues-classic/${leagueId}/standings/?page_standings=${nextPage}`, 120).catch(() => null);
+          if (!pg || !pg.standings || !Array.isArray(pg.standings.results) || pg.standings.results.length === 0) break;
+          totalPtsSum += (pg.standings.results || []).reduce((s, r) => s + ((r.total_points || r.total) || 0), 0);
+          totalCount += (pg.standings.results || []).length;
+          if (!pg.standings.has_next) break;
+          nextPage += 1;
+        }
+
+        // Use the computed totalCount if official count is missing or clearly capped
+        if (!managersCount || managersCount <= results.length) {
+          managersCount = totalCount;
+        }
+        avgPoints = totalCount ? Math.round(totalPtsSum / totalCount) : avgPoints;
+      }
+    } catch (err) {
+      console.warn('League summary extra-pages fetch failed:', err && err.message ? err.message : err);
+    }
+
+    return res.json({ league: leaguePage.league || {}, managersCount, avgPoints });
+  } catch (e) { apiError(res, e); }
+});
+
 // H2H league standings
 app.get('/api/league-h2h/:id', async (req, res) => {
   try {
@@ -1303,40 +1345,22 @@ app.get('/api/spy/:leagueId', async (req, res) => {
     const entries = allEntries.slice(offsetInFplPage, offsetInFplPage + pageSize);
     const hasMore = allEntries.length > offsetInFplPage + pageSize;
 
-    const managerRequests = entries.map(e => ({
-      entry: e.entry,
-      picksEndpoint: `/entry/${e.entry}/event/${currentGW}/picks/`,
-      transfersEndpoint: `/entry/${e.entry}/transfers/`,
-      detailsEndpoint: `/entry/${e.entry}/`,
-    }));
-
-    const managerResults = await promisePool(managerRequests, async (manager) => {
-      const [picks, transfers, details] = await Promise.all([
-        fplFetch(manager.picksEndpoint, 120).catch(() => null),
-        fplFetch(manager.transfersEndpoint, 120).catch(() => null),
-        fplFetch(manager.detailsEndpoint, 180).catch(() => null),
-      ]);
-      return { entry: manager.entry, picks, transfers, details };
-    }, Math.min(FPL_MAX_CONCURRENT, managerRequests.length));
-
-    const picksArr = managerResults.map(r => r.picks);
-    const transfersArr = managerResults.map(r => r.transfers);
-    const detailsArr = managerResults.map(r => r.details);
-
-    const enriched = entries.map((e, i) => ({
-      ...e,
-      picks: picksArr[i],
-      transfers: transfersArr[i],
-      detail: detailsArr[i]
-    }));
-
     const totalEntries = leaguePage.standings.count || null;
     const totalPages = totalEntries ? Math.max(1, Math.ceil(totalEntries / pageSize)) : null;
+
+    // Return managers INSTANTLY without picks/transfers/details to avoid rate limiting
+    // Background fetch these separately via /api/spy-details endpoint
+    const managers = entries.map(e => ({
+      ...e,
+      picks: null,
+      transfers: null,
+      detail: null
+    }));
 
     res.json({
       league: leaguePage.league,
       currentGW,
-      managers: enriched,
+      managers,
       players: bootstrap.elements,
       teams: bootstrap.teams,
       page,
@@ -1345,6 +1369,8 @@ app.get('/api/spy/:leagueId', async (req, res) => {
       totalEntries,
       totalPages
     });
+
+    // Note: background fetching of picks/transfers removed for spy endpoint
   } catch (err) { apiError(res, err); }
 });
 
@@ -1355,36 +1381,51 @@ app.get('/api/spy-search/:leagueId', async (req, res) => {
     const q = (req.query.q || '').toLowerCase().trim();
     if (!q) return res.status(400).json({ error: 'Missing query parameter q' });
 
-    const maxPages = Math.min(10, Math.max(1, parseInt(req.query.maxPages || '5', 10)));
-    // iterate pages sequentially to avoid bursts; fplFetch will be queued and cached
-    for (let p = 1; p <= maxPages; p += 1) {
-      const pageData = await fplFetch(`/leagues-classic/${leagueId}/standings/?page_standings=${p}`, 120);
-      const entries = (pageData && pageData.standings && pageData.standings.results) || [];
+    const maxPages = Math.min(50, Math.max(1, parseInt(req.query.maxPages || '5', 10)));
+    // Fetch pages in parallel batches to reduce latency while still respecting FPL queue/rate limits
+    const BATCH_SIZE = 4;
+    for (let start = 1; start <= maxPages; start += BATCH_SIZE) {
+      const batchPages = [];
+      for (let p = start; p < start + BATCH_SIZE && p <= maxPages; p += 1) batchPages.push(p);
 
-      for (const e of entries) {
-        const name = String(e.player_name || '').toLowerCase();
-        const team = String(e.entry_name || '').toLowerCase();
-        if (name.includes(q) || team.includes(q) || String(e.entry).toLowerCase() === q) {
-          // found — return the manager plus pagination info
-          return res.json({
-            found: true,
-            page: p,
-            manager: e,
-            players: (await fplFetch('/bootstrap-static/', 300)).elements,
-            teams: (await fplFetch('/bootstrap-static/', 300)).teams
-          });
+      const pageResults = await promisePool(batchPages, async (page) => {
+        try {
+          return await fplFetch(`/leagues-classic/${leagueId}/standings/?page_standings=${page}`, 120);
+        } catch (err) {
+          return null;
         }
-      }
+      }, BATCH_SIZE);
 
-        // stop early if there are no more pages
-        if (!pageData.standings || !pageData.standings.has_next) {
+      for (let i = 0; i < pageResults.length; i += 1) {
+        const pageData = pageResults[i];
+        const p = batchPages[i];
+        if (!pageData || !pageData.standings) continue;
+        const entries = pageData.standings.results || [];
+        for (const e of entries) {
+          const name = String(e.player_name || '').toLowerCase();
+          const team = String(e.entry_name || '').toLowerCase();
+          if (name.includes(q) || team.includes(q) || String(e.entry).toLowerCase() === q) {
+            // found — return the manager plus pagination info
+            return res.json({
+              found: true,
+              page: p,
+              manager: e,
+              players: (await fplFetch('/bootstrap-static/', 300)).elements,
+              teams: (await fplFetch('/bootstrap-static/', 300)).teams
+            });
+          }
+        }
+
+        // stop early if there are no more pages on FPL
+        if (!pageData.standings.has_next) {
           const scanned = Math.min(maxPages, p);
           return res.status(404).json({ found: false, scannedPages: scanned, hasMore: false, message: 'Manager not found in first ' + scanned + ' pages' });
         }
       }
+    }
 
-      // If we reach here we scanned maxPages and still haven't found the manager
-      return res.status(404).json({ found: false, scannedPages: maxPages, hasMore: true, message: 'Manager not found in first ' + maxPages + ' pages' });
+    // If we reach here we scanned maxPages and still haven't found the manager
+    return res.status(404).json({ found: false, scannedPages: maxPages, hasMore: true, message: 'Manager not found in first ' + maxPages + ' pages' });
   } catch (err) {
     apiError(res, err);
   }
@@ -1492,6 +1533,21 @@ app.get('/api/analyze-transfers/:id/:gw', async (req, res) => {
         players_to_buy: [],
         best_captain: null
       };
+
+      const availableTransfers = Number(manager.transfers_balance ?? 1);
+      if (availableTransfers <= 0) {
+        if (starting.length > 0) {
+          const captain = starting.reduce((best, p) => p.score > best.score ? p : best);
+          recommendations.best_captain = {
+            name: captain.web_name,
+            position: posName(captain.element_type),
+            team: allTeams.find(t => t.id === captain.team)?.name,
+            price: (captain.now_cost / 10).toFixed(1),
+            score: captain.score.toFixed(2)
+          };
+        }
+        return recommendations;
+      }
 
       // Get weakest starters (last 2)
       const weakestStarters = starting.sort((a, b) => a.score - b.score).slice(0, 2);

@@ -21,47 +21,90 @@ const TransferAnalyzer = (() => {
    * Considers: form, total_points, goals, assists, clean_sheets, yellow_cards, injuries
    */
   function calculatePlayerScore(player) {
+    // Professional blended performance score
+    // Uses form, recent points, raw outputs (goals/assists/clean sheets), and contextual metrics (threat/creativity/influence)
     let score = 0;
-    const weights = {
-      form: 0.30,
-      recent_points: 0.25,
-      goals: 0.15,
-      assists: 0.10,
-      clean_sheets: 0.10,
-      yellow_cards: -0.05,
-      injury_risk: -0.05
-    };
 
-    // Form (0-100)
-    const formScore = parseFloat(player.form || 0) * 10;
-    score += formScore * weights.form;
+    const form = Number(player.form || 0);
+    const recent = Number(player.event_points || 0);
+    const goals = Number(player.goals_scored || 0);
+    const assists = Number(player.assists || 0);
+    const cs = Number(player.clean_sheets || 0);
+    const yc = Number(player.yellow_cards || 0);
+    const threat = Number(player.threat || 0);
+    const creativity = Number(player.creativity || 0);
+    const influence = Number(player.influence || 0);
 
-    // Recent points (GW points)
-    const recentPoints = parseFloat(player.event_points || 0) * 10;
-    score += recentPoints * weights.recent_points;
+    // Base contributors (normalized)
+    score += (form * 10) * 0.22;             // form
+    score += (recent * 10) * 0.18;           // recent GW points
 
-    // Goals (weighted by position)
-    let goalWeight = 0.5;
-    if (player.element_type === 4) goalWeight = 1.0; // FWD
-    if (player.element_type === 3) goalWeight = 0.7; // MID
-    score += (player.goals_scored || 0) * goalWeight * weights.goals;
+    // Goals and assists scaled by position
+    const goalWeight = player.element_type === 4 ? 1.0 : player.element_type === 3 ? 0.8 : 0.5;
+    score += goals * goalWeight * 0.14;
+    score += assists * 0.12;
 
-    // Assists
-    score += (player.assists || 0) * weights.assists;
+    // Clean sheets for defenders/goalkeepers
+    if (player.element_type <= 2) score += cs * 0.12;
 
-    // Clean sheets
-    const csPoints = player.element_type <= 2 ? (player.clean_sheets || 0) * 2 : 0;
-    score += csPoints * weights.clean_sheets;
+    // Creativity & threat (derived expected involvement)
+    score += (threat * 0.018);    // threat values tend to be larger, scale down
+    score += (creativity * 0.02);
+    if (influence) score += (influence * 0.006);
 
-    // Yellow cards (negative impact)
-    score += (player.yellow_cards || 0) * weights.yellow_cards;
+    // Discipline negative
+    score += yc * -0.05;
 
-    // Injury risk
-    if (player.status === 'u') score += -5; // Unavailable
-    if (player.status === 'd') score += -3; // Doubt
-    if (player.status === 's') score += -1; // Suspended
+    // Injury / availability penalties
+    if (player.status === 'u') score -= 6;
+    if (player.status === 'd') score -= 3;
+    if (player.status === 's') score -= 1;
 
-    return Math.max(0, score);
+    // Fixture difficulty (FDR) — lower is better
+    const fdr = Number(player.fixture_difficulty || getAverageFixtureDifficulty(player.fixtures) || 2);
+    score -= (fdr - 2) * 0.12; // slightly stronger penalty than before
+
+    // Normalize and floor
+    return Math.max(0, Number(score.toFixed(2)));
+  }
+
+  /**
+   * Projected points based on form and fixture difficulty over a short horizon
+   * Mirrors server logic: projectPoints(form, difficulty, gwCount)
+   */
+  function projectPoints(form, difficulty, gwCount = 3, player = {}) {
+    // Produce a realistic per-game expected points estimate (not a multi-GW sum)
+    const f = Math.min(Math.max(Number(form || 0), 0), 10);
+    const diff = Number(difficulty || 2);
+
+    // Fixture multiplier: better fixtures slightly increase expected points (~0.8 - 1.2)
+    const fixtureFactor = 1 + ((2 - diff) * 0.12);
+
+    const xg = Number(player.expected_goals || player.xG || 0);
+    const xa = Number(player.expected_assists || player.xA || 0);
+    const threat = Number(player.threat || 0);
+
+    // Minutes probability heuristic
+    let minutesProb = 0.9;
+    if (player.status === 'u') minutesProb = 0.25;
+    else if (player.status === 'd') minutesProb = 0.6;
+    else if (player.status === 's') minutesProb = 0.75;
+    if (player.minutes) minutesProb = Math.min(1, Math.max(0.2, player.minutes / 90));
+
+    // xG/xA contribution to per-game points (goals ~4, assists ~3)
+    const xgxaPerGame = (xg * 4) + (xa * 3);
+
+    // Map form (0-10) to a 0-6 per-game baseline
+    const formBaseline = (f / 10) * 6;
+
+    // Small contribution from threat (scaled down)
+    const threatBonus = threat * 0.02;
+
+    // Blend components and apply minutes probability
+    const blended = (formBaseline * 0.55) + (xgxaPerGame * 0.35) + (threatBonus * 0.1);
+    const perGame = blended * minutesProb;
+
+    return Number(perGame.toFixed(2));
   }
 
   /**
@@ -200,11 +243,18 @@ const TransferAnalyzer = (() => {
    */
   function generateLineup(squad, currentGameWeek = null) {
     // Score all players
-    const scoredPlayers = squad.map(p => ({
-      ...p,
-      score: calculatePlayerScore(p),
-      fixture_difficulty: p.fixtures ? getAverageFixtureDifficulty(p.fixtures) : 2
-    }));
+    const scoredPlayers = squad.map(p => {
+      const fixture_difficulty = p.fixture_difficulty || (p.fixtures ? getAverageFixtureDifficulty(p.fixtures) : 2);
+      const baseScore = calculatePlayerScore({ ...p, fixture_difficulty });
+      // Project short-term points and blend with base score for better forward-looking lineup
+      const projected = projectPoints(p.form || 0, fixture_difficulty, 3);
+      const finalScore = Number((baseScore * 0.7) + (projected * 0.3));
+      return {
+        ...p,
+        score: finalScore,
+        fixture_difficulty
+      };
+    });
 
     const lineup = { starting: [], bench: [] };
     const byPosition = {};
@@ -398,6 +448,8 @@ const TransferAnalyzer = (() => {
     suggestTransfers,
     generateLineup,
     calculatePlayerScore,
+    projectPoints,
+    getAverageFixtureDifficulty,
     getPositionName,
     SQUAD_RULES,
     MAX_BUDGET
