@@ -21,6 +21,11 @@
     #events { background: rgba(255,255,255,0.02); border-radius:8px; padding:10px; }
     #events div { color: var(--text-on-dark-2); }
     a#partner-link { color: var(--blue-light); }
+    /* Partner key modal (force entry, no cancel) */
+    #partner-key-modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.6); z-index:10000; }
+    #partner-key-modal .card { background:var(--navy); border-radius:12px; padding:18px; width:min(420px,95%); box-shadow:0 10px 30px rgba(0,0,0,0.6); }
+    #partner-key-modal input { width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); color:#fff; margin-top:8px; }
+    #partner-key-modal button { margin-top:12px; padding:10px 14px; background:var(--green); color:#000; border:none; border-radius:8px; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -39,17 +44,56 @@
 <script>
 const partnerId = 'king';
 
-function ensurePartnerKey() {
+// Modal markup (force partner key entry)
+const modalHtml = `
+  <div id="partner-key-modal" role="dialog" aria-modal="true">
+    <div class="card">
+      <div style="font-weight:700;font-size:1.1rem;color:var(--green);">Enter partner key to view dashboard</div>
+      <div style="margin-top:8px;color:rgba(255,255,255,0.8);">This dashboard is restricted — ask the site owner for the partner key.</div>
+      <input id="partner-key-input" placeholder="Enter partner key" autocomplete="off" />
+      <div style="display:flex;justify-content:flex-end;"><button id="partner-key-submit">OK</button></div>
+    </div>
+  </div>
+`;
+
+document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+function showPartnerKeyModal() {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('partner-key-modal');
+    const input = document.getElementById('partner-key-input');
+    const btn = document.getElementById('partner-key-submit');
+    modal.style.display = 'flex';
+    input.value = '';
+    setTimeout(() => input.focus(), 50);
+
+    function submit() {
+      const val = (input.value || '').trim();
+      if (!val) {
+        input.style.outline = '2px solid rgba(255,80,80,0.25)';
+        return;
+      }
+      sessionStorage.setItem('partner_key_' + partnerId, val);
+      modal.style.display = 'none';
+      btn.removeEventListener('click', submit);
+      input.removeEventListener('keydown', onKey);
+      resolve(val);
+    }
+
+    function onKey(e) { if (e.key === 'Enter') submit(); }
+    btn.addEventListener('click', submit);
+    input.addEventListener('keydown', onKey);
+  });
+}
+
+async function ensurePartnerKey() {
   let key = sessionStorage.getItem('partner_key_' + partnerId);
-  if (!key) {
-    key = prompt('Enter partner key to view dashboard for "' + partnerId + '" (ask the site owner)');
-    if (key) sessionStorage.setItem('partner_key_' + partnerId, key);
-  }
-  return key;
+  if (key) return key;
+  return await showPartnerKeyModal();
 }
 
 async function fetchStats() {
-  const key = ensurePartnerKey();
+    const key = await ensurePartnerKey();
   try {
     const res = await fetch(`/api/partner/${partnerId}/stats?key=${encodeURIComponent(key)}`);
     const data = await res.json();
