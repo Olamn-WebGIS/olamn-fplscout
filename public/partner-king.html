@@ -1,0 +1,137 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Partner Dashboard — King</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    /* Improve contrast for partner dashboard elements while keeping site theme */
+    #partner-dashboard-wrap { padding: 32px; }
+    #partner-dashboard-wrap h1 { color: var(--text-on-dark); opacity: 0.95; }
+    #partner-dashboard-wrap p { color: var(--text-on-dark-2); }
+    #stats { display:flex; gap:16px; margin-bottom:16px; }
+    #stats > div {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: var(--text-on-dark);
+      padding: 12px; border-radius:8px; min-width:120px;
+    }
+    #stats .count { font-size:1.6rem; font-weight:700; color: var(--green); }
+    #events { background: rgba(255,255,255,0.02); border-radius:8px; padding:10px; }
+    #events div { color: var(--text-on-dark-2); }
+    a#partner-link { color: var(--blue-light); }
+  </style>
+</head>
+<body>
+  <div style="max-width:900px;margin:32px auto;padding:16px;">
+    <h1 style="color:var(--green);">Partner Dashboard — King</h1>
+    <p style="color:var(--green);">Overview of tracked activity</p>
+    <div id="stats" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;"></div>
+    <h3 style="color:var(--green);">Recent events</h3>
+    <div id="events" style="background:var(--navy);padding:12px;border-radius:8px;">
+      <div style="color:rgba(255,255,255,0.65);">Loading...</div>
+    </div>
+    <h3 style="margin-top:24px;color:var(--green);">Partner Links</h3>
+    <p style="color:var(--green);">Use this short link for promotions: <a id="partner-link" href="/r/king" target="_blank">https://your-site/r/king</a></p>
+  </div>
+<script src="/partner-snippet.js"></script>
+<script>
+const partnerId = 'king';
+
+function ensurePartnerKey() {
+  let key = sessionStorage.getItem('partner_key_' + partnerId);
+  if (!key) {
+    key = prompt('Enter partner key to view dashboard for "' + partnerId + '" (ask the site owner)');
+    if (key) sessionStorage.setItem('partner_key_' + partnerId, key);
+  }
+  return key;
+}
+
+async function fetchStats() {
+  const key = ensurePartnerKey();
+  try {
+    const res = await fetch(`/api/partner/${partnerId}/stats?key=${encodeURIComponent(key)}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'failed');
+    const counts = data.counts || {};
+    const statsEl = document.getElementById('stats');
+    statsEl.innerHTML = '';
+    ['click','signup','purchase'].forEach(k => {
+      const v = counts[k] || 0;
+      const el = document.createElement('div');
+      el.style.padding = '12px'; el.style.background = 'rgba(255,255,255,0.03)'; el.style.border = '1px solid rgba(255,255,255,0.06)'; el.style.borderRadius='8px'; el.style.minWidth='120px';
+      el.innerHTML = `<div style="font-size:0.85rem;color:rgba(255,255,255,0.7);">${k}</div><div style="font-size:1.6rem;font-weight:700;color:#7ef3b9">${v}</div>`;
+      statsEl.appendChild(el);
+    });
+
+    const events = data.recent || [];
+    const evEl = document.getElementById('events');
+    if (!events.length) { evEl.innerHTML = '<div style="color:rgba(255,255,255,0.65);">No recent events</div>'; return; }
+
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return '';
+      return String(s).replace(/[&<>"']/g, function (c) {
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c];
+      });
+    }
+
+    function formatRelativeTime(ts) {
+      const d = new Date(ts);
+      const now = new Date();
+      const sec = Math.floor((now - d) / 1000);
+      if (sec < 60) return sec + 's ago';
+      const min = Math.floor(sec / 60);
+      if (min < 60) return min + 'm ago';
+      const hr = Math.floor(min / 60);
+      if (hr < 24) return hr + 'h ago';
+      const days = Math.floor(hr / 24);
+      return days + 'd ago';
+    }
+
+    function renderMetadata(meta) {
+      if (!meta || Object.keys(meta).length === 0) return '';
+      const parts = [];
+      if (meta.path && meta.path !== '/r/king') parts.push(`<div>Path: <code style="color:var(--green);">${escapeHtml(meta.path)}</code></div>`);
+      if (meta.email) parts.push(`<div>Email: ${escapeHtml(meta.email)}</div>`);
+      if (meta.amount) parts.push(`<div>Amount: ${escapeHtml(String(meta.amount))}</div>`);
+      Object.keys(meta).forEach(k => {
+        if (['path','email','amount'].includes(k)) return;
+        const v = meta[k];
+        if (typeof v === 'object') parts.push(`<div>${escapeHtml(k)}: ${escapeHtml(JSON.stringify(v))}</div>`);
+        else parts.push(`<div>${escapeHtml(k)}: ${escapeHtml(String(v))}</div>`);
+      });
+      return parts.join('');
+    }
+
+    evEl.innerHTML = '';
+    events.forEach(e => {
+      const item = document.createElement('div');
+      item.style.padding = '12px';
+      item.style.borderBottom = '1px solid rgba(255,255,255,0.04)';
+      item.style.color = '#fff';
+
+      const title = document.createElement('div');
+      title.innerHTML = `<strong style="text-transform:capitalize">${escapeHtml(e.type)}</strong> · <span style="opacity:0.9">${escapeHtml(new Date(e.ts).toLocaleString())}</span> · <span style="color:var(--green)">${escapeHtml(formatRelativeTime(e.ts))}</span>`;
+
+      const metaDiv = document.createElement('div');
+      metaDiv.style.fontSize = '0.9rem';
+      metaDiv.style.color = 'rgba(255,255,255,0.75)';
+      metaDiv.style.marginTop = '6px';
+      metaDiv.innerHTML = renderMetadata(e.metadata || {});
+
+      item.appendChild(title);
+      if (metaDiv.innerHTML) item.appendChild(metaDiv);
+      evEl.appendChild(item);
+    });
+  } catch (err) {
+    console.error('stats fetch failed', err);
+    document.getElementById('events').innerHTML = '<div style="color:rgba(255,255,255,0.65);">Failed to load events</div>';
+  }
+}
+
+fetchStats();
+setInterval(fetchStats, 20_000);
+</script>
+</body>
+</html>

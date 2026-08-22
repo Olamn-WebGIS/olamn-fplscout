@@ -87,6 +87,32 @@ const ADMIN_SECRET_FALLBACK = !process.env.ADMIN_PASSWORD && !process.env.ADMIN_
 if (ADMIN_SECRET_FALLBACK) {
   console.warn('Warning: ADMIN_PASSWORD / ADMIN_PASS is not set. Default admin password is "admin123" for development only.');
 }
+
+// Partner key helper: supports env var PARTNER_KEY_<PARTNERID> or JSON map PARTNER_KEYS
+function getPartnerKeyFor(partnerId) {
+  try {
+    // 1) Specific per-partner key: PARTNER_KEY_<PARTNERID>
+    const specific = process.env[`PARTNER_KEY_${String(partnerId).toUpperCase()}`];
+    if (specific) return specific;
+    // 2) Global single partner key: PARTNER_KEY
+    if (process.env.PARTNER_KEY) return process.env.PARTNER_KEY;
+    // 3) JSON map of keys: PARTNER_KEYS = '{"king":"key123","alice":"..."}'
+    if (process.env.PARTNER_KEYS) {
+      try {
+        const map = JSON.parse(process.env.PARTNER_KEYS || '{}');
+        if (map && map[partnerId]) return map[partnerId];
+      } catch (e) { /* ignore parse errors */ }
+    }
+  } catch (err) { /* ignore */ }
+  return null;
+}
+
+function isValidPartnerKey(partnerId, providedKey) {
+  if (!providedKey) return false;
+  const expected = getPartnerKeyFor(partnerId);
+  if (!expected) return false;
+  return providedKey === expected;
+}
 // 🔒 PREMIUM SECURITY CHECK MIDDLEWARE
 // It looks up the requesting user's true profile status in Supabase before unblocking private paths
 async function requirePremiumUser(req, res, next) {
@@ -418,6 +444,129 @@ app.post('/api/careers/get-upload-url', async (req, res) => {
   } catch (error) {
     console.error('Upload URL generation failed:', error);
     return res.status(500).json({ success: false, message: 'Unable to generate upload URL.' });
+  }
+});
+
+// ── Partner tracking endpoints ─────────────────────────────────
+// Record partner events (click, signup, purchase)
+app.post('/api/partner/:partnerId/event', async (req, res) => {
+  try {
+    const { partnerId } = req.params;
+    const { type, metadata } = req.body || {};
+    if (!type) return res.status(400).json({ success: false, message: 'Missing event type' });
+
+    // For non-click events require partner key for authenticity
+    const providedKey = req.headers['x-partner-key'] || req.query.key || req.body.key;
+    if (type !== 'click' && !isValidPartnerKey(partnerId, providedKey)) {
+      return res.status(403).json({ success: false, message: 'Invalid or missing partner key' });
+    }
+
+    const event = {
+      id: crypto.randomUUID(),
+      partner_id: partnerId,
+      type,
+      metadata: metadata || {},
+      ts: new Date().toISOString(),
+      ip: req.ip,
+      ua: req.get('user-agent') || null,
+    };
+
+    // Try persisting to Supabase table `partner_events` if available
+    if (supabaseAdmin) {
+      try {
+        await supabaseAdmin.from('partner_events').insert([event]);
+        return res.json({ success: true, stored: 'supabase', event });
+      } catch (err) {
+        console.warn('Supabase partner_events insert failed, falling back to file:', err && err.message ? err.message : err);
+      }
+    }
+
+    // Fallback: append to local file under data/partners/{partnerId}.json
+    try {
+      const dir = path.join(process.cwd(), 'data', 'partners');
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const file = path.join(dir, `${partnerId}.json`);
+      let arr = [];
+      if (fs.existsSync(file)) {
+        try { arr = JSON.parse(fs.readFileSync(file, 'utf8') || '[]'); } catch (e) { arr = []; }
+      }
+      arr.push(event);
+      fs.writeFileSync(file, JSON.stringify(arr, null, 2));
+      return res.json({ success: true, stored: 'file', event });
+    } catch (err) {
+      console.error('Partner file write failed:', err && err.message ? err.message : err);
+      return res.status(500).json({ success: false, message: 'Failed to persist event' });
+    }
+  } catch (err) {
+    console.error('Partner event error:', err && err.message ? err.message : err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Simple stats endpoint for partner dashboard
+app.get('/api/partner/:partnerId/stats', async (req, res) => {
+  try {
+    const { partnerId } = req.params;
+
+    // require partner key
+    const providedKey = req.headers['x-partner-key'] || req.query.key;
+    if (!isValidPartnerKey(partnerId, providedKey)) {
+      return res.status(403).json({ success: false, message: 'Invalid or missing partner key' });
+    }
+
+    // Prefer Supabase admin (service role) for reads when available — service role bypasses RLS
+    if (supabaseAdmin) {
+      try {
+        const { data, error } = await supabaseAdmin.from('partner_events').select('*').eq('partner_id', partnerId).order('ts', { ascending: false }).limit(200);
+        if (!error) {
+          const counts = data.reduce((acc, e) => { acc[e.type] = (acc[e.type] || 0) + 1; return acc; }, {});
+          return res.json({ success: true, source: 'supabase_admin', counts, recent: data.slice(0, 50) });
+        }
+      } catch (err) { console.warn('Supabase admin partner stats failed:', err && err.message ? err.message : err); }
+    }
+
+    // Fallback to file storage if Supabase is not available
+    const file = path.join(process.cwd(), 'data', 'partners', `${partnerId}.json`);
+    let arr = [];
+    if (fs.existsSync(file)) {
+      try { arr = JSON.parse(fs.readFileSync(file, 'utf8') || '[]'); } catch (e) { arr = []; }
+    }
+    const counts = arr.reduce((acc, e) => { acc[e.type] = (acc[e.type] || 0) + 1; return acc; }, {});
+    return res.json({ success: true, source: 'file', counts, recent: arr.slice(-50).reverse() });
+  } catch (err) {
+    console.error('Partner stats error:', err && err.message ? err.message : err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Public redirect route for partner links: /r/:partnerId
+app.get('/r/:partnerId', async (req, res) => {
+  try {
+    const { partnerId } = req.params;
+    // record a click event (fire-and-forget)
+    const evt = {
+      id: crypto.randomUUID(), partner_id: partnerId, type: 'click', metadata: { path: req.originalUrl }, ts: new Date().toISOString(), ip: req.ip, ua: req.get('user-agent') || null
+    };
+    // Try to save asynchronously (do not await to avoid delaying redirect)
+    (async () => {
+      if (supabaseAdmin) {
+        try { await supabaseAdmin.from('partner_events').insert([evt]); return; } catch (e) { /* fallback */ }
+      }
+      try {
+        const dir = path.join(process.cwd(), 'data', 'partners'); if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        const file = path.join(dir, `${partnerId}.json`);
+        let arr = [];
+        if (fs.existsSync(file)) { try { arr = JSON.parse(fs.readFileSync(file, 'utf8') || '[]'); } catch (e) { arr = []; } }
+        arr.push(evt);
+        fs.writeFileSync(file, JSON.stringify(arr, null, 2));
+      } catch (e) { console.warn('Redirect partner click save failed', e && e.message ? e.message : e); }
+    })();
+
+    // Redirect to homepage or landing page
+    res.redirect(process.env.PARTNER_REDIRECT_URL || '/');
+  } catch (err) {
+    console.error('Partner redirect error:', err && err.message ? err.message : err);
+    res.redirect('/');
   }
 });
 
