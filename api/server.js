@@ -562,8 +562,15 @@ app.get('/r/:partnerId', async (req, res) => {
       } catch (e) { console.warn('Redirect partner click save failed', e && e.message ? e.message : e); }
     })();
 
-    // Redirect to homepage or landing page
-    res.redirect(process.env.PARTNER_REDIRECT_URL || '/');
+    // Redirect to homepage or landing page and preserve partner ref for client capture
+    const target = process.env.PARTNER_REDIRECT_URL || '/';
+    const sep = target.includes('?') ? '&' : '?';
+    try {
+      // append ?ref=partnerId so front-end captureReferralFromUrl() stores it
+      res.redirect(`${target}${sep}ref=${encodeURIComponent(partnerId)}`);
+    } catch (e) {
+      res.redirect(target);
+    }
   } catch (err) {
     console.error('Partner redirect error:', err && err.message ? err.message : err);
     res.redirect('/');
@@ -2697,6 +2704,26 @@ app.post('/api/signup', async (req, res) => {
 
     console.log(`User registered successfully: ${email}`);
 
+    // If this signup used a partner short-ref (e.g., /r/king redirected with ?ref=king),
+    // record a partner signup event server-side to avoid exposing partner keys client-side.
+    try {
+      if (referralCode && getPartnerKeyFor(referralCode)) {
+        const evt = { id: crypto.randomUUID(), partner_id: referralCode, type: 'signup', metadata: { email }, ts: new Date().toISOString(), ip: req.ip, ua: req.get('user-agent') || null };
+        if (supabaseAdmin) {
+          try { await supabaseAdmin.from('partner_events').insert([evt]); } catch (e) { console.warn('Supabase partner signup insert failed:', e && e.message ? e.message : e); }
+        } else {
+          try {
+            const dir = path.join(process.cwd(), 'data', 'partners'); if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            const file = path.join(dir, `${referralCode}.json`);
+            let arr = [];
+            if (fs.existsSync(file)) { try { arr = JSON.parse(fs.readFileSync(file, 'utf8') || '[]'); } catch (e) { arr = []; } }
+            arr.push(evt);
+            fs.writeFileSync(file, JSON.stringify(arr, null, 2));
+          } catch (e) { console.warn('Partner signup file write failed', e && e.message ? e.message : e); }
+        }
+      }
+    } catch (e) { console.warn('Partner signup event handling error:', e && e.message ? e.message : e); }
+
     return res.json({
       success: true,
       message: 'Account created successfully!',
@@ -3993,6 +4020,28 @@ app.get('/api/verify-payment', async (req, res) => {
                         .eq('id', referralQuery.data.id);
                 }
             }
+
+            // If the upgraded user was referred via a partner short-ref (e.g., ref_code set to 'king'), record partner purchase event
+            try {
+              // Load the user row to inspect ref_code
+              const { data: userRow, error: userErr } = await supabase.from('users').select('id,email,ref_code').eq('email', email).single();
+              const partnerRef = userRow && userRow.ref_code ? String(userRow.ref_code).trim() : null;
+              if (partnerRef && getPartnerKeyFor(partnerRef)) {
+                const evt = { id: crypto.randomUUID(), partner_id: partnerRef, type: 'purchase', metadata: { email, payment_reference: paymentReference, amount: Math.round(amountPaidInKobo / 100) }, ts: new Date().toISOString(), ip: req.ip, ua: req.get('user-agent') || null };
+                if (supabaseAdmin) {
+                  try { await supabaseAdmin.from('partner_events').insert([evt]); } catch (e) { console.warn('Supabase partner purchase insert failed:', e && e.message ? e.message : e); }
+                } else {
+                  try {
+                    const dir = path.join(process.cwd(), 'data', 'partners'); if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+                    const file = path.join(dir, `${partnerRef}.json`);
+                    let arr = [];
+                    if (fs.existsSync(file)) { try { arr = JSON.parse(fs.readFileSync(file, 'utf8') || '[]'); } catch (e) { arr = []; } }
+                    arr.push(evt);
+                    fs.writeFileSync(file, JSON.stringify(arr, null, 2));
+                  } catch (e) { console.warn('Partner purchase file write failed', e && e.message ? e.message : e); }
+                }
+              }
+            } catch (e) { console.warn('Partner purchase event handling error:', e && e.message ? e.message : e); }
         }
 
         return res.json({
