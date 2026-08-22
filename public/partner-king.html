@@ -136,7 +136,7 @@ async function fetchStats() {
     function renderMetadata(meta) {
       if (!meta || Object.keys(meta).length === 0) return '';
       const parts = [];
-      if (meta.path && meta.path !== '/r/king') parts.push(`<div>Path: <code style="color:var(--green);">${escapeHtml(meta.path)}</code></div>`);
+      // Do not display request path for privacy / cleanliness
       if (meta.email) parts.push(`<div>Email: ${escapeHtml(meta.email)}</div>`);
       if (meta.amount) parts.push(`<div>Amount: ${escapeHtml(String(meta.amount))}</div>`);
       Object.keys(meta).forEach(k => {
@@ -156,7 +156,8 @@ async function fetchStats() {
       item.style.color = '#fff';
 
       const title = document.createElement('div');
-      title.innerHTML = `<strong style="text-transform:capitalize">${escapeHtml(e.type)}</strong> · <span style="opacity:0.9">${escapeHtml(new Date(e.ts).toLocaleString())}</span> · <span style="color:var(--green)">${escapeHtml(formatRelativeTime(e.ts))}</span>`;
+      // Show only relative time (e.g., "5m ago") for cleaner display
+      title.innerHTML = `<strong style="text-transform:capitalize">${escapeHtml(e.type)}</strong> · <span style="color:var(--green)">${escapeHtml(formatRelativeTime(e.ts))}</span>`;
 
       const metaDiv = document.createElement('div');
       metaDiv.style.fontSize = '0.9rem';
