@@ -572,6 +572,7 @@ async function boot() {
     allPlayers = data.elements;
     allTeams   = data.teams;
     allEvents  = data.events;
+    window.__latestFplEvents = data.events || [];
 
     populateTeamFilter();
     updateHeroStats(data);
@@ -606,6 +607,7 @@ async function startAutoRefresh() {
         allPlayers = data.elements;
         allTeams = data.teams;
         allEvents = data.events;
+        window.__latestFplEvents = data.events || [];
         
         updateHeroStats(data);
         applyFilters();
@@ -1056,7 +1058,12 @@ async function syncManager() {
   document.getElementById('sync-btn').textContent = '…';
   document.getElementById('sync-msg').innerHTML = '';
   try {
-    const data = await API.manager(id);
+    const [bs, data] = await Promise.all([
+      API.bootstrap().catch(() => null),
+      API.manager(id)
+    ]);
+
+    if (bs && bs.events) window.__latestFplEvents = bs.events;
     Store.setManagerId(id);
     renderManagerInfo(data);
     document.getElementById('sync-msg').innerHTML = '<p class="success-msg">Manager synced successfully.</p>';
@@ -1074,9 +1081,9 @@ function renderManagerInfo(data) {
   document.getElementById('sm-rank').textContent = data.summary_overall_rank ? fmt(data.summary_overall_rank) : '—';
   document.getElementById('sm-pts').textContent  = data.summary_overall_points || '—';
   
-  // Display transfers available for next gameweek
-  const transfersAvailable = data.transfers_balance !== undefined ? data.transfers_balance : '—';
-  const transfersUsed = data.transfers !== undefined ? data.transfers : 0;
+  // FPL sometimes omits transfers_balance until the next event is live; default to 1 when the manager is synced at the start of the upcoming week.
+  const transfersAvailable = Number.isFinite(Number(data.transfers_balance)) ? Number(data.transfers_balance) : resolveAvailableTransfers(data, window.__latestFplEvents || []);
+  const transfersUsed = Number.isFinite(Number(data.transfers)) ? Number(data.transfers) : 0;
   document.getElementById('sm-transfers').textContent = `${transfersAvailable} available (${transfersUsed} used)`;
   
   const chips = data.chips || [];

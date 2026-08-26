@@ -25,6 +25,17 @@ test('ignores a finished current gameweek and picks the next upcoming one', () =
   assert.equal(resolveGameweek(events).id, 2);
 });
 
+test('defaults to one available transfer when FPL omits transfers_balance', () => {
+  const now = new Date();
+  const events = [
+    { id: 1, finished: true, is_current: true, is_next: false, deadline_time: new Date(now.getTime() - 86400000).toISOString() },
+    { id: 2, finished: false, is_current: false, is_next: true, deadline_time: new Date(now.getTime() + 86400000).toISOString() }
+  ];
+
+  const { resolveAvailableTransfers } = require('../public/utils.js');
+  assert.equal(resolveAvailableTransfers({ current_event: 1, transfers: 0 }, events), 1);
+});
+
 test('falls back to the latest incomplete gameweek when no upcoming event exists', () => {
   const now = new Date();
   const events = [

@@ -105,6 +105,22 @@ function resolveGameweek(events, now = new Date()) {
   return events[events.length - 1] || null;
 }
 
+function resolveAvailableTransfers(manager, events) {
+  if (manager && Number.isFinite(Number(manager.transfers_balance))) {
+    return Number(manager.transfers_balance);
+  }
+
+  const used = Number.isFinite(Number(manager?.transfers)) ? Number(manager.transfers) : 0;
+
+  const nextGw = resolveGameweek(events || []);
+  const currentEvent = Number(manager?.current_event || 0);
+  if (nextGw && currentEvent && nextGw.id > currentEvent) {
+    return Math.max(0, 1 - used);
+  }
+
+  return Math.max(0, 1 - used);
+}
+
 /* ── Player photo URL ────────────────────────────────────────── */
 function photoUrl(code) {
   const normalized = String(code || '')
@@ -157,5 +173,5 @@ if (typeof document !== 'undefined') {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { resolveGameweek };
+  module.exports = { resolveGameweek, resolveAvailableTransfers };
 }
