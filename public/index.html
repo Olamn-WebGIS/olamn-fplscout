@@ -634,10 +634,8 @@ async function startAutoRefresh() {
             const managerData = await API.manager(managerId);
             renderManagerInfo(managerData);
             
-            // Refresh recommendations with updated transfers using manager's next gameweek
-            const nextGW = resolveNextGameweek(data.events, managerData.current_event);
-            const gwForAnalysis = nextGW || currentGW;
-            const analysis = await API.analyzeTransfers(managerId, gwForAnalysis.id);
+            // Refresh recommendations with current gameweek and available transfers
+            const analysis = await API.analyzeTransfers(managerId, currentGW.id);
             renderTransferRecommendations(analysis, Number(managerData.transfers_balance ?? 0));
           } catch (e) {
             console.warn('Failed to refresh transfers during auto-refresh:', e);
@@ -1100,20 +1098,17 @@ async function loadSquad(id) {
     const bs  = await API.bootstrap();
     const managerData = await API.manager(id);
     
-    // Get current gameweek for live squad data
-    const currentGW = resolveCurrentGameweek(bs.events, managerData.current_event);
-    // Get next gameweek for transfer analysis (when transfers can be made)
-    const nextGW = resolveNextGameweek(bs.events, managerData.current_event);
-    const gwForAnalysis = nextGW || currentGW;
-    
-    if (!currentGW && !nextGW) return;
+    // Use manager's current_event to get the live squad
+    const cur = resolveCurrentGameweek(bs.events, managerData.current_event) || resolveNextGameweek(bs.events, managerData.current_event);
+    if (!cur) return;
     
     renderManagerInfo(managerData);
     
-    // Call the transfer analysis API with the next gameweek (or current if next doesn't exist)
-    const analysis = await API.analyzeTransfers(id, gwForAnalysis.id);
+    // Call the transfer analysis API with current gameweek for live squad
+    const analysis = await API.analyzeTransfers(id, cur.id);
     
     renderTransferAnalysis(analysis);
+    // Pass transfers_balance from manager data to show available transfers
     renderTransferRecommendations(analysis, Number(managerData.transfers_balance ?? 0));
     document.getElementById('squad-card').style.display = 'block';
   } catch (e) {
@@ -1125,7 +1120,8 @@ async function loadSquad(id) {
       const cur = resolveCurrentGameweek(bs.events, managerData.current_event) || resolveNextGameweek(bs.events, managerData.current_event);
       const picks = await API.managerPicks(id, cur.id);
       renderSquad(picks.picks, bs.elements);
-      renderTransferRecommendations(picks, Number(managerData.transfers_balance ?? 1));
+      // Pass transfers_balance from manager data
+      renderTransferRecommendations(picks, Number(managerData.transfers_balance ?? 0));
       document.getElementById('squad-card').style.display = 'block';
     } catch (e2) {
       document.getElementById('squad-card').style.display = 'block';
