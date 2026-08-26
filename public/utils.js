@@ -88,21 +88,44 @@ function chipLabel(chip) {
   return { wildcard:'Wildcard', bboost:'Bench Boost', freehit:'Free Hit', '3xc':'Triple Captain' }[chip] || chip;
 }
 
-function resolveGameweek(events, now = new Date()) {
+function resolveCurrentGameweek(events, managerCurrentEvent = null) {
   if (!Array.isArray(events) || !events.length) return null;
 
-  const next = events
-    .filter(e => e && !e.finished && (e.is_next || (e.deadline_time && new Date(e.deadline_time) > now)))
-    .sort((a, b) => new Date(a.deadline_time || 0) - new Date(b.deadline_time || 0))[0];
-  if (next) return next;
+  const exactCurrent = events.find(e => e && e.is_current);
+  if (exactCurrent) return exactCurrent;
 
-  const current = events.find(e => e && e.is_current && !e.finished);
-  if (current) return current;
+  if (managerCurrentEvent) {
+    const byId = events.find(e => Number(e.id) === Number(managerCurrentEvent));
+    if (byId) return byId;
+  }
 
   const unfinished = events.filter(e => e && !e.finished);
   if (unfinished.length) return unfinished.sort((a, b) => (b.id || 0) - (a.id || 0))[0];
 
   return events[events.length - 1] || null;
+}
+
+function resolveNextGameweek(events, managerCurrentEvent = null, now = new Date()) {
+  if (!Array.isArray(events) || !events.length) return null;
+
+  const currentId = Number(managerCurrentEvent || resolveCurrentGameweek(events)?.id || 0);
+  const viaId = currentId ? events.find(e => Number(e.id) === currentId + 1) : null;
+  if (viaId && !viaId.finished) return viaId;
+
+  const next = events
+    .filter(e => e && !e.finished && (e.is_next || (e.deadline_time && new Date(e.deadline_time) > now)))
+    .sort((a, b) => new Date(a.deadline_time || 0) - new Date(b.deadline_time || 0))[0];
+
+  if (next) return next;
+
+  const unfinished = events.filter(e => e && !e.finished);
+  if (unfinished.length) return unfinished.sort((a, b) => (a.id || 0) - (b.id || 0))[0];
+
+  return events[events.length - 1] || null;
+}
+
+function resolveGameweek(events, now = new Date()) {
+  return resolveCurrentGameweek(events) || resolveNextGameweek(events, null, now);
 }
 
 function resolveAvailableTransfers(manager, events) {
@@ -111,10 +134,9 @@ function resolveAvailableTransfers(manager, events) {
   }
 
   const used = Number.isFinite(Number(manager?.transfers)) ? Number(manager.transfers) : 0;
+  const nextGw = resolveNextGameweek(events || [], Number(manager?.current_event || 0));
 
-  const nextGw = resolveGameweek(events || []);
-  const currentEvent = Number(manager?.current_event || 0);
-  if (nextGw && currentEvent && nextGw.id > currentEvent) {
+  if (nextGw && Number(manager?.current_event || 0) && nextGw.id > Number(manager.current_event)) {
     return Math.max(0, 1 - used);
   }
 
@@ -173,5 +195,5 @@ if (typeof document !== 'undefined') {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { resolveGameweek, resolveAvailableTransfers };
+  module.exports = { resolveGameweek, resolveCurrentGameweek, resolveNextGameweek, resolveAvailableTransfers };
 }

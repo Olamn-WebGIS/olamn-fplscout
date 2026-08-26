@@ -649,7 +649,7 @@ async function startAutoRefresh() {
 }
 
 function updateHeroStats(data) {
-  const cur = resolveGameweek(data.events);
+  const cur = resolveCurrentGameweek(data.events) || resolveNextGameweek(data.events);
 
   document.getElementById('stat-players').textContent = fmt(data.elements.length);
   document.getElementById('stat-gw').textContent = cur ? cur.id : '—';
@@ -1081,7 +1081,7 @@ function renderManagerInfo(data) {
   document.getElementById('sm-rank').textContent = data.summary_overall_rank ? fmt(data.summary_overall_rank) : '—';
   document.getElementById('sm-pts').textContent  = data.summary_overall_points || '—';
   
-  // FPL sometimes omits transfers_balance until the next event is live; default to 1 when the manager is synced at the start of the upcoming week.
+  // Use the next gameweek for transfers, while keeping the current event for live squad data.
   const transfersAvailable = Number.isFinite(Number(data.transfers_balance)) ? Number(data.transfers_balance) : resolveAvailableTransfers(data, window.__latestFplEvents || []);
   const transfersUsed = Number.isFinite(Number(data.transfers)) ? Number(data.transfers) : 0;
   document.getElementById('sm-transfers').textContent = `${transfersAvailable} available (${transfersUsed} used)`;
@@ -1096,7 +1096,7 @@ function renderManagerInfo(data) {
 async function loadSquad(id) {
   try {
     const bs  = await API.bootstrap();
-    const cur = resolveGameweek(bs.events);
+    const cur = resolveCurrentGameweek(bs.events, id && Number.isFinite(Number(id)) ? Number(id) : null) || resolveNextGameweek(bs.events, id && Number.isFinite(Number(id)) ? Number(id) : null);
     if (!cur) return;
     
     // Refresh manager info (includes transfers available)
@@ -1114,7 +1114,7 @@ async function loadSquad(id) {
     // Fallback to original squad display
     try {
       const bs  = await API.bootstrap();
-      const cur = resolveGameweek(bs.events);
+      const cur = resolveCurrentGameweek(bs.events, Number(id)) || resolveNextGameweek(bs.events, Number(id));
       const picks = await API.managerPicks(id, cur.id);
       renderSquad(picks.picks, bs.elements);
       renderTransferRecommendations(picks, 1);

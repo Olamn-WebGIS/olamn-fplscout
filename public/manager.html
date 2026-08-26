@@ -208,7 +208,7 @@
     try {
       const bs = await API.bootstrap();
       const manager = await API.manager(id);
-      const currentGW = resolveGameweek(bs.events)?.id || manager.current_event || 1;
+      const currentGW = resolveCurrentGameweek(bs.events, manager.current_event)?.id || manager.current_event || 1;
       const managerName = `${manager.player_first_name || manager.player_name || 'Manager'} ${manager.player_last_name || ''}`.trim();
       document.getElementById('manager-title').textContent = `${managerName}'s Squad`;
       document.getElementById('manager-meta').textContent = `Team Rank: #${manager.summary_overall_rank || manager.entry_rank || manager.rank || manager.summary_rank || '—'} | Total Points: ${manager.summary_overall_points || manager.total_points || manager.summary_total || manager.points || '—'}`;
