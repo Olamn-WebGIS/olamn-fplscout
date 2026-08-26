@@ -91,14 +91,13 @@ function chipLabel(chip) {
 function resolveGameweek(events, now = new Date()) {
   if (!Array.isArray(events) || !events.length) return null;
 
-  const current = events.find(e => e && e.is_current);
-  if (current) return current;
-
-  const upcoming = events
+  const next = events
     .filter(e => e && !e.finished && (e.is_next || (e.deadline_time && new Date(e.deadline_time) > now)))
     .sort((a, b) => new Date(a.deadline_time || 0) - new Date(b.deadline_time || 0))[0];
+  if (next) return next;
 
-  if (upcoming) return upcoming;
+  const current = events.find(e => e && e.is_current && !e.finished);
+  if (current) return current;
 
   const unfinished = events.filter(e => e && !e.finished);
   if (unfinished.length) return unfinished.sort((a, b) => (b.id || 0) - (a.id || 0))[0];
