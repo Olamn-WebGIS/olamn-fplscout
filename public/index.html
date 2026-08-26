@@ -790,17 +790,17 @@ function renderTransferRecommendations(analysis, transfersAvailable = 0) {
     const benchByPos = {};
     const startersByPos = {};
     
-    // Group by position
+    // Group by position (API returns position as string: "GKP", "DEF", "MID", "FWD")
     bench.forEach(p => {
-      const pos = elementTypeToPos(p.element_type);
+      const pos = p.position || 'UNK';
       if (!benchByPos[pos]) benchByPos[pos] = [];
-      benchByPos[pos].push({...p, score: calculatePlayerScore(p, p.element_type <= 2)});
+      benchByPos[pos].push({...p, score: Number(p.score)});
     });
     
     squad.forEach(p => {
-      const pos = elementTypeToPos(p.element_type);
+      const pos = p.position || 'UNK';
       if (!startersByPos[pos]) startersByPos[pos] = [];
-      startersByPos[pos].push({...p, score: calculatePlayerScore(p, p.element_type <= 2)});
+      startersByPos[pos].push({...p, score: Number(p.score)});
     });
     
     // Find underperforming starters that could be replaced by bench
@@ -834,10 +834,10 @@ function renderTransferRecommendations(analysis, transfersAvailable = 0) {
         <div style="padding:10px;background:rgba(76,175,80,0.15);border-radius:8px;margin-bottom:8px;border-left:4px solid var(--green);">
           <div style="font-weight:700;font-size:0.85rem;color:var(--text-primary);">🔄 Bench Upgrade Available</div>
           <div style="margin-top:6px;padding:6px;background:rgba(211,47,47,0.15);border-radius:4px;font-size:0.75rem;">
-            <strong>Replace:</strong> ${r.out.web_name} (${elementTypeToPos(r.out.element_type)}) - Score: ${r.out.score}
+            <strong>Replace:</strong> ${r.out.name} (${r.out.position}) - Score: ${r.out.score}
           </div>
           <div style="margin-top:6px;padding:6px;background:rgba(76,175,80,0.15);border-radius:4px;font-size:0.75rem;">
-            <strong>With:</strong> ${r.in.web_name} (${elementTypeToPos(r.in.element_type)}) - Score: ${r.in.score}
+            <strong>With:</strong> ${r.in.name} (${r.in.position}) - Score: ${r.in.score}
           </div>
           <div style="margin-top:6px;font-size:0.7rem;color:var(--green);font-weight:600;">+${r.scoreDiff} points better</div>
         </div>
