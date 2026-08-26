@@ -647,28 +647,8 @@ async function startAutoRefresh() {
 }
 
 function updateHeroStats(data) {
-  // Try to find current gameweek
-  let cur = data.events.find(e => e.is_current);
-  
-  // If no current gameweek, find the first upcoming one (not finished)
-  if (!cur) {
-    const now = new Date();
-    cur = data.events.find(e => {
-      const deadline = e.deadline_time ? new Date(e.deadline_time) : null;
-      return deadline && deadline > now && !e.finished;
-    });
-  }
-  
-  // If still no match, find the first gameweek that hasn't finished yet
-  if (!cur) {
-    cur = data.events.find(e => !e.finished);
-  }
-  
-  // Last resort: get the most recent gameweek
-  if (!cur) {
-    cur = data.events[data.events.length - 1];
-  }
-  
+  const cur = resolveGameweek(data.events);
+
   document.getElementById('stat-players').textContent = fmt(data.elements.length);
   document.getElementById('stat-gw').textContent = cur ? cur.id : '—';
   document.getElementById('stat-avg').textContent = cur && cur.average_entry_score ? cur.average_entry_score : '—';
@@ -1109,7 +1089,7 @@ function renderManagerInfo(data) {
 async function loadSquad(id) {
   try {
     const bs  = await API.bootstrap();
-    const cur = bs.events.find(e => e.is_current) || bs.events[bs.events.length - 1];
+    const cur = resolveGameweek(bs.events);
     if (!cur) return;
     
     // Refresh manager info (includes transfers available)
@@ -1127,7 +1107,7 @@ async function loadSquad(id) {
     // Fallback to original squad display
     try {
       const bs  = await API.bootstrap();
-      const cur = bs.events.find(e => e.is_current) || bs.events[bs.events.length - 1];
+      const cur = resolveGameweek(bs.events);
       const picks = await API.managerPicks(id, cur.id);
       renderSquad(picks.picks, bs.elements);
       renderTransferRecommendations(picks, 1);

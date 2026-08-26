@@ -88,6 +88,24 @@ function chipLabel(chip) {
   return { wildcard:'Wildcard', bboost:'Bench Boost', freehit:'Free Hit', '3xc':'Triple Captain' }[chip] || chip;
 }
 
+function resolveGameweek(events, now = new Date()) {
+  if (!Array.isArray(events) || !events.length) return null;
+
+  const current = events.find(e => e && e.is_current);
+  if (current) return current;
+
+  const upcoming = events
+    .filter(e => e && !e.finished && (e.is_next || (e.deadline_time && new Date(e.deadline_time) > now)))
+    .sort((a, b) => new Date(a.deadline_time || 0) - new Date(b.deadline_time || 0))[0];
+
+  if (upcoming) return upcoming;
+
+  const unfinished = events.filter(e => e && !e.finished);
+  if (unfinished.length) return unfinished.sort((a, b) => (b.id || 0) - (a.id || 0))[0];
+
+  return events[events.length - 1] || null;
+}
+
 /* ── Player photo URL ────────────────────────────────────────── */
 function photoUrl(code) {
   const normalized = String(code || '')
@@ -121,18 +139,24 @@ function debounce(fn, ms) {
 }
 
 /* ── Hamburger nav ───────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', () => {
-  const ham = document.querySelector('.hamburger');
-  const navLinks = document.querySelector('.nav-links');
-  if (ham && navLinks) {
-    ham.addEventListener('click', () => navLinks.classList.toggle('open'));
-  }
-  // Mark active nav link
-  const path = location.pathname.replace(/\/$/, '');
-  document.querySelectorAll('.nav-links a').forEach(a => {
-    const href = a.getAttribute('href').replace(/\/$/, '');
-    if (href === path || (path === '' && href === '/') || (path === '/index.html' && href === '/')) {
-      a.classList.add('active');
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    const ham = document.querySelector('.hamburger');
+    const navLinks = document.querySelector('.nav-links');
+    if (ham && navLinks) {
+      ham.addEventListener('click', () => navLinks.classList.toggle('open'));
     }
+    // Mark active nav link
+    const path = location.pathname.replace(/\/$/, '');
+    document.querySelectorAll('.nav-links a').forEach(a => {
+      const href = a.getAttribute('href').replace(/\/$/, '');
+      if (href === path || (path === '' && href === '/') || (path === '/index.html' && href === '/')) {
+        a.classList.add('active');
+      }
+    });
   });
-});
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { resolveGameweek };
+}

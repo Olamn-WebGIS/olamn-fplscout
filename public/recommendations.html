@@ -298,7 +298,7 @@ async function boot() {
       console.log('TransferAnalyzer available?', typeof TransferAnalyzer !== 'undefined');
     } catch (e) { console.error('BOOT-LOG error', e); }
     
-    const cur = bsData.events.find(e => e.is_current) || bsData.events[bsData.events.length - 1];
+    const cur = resolveGameweek(bsData.events);
 
     // GW banner
     document.getElementById('cur-gw-label').textContent = `Gameweek ${cur.id}`;
@@ -324,13 +324,13 @@ function startAutoRefresh() {
       const newBsData = await API.bootstrap();
       if (!newBsData) return;
       
-      const oldGw = bsData?.events?.find(e => e.is_current)?.id || bsData?.events?.[bsData.events.length - 1]?.id;
-      const newGw = newBsData.events.find(e => e.is_current)?.id || newBsData.events[newBsData.events.length - 1]?.id;
+      const oldGw = resolveGameweek(bsData?.events)?.id;
+      const newGw = resolveGameweek(newBsData.events)?.id;
       
       bsData = newBsData;
       
       // Re-render all sections
-      const cur = bsData.events.find(e => e.is_current) || bsData.events[bsData.events.length - 1];
+      const cur = resolveGameweek(bsData.events);
       
       document.getElementById('cur-gw-label').textContent = `Gameweek ${cur.id}`;
       document.getElementById('cap-gw').textContent = cur.id;
