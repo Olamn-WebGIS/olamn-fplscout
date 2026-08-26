@@ -636,7 +636,9 @@ async function startAutoRefresh() {
             
             // Refresh recommendations with current gameweek and available transfers
             const analysis = await API.analyzeTransfers(managerId, currentGW.id);
-            renderTransferRecommendations(analysis, Number(managerData.transfers_balance ?? 0));
+            // Use same logic as renderManagerInfo to calculate transfers available
+            const transfersAvailable = Number.isFinite(Number(managerData.transfers_balance)) ? Number(managerData.transfers_balance) : resolveAvailableTransfers(managerData, data.events || []);
+            renderTransferRecommendations(analysis, transfersAvailable);
           } catch (e) {
             console.warn('Failed to refresh transfers during auto-refresh:', e);
           }
@@ -735,11 +737,14 @@ function renderTransferRecommendations(analysis, transfersAvailable = 0) {
   
   document.getElementById('transfer-recommendations-sidebar').style.display = 'block';
   
-  // Early exit: No transfers available
+  const recs = analysis.transfer_recommendations || {};
+  const squad = analysis.starting_xi || [];
+  const bench = analysis.bench || [];
+  
+  // If no transfers available, show message and captain only
   if (availableTransfers <= 0) {
-    document.getElementById('players-to-sell-section').style.display = 'none';
+    document.getElementById('players-to-sell-section').style.display = 'block';
     document.getElementById('players-to-buy-section').style.display = 'none';
-    document.getElementById('recommended-captain-section').style.display = 'block';
     
     const noTransfersMsg = `
       <div style="padding:12px;background:rgba(255,193,7,0.15);border-radius:8px;border-left:4px solid #ffc107;color:#fff;">
@@ -749,14 +754,23 @@ function renderTransferRecommendations(analysis, transfersAvailable = 0) {
     `;
     
     document.getElementById('players-to-sell-container').innerHTML = noTransfersMsg;
-    document.getElementById('players-to-sell-section').style.display = 'block';
-    document.getElementById('players-to-buy-section').style.display = 'none';
+    
+    // Still show captain recommendation even with no transfers
+    if (recs.best_captain) {
+      const cap = recs.best_captain;
+      const capHtml = `
+        <div style="padding:12px;background:linear-gradient(135deg, rgba(76,175,80,0.15) 0%, rgba(76,175,80,0.05) 100%);border-radius:8px;border:2px solid var(--green);">
+          <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">🎖 ${cap.name}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">${cap.position} • ${cap.team} • £${cap.price}m</div>
+          <div style="font-size:0.7rem;color:var(--green);margin-top:8px;font-weight:600;">Captain Score: ${cap.score} (Highest Form)</div>
+        </div>
+      `;
+      
+      document.getElementById('recommended-captain-container').innerHTML = capHtml;
+      document.getElementById('recommended-captain-section').style.display = 'block';
+    }
     return;
   }
-  
-  const recs = analysis.transfer_recommendations || {};
-  const squad = analysis.starting_xi || [];
-  const bench = analysis.bench || [];
   
   // Helper: Get position type
   const getPositionType = (pos) => {
@@ -1108,8 +1122,10 @@ async function loadSquad(id) {
     const analysis = await API.analyzeTransfers(id, cur.id);
     
     renderTransferAnalysis(analysis);
-    // Pass transfers_balance from manager data to show available transfers
-    renderTransferRecommendations(analysis, Number(managerData.transfers_balance ?? 0));
+    
+    // Use same logic as renderManagerInfo to calculate transfers available
+    const transfersAvailable = Number.isFinite(Number(managerData.transfers_balance)) ? Number(managerData.transfers_balance) : resolveAvailableTransfers(managerData, bs.events || []);
+    renderTransferRecommendations(analysis, transfersAvailable);
     document.getElementById('squad-card').style.display = 'block';
   } catch (e) {
     console.error('Transfer analysis error:', e);
@@ -1120,8 +1136,10 @@ async function loadSquad(id) {
       const cur = resolveCurrentGameweek(bs.events, managerData.current_event) || resolveNextGameweek(bs.events, managerData.current_event);
       const picks = await API.managerPicks(id, cur.id);
       renderSquad(picks.picks, bs.elements);
-      // Pass transfers_balance from manager data
-      renderTransferRecommendations(picks, Number(managerData.transfers_balance ?? 0));
+      
+      // Use same logic as renderManagerInfo to calculate transfers available
+      const transfersAvailable = Number.isFinite(Number(managerData.transfers_balance)) ? Number(managerData.transfers_balance) : resolveAvailableTransfers(managerData, bs.events || []);
+      renderTransferRecommendations(picks, transfersAvailable);
       document.getElementById('squad-card').style.display = 'block';
     } catch (e2) {
       document.getElementById('squad-card').style.display = 'block';
