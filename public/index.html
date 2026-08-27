@@ -1153,8 +1153,9 @@ function renderTransferAnalysis(analysis) {
   document.getElementById('starting-xi-display').innerHTML = '<div style="font-size:0.92rem;color:var(--text-muted);line-height:1.5;">Loading your live line-up…</div>';
   document.getElementById('bench-display').innerHTML = '<div style="font-size:0.9rem;color:var(--text-muted);line-height:1.5;">Loading bench details…</div>';
 
-  // Show squad validation status
-  if (analysis.squad_valid) {
+  // Show squad validation status, excluding the non-blocking budget warning.
+  const visibleSquadErrors = (analysis.squad_errors || []).filter(err => !/^Budget:/i.test(String(err)));
+  if (analysis.squad_valid || visibleSquadErrors.length === 0) {
     document.getElementById('squad-validation').style.display = 'block';
     document.getElementById('squad-errors').style.display = 'none';
     document.getElementById('validation-errors').innerHTML = `
@@ -1164,7 +1165,7 @@ function renderTransferAnalysis(analysis) {
   } else {
     document.getElementById('squad-validation').style.display = 'none';
     document.getElementById('squad-errors').style.display = 'block';
-    document.getElementById('squad-errors-list').innerHTML = analysis.squad_errors
+    document.getElementById('squad-errors-list').innerHTML = visibleSquadErrors
       .map(err => `<div style="padding:4px 0;">⚠️ ${err}</div>`)
       .join('');
   }

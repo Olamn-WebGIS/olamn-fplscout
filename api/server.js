@@ -157,8 +157,13 @@ app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // Add conservative Cache-Control headers for API responses to leverage CDN caching
 app.use('/api', (req, res, next) => {
-  // public CDN cache for 60s, allow stale while revalidate for 120s
-  res.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+  // Manager data must always reflect the latest squad and transfers.
+  if (/^\/manager\/[^/]+(?:\/picks\/[^/]+|\/transfers)?$/.test(req.path) || /^\/analyze-transfers\//.test(req.path)) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  } else {
+    // public CDN cache for 60s, allow stale while revalidate for 120s
+    res.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+  }
   next();
 });
 
@@ -1209,11 +1214,13 @@ function promisePool(items, fn, concurrency = 4) {
 
 async function fplFetch(endpoint, ttl = 120) {
   const key = endpoint;
-  const cached = cache.get(key);
-  if (cached) return cached;
+  if (ttl > 0) {
+    const cached = cache.get(key);
+    if (cached) return cached;
+  }
 
   // Try shared Redis cache first (if available)
-  if (redis) {
+  if (redis && ttl > 0) {
     try {
       const raw = await redis.get(key);
       if (raw) {
@@ -1244,10 +1251,10 @@ async function fplFetch(endpoint, ttl = 120) {
     }
 
     const data = await res.json();
-    cache.set(key, data, ttl);
+    if (ttl > 0) cache.set(key, data, ttl);
 
     // Store in shared Redis (best-effort)
-    if (redis) {
+    if (redis && ttl > 0) {
       try {
         await redis.set(key, JSON.stringify(data), { ex: ttl });
       } catch (err) {
@@ -1347,7 +1354,7 @@ app.get('/api/bootstrap', async (req, res) => {
 // Single manager entry
 app.get('/api/manager/:id', async (req, res) => {
   try {
-    const data = await fplFetch(`/entry/${req.params.id}/`, 180);
+    const data = await fplFetch(`/entry/${req.params.id}/`, 0);
     res.json(data);
   } catch (e) { apiError(res, e); }
 });
@@ -1355,7 +1362,7 @@ app.get('/api/manager/:id', async (req, res) => {
 // Manager history (all GW scores)
 app.get('/api/manager/:id/history', async (req, res) => {
   try {
-    const data = await fplFetch(`/entry/${req.params.id}/history/`, 180);
+    const data = await fplFetch(`/entry/${req.params.id}/history/`, 0);
     res.json(data);
   } catch (e) { apiError(res, e); }
 });
@@ -1363,7 +1370,7 @@ app.get('/api/manager/:id/history', async (req, res) => {
 // Manager picks for a gameweek
 app.get('/api/manager/:id/picks/:gw', async (req, res) => {
   try {
-    const data = await fplFetch(`/entry/${req.params.id}/event/${req.params.gw}/picks/`, 120);
+    const data = await fplFetch(`/entry/${req.params.id}/event/${req.params.gw}/picks/`, 0);
     res.json(data);
   } catch (e) { apiError(res, e); }
 });
@@ -1371,7 +1378,7 @@ app.get('/api/manager/:id/picks/:gw', async (req, res) => {
 // Manager transfers
 app.get('/api/manager/:id/transfers', async (req, res) => {
   try {
-    const data = await fplFetch(`/entry/${req.params.id}/transfers/`, 120);
+    const data = await fplFetch(`/entry/${req.params.id}/transfers/`, 0);
     res.json(data);
   } catch (e) { apiError(res, e); }
 });
@@ -1596,8 +1603,8 @@ app.get('/api/analyze-transfers/:id/:gw', async (req, res) => {
     // Fetch all data in parallel
     const [bootstrap, picks, manager] = await Promise.all([
       fplFetch('/bootstrap-static/', 300),
-      fplFetch(`/entry/${managerId}/event/${currentGW}/picks/`, 120),
-      fplFetch(`/entry/${managerId}/`, 180)
+      fplFetch(`/entry/${managerId}/event/${currentGW}/picks/`, 0),
+      fplFetch(`/entry/${managerId}/`, 0)
     ]);
 
     const allPlayers = bootstrap.elements;
