@@ -1122,8 +1122,14 @@ async function loadSquad(id) {
     
     renderManagerInfo(managerData);
     
-    // The upcoming gameweek contains the manager's latest saved transfers.
-    const analysis = await API.analyzeTransfers(id, upcomingGW.id);
+    // Prefer the latest upcoming squad; FPL may not publish it until the deadline.
+    let analysis;
+    try {
+      analysis = await API.analyzeTransfers(id, upcomingGW.id);
+    } catch (upcomingError) {
+      if (!currentGW || Number(currentGW.id) === Number(upcomingGW.id)) throw upcomingError;
+      analysis = await API.analyzeTransfers(id, currentGW.id);
+    }
     
     renderTransferAnalysis(analysis);
     
@@ -1140,7 +1146,8 @@ async function loadSquad(id) {
       const managerCurrentGW = managerData.current_event ? bs.events.find(e => Number(e.id) === Number(managerData.current_event)) : null;
       const currentGW = resolveCurrentGameweek(bs.events, managerCurrentGW?.id);
       const upcomingGW = resolveNextGameweek(bs.events, managerCurrentGW?.id) || currentGW;
-      const picks = await API.managerPicks(id, upcomingGW.id);
+      const picks = await API.managerPicks(id, upcomingGW.id).catch(() => currentGW && API.managerPicks(id, currentGW.id));
+      if (!picks) throw new Error('Manager picks are not available');
       renderSquad(picks.picks, bs.elements);
       
       // Use same logic as renderManagerInfo to calculate transfers available
