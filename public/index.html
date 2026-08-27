@@ -634,8 +634,10 @@ async function startAutoRefresh() {
             const managerData = await API.manager(managerId);
             renderManagerInfo(managerData);
             
-            // Refresh recommendations with current gameweek and available transfers
-            const analysis = await API.analyzeTransfers(managerId, currentGW.id);
+            // Refresh the latest saved squad for the upcoming gameweek.
+            const managerCurrentGW = managerData.current_event ? data.events.find(e => Number(e.id) === Number(managerData.current_event)) : currentGW;
+            const upcomingGW = resolveNextGameweek(data.events, managerCurrentGW?.id) || managerCurrentGW || currentGW;
+            const analysis = await API.analyzeTransfers(managerId, upcomingGW.id);
             // Use same logic as renderManagerInfo to calculate transfers available
             const transfersAvailable = Number.isFinite(Number(managerData.transfers_balance)) ? Number(managerData.transfers_balance) : resolveAvailableTransfers(managerData, data.events || []);
             renderTransferRecommendations(analysis, transfersAvailable);
@@ -1112,14 +1114,16 @@ async function loadSquad(id) {
     const bs  = await API.bootstrap();
     const managerData = await API.manager(id);
     
-    // Use manager's current_event to get the live squad
-    const cur = resolveCurrentGameweek(bs.events, managerData.current_event) || resolveNextGameweek(bs.events, managerData.current_event);
-    if (!cur) return;
+    // Load the latest saved squad for the upcoming gameweek after the deadline.
+    const managerCurrentGW = managerData.current_event ? bs.events.find(e => Number(e.id) === Number(managerData.current_event)) : null;
+    const currentGW = resolveCurrentGameweek(bs.events, managerCurrentGW?.id);
+    const upcomingGW = resolveNextGameweek(bs.events, managerCurrentGW?.id) || currentGW;
+    if (!upcomingGW) return;
     
     renderManagerInfo(managerData);
     
-    // Call the transfer analysis API with current gameweek for live squad
-    const analysis = await API.analyzeTransfers(id, cur.id);
+    // The upcoming gameweek contains the manager's latest saved transfers.
+    const analysis = await API.analyzeTransfers(id, upcomingGW.id);
     
     renderTransferAnalysis(analysis);
     
@@ -1133,8 +1137,10 @@ async function loadSquad(id) {
     try {
       const bs  = await API.bootstrap();
       const managerData = await API.manager(id);
-      const cur = resolveCurrentGameweek(bs.events, managerData.current_event) || resolveNextGameweek(bs.events, managerData.current_event);
-      const picks = await API.managerPicks(id, cur.id);
+      const managerCurrentGW = managerData.current_event ? bs.events.find(e => Number(e.id) === Number(managerData.current_event)) : null;
+      const currentGW = resolveCurrentGameweek(bs.events, managerCurrentGW?.id);
+      const upcomingGW = resolveNextGameweek(bs.events, managerCurrentGW?.id) || currentGW;
+      const picks = await API.managerPicks(id, upcomingGW.id);
       renderSquad(picks.picks, bs.elements);
       
       // Use same logic as renderManagerInfo to calculate transfers available
